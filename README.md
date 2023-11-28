@@ -1,110 +1,107 @@
-![CI logo](https://codeinstitute.s3.amazonaws.com/fullstack/ci_logo_small.png)
+# A wage calculator for the drivers of a haulage business.
 
-Welcome USER_NAME,
+## UX
 
-This is the Code Institute student template for Gitpod. We have preinstalled all of the tools you need to get started. It's perfectly ok to use this template as the basis for your project submissions.
+### Overview
+This project is for an imaginary haulage business that pays it's employees with a bonues scheme based on what they earn during the week. The user will be the fleet manager and will be able to add drivers (and their bonus plans), as well as how much they earn each day. The calculator will then give their wages total for any given week that has entries. The fleet manager will be able to add, remove and edit each of these variables.
 
-You can safely delete this README.md file, or change it for your own project. Please do read it at least once, though! It contains some important information about Gitpod and the extensions we use. Some of this information has been updated since the video content was created. The last update to this file was: **September 1, 2021**
+### Site owners goals
+To provide a service that the customer will be happy to pay a subsctiption fee for.
 
-## Gitpod Reminders
+### External users goals
+* Save time for employees by automating a labour intesive task. 
+* Save time for employees searching for wages details.
 
-To run a frontend (HTML, CSS, Javascript only) application in Gitpod, in the terminal, type:
+### Developer goals
+- To build a functional app that can be replicated for other business situations.
 
-`python3 -m http.server`
+### Proposed features
+- A database that takes entries for driver details, and their daily earnings. This information should be called upon and manipulated to give the wages for any driver, of any given week.
+- A history of all entries that can be edited/deleted.
+- Notify the user of a successful entry with a flashing tab.
+- A tab for the wages calculator.
 
-A blue button should appear to click: _Make Public_,
+The features listed are achievable in terms of timescales and technology available.
 
-Another blue button should appear to click: _Open Browser_.
+### User stories
+- As a user of this app, I will want to be able to intuitively navigate it to easily add, remove and edit data. 
+- I should be able to easily find the wages of any driver which I normally caluclate manually.
 
-To run a backend Python file, type `python3 app.py`, if your Python file is named `app.py` of course.
+## Design
 
-A blue button should appear to click: _Make Public_,
+### Design choices
+- I've chosen a simple design which can be expanded on with more data inputs and features in the future.
+- A professional, clean color scheme will be used, as this app will be used day to day by the fleet manager.
+- The app will have two main menu tabs at the bottom of the page so the user can flick with ease between data input and the wages calculator. Within data input, the user can choose between 'driver' and 'end day' sections. 
+- The app was designed mobile first, even though it is suspected it will be used more on the desktop. This is to ensure the content and navigation is kept simple. 
 
-Another blue button should appear to click: _Open Browser_.
+### Wireframes
+Desktop wireframes:
+![Desktop wireframes](/wages_calculator/static/images/wireframes/PROJECT3-DESKTOP.png)
 
-In Gitpod you have superuser security privileges by default. Therefore you do not need to use the `sudo` (superuser do) command in the bash terminal in any of the lessons.
+Tablet wireframes:
+![Tablet wireframes](/wages_calculator/static/images/wireframes/PROJECT3-TABLET.png)
 
-To log into the Heroku toolbelt CLI:
+Mobile wireframes:
+![Mobile wireframes](/wages_calculator/static/images/wireframes/PROJECT3-MOBILE.png)
 
-1. Log in to your Heroku account and go to *Account Settings* in the menu under your avatar.
-2. Scroll down to the *API Key* and click *Reveal*
-3. Copy the key
-4. In Gitpod, from the terminal, run `heroku_config`
-5. Paste in your API key when asked
 
-You can now use the `heroku` CLI program - try running `heroku apps` to confirm it works. This API key is unique and private to you so do not share it. If you accidentally make it public then you can create a new one with _Regenerate API Key_.
 
-------
+##### Plan
 
-## Release History
 
-We continually tweak and adjust this template to help give you the best experience. Here is the version history:
+##### End design similarity/difference
+-JS
 
-**September 20 2023:** Update Python version to 3.9.17.
 
-**September 1 2021:** Remove `PGHOSTADDR` environment variable.
+- HTML & CSS
 
-**July 19 2021:** Remove `font_fix` script now that the terminal font issue is fixed.
 
-**July 2 2021:** Remove extensions that are not available in Open VSX.
 
-**June 30 2021:** Combined the P4 and P5 templates into one file, added the uptime script. See the FAQ at the end of this file.
+### Colour scheme
+The colour pallet was found from an article on [canva.com](https://www.canva.com/learn/website-color-schemes/)
+Fresh - #f7f5e6,
+Vermillion - #333a56,
+Sunshine - #52658f,
+Clean - #e8e8e8.
 
-**June 10 2021:** Added: `font_fix` script and alias to fix the Terminal font issue
+## Testing 
 
-**May 10 2021:** Added `heroku_config` script to allow Heroku API key to be stored as an environment variable.
+### Functionality testing
 
-**April 7 2021:** Upgraded the template for VS Code instead of Theia.
 
-**October 21 2020:** Versions of the HTMLHint, Prettier, Bootstrap4 CDN and Auto Close extensions updated. The Python extension needs to stay the same version for now.
+### Issues
 
-**October 08 2020:** Additional large Gitpod files (`core.mongo*` and `core.python*`) are now hidden in the Explorer, and have been added to the `.gitignore` by default.
+#### JS
 
-**September 22 2020:** Gitpod occasionally creates large `core.Microsoft` files. These are now hidden in the Explorer. A `.gitignore` file has been created to make sure these files will not be committed, along with other common files.
 
-**April 16 2020:** The template now automatically installs MySQL instead of relying on the Gitpod MySQL image. The message about a Python linter not being installed has been dealt with, and the set-up files are now hidden in the Gitpod file explorer.
+#### CSS
+- 
 
-**April 13 2020:** Added the _Prettier_ code beautifier extension instead of the code formatter built-in to Gitpod.
+#### Features
 
-**February 2020:** The initialisation files now _do not_ auto-delete. They will remain in your project. You can safely ignore them. They just make sure that your workspace is configured correctly each time you open it. It will also prevent the Gitpod configuration popup from appearing.
 
-**December 2019:** Added Eventyret's Bootstrap 4 extension. Type `!bscdn` in a HTML file to add the Bootstrap boilerplate. Check out the <a href="https://github.com/Eventyret/vscode-bcdn" target="_blank">README.md file at the official repo</a> for more options.
 
-------
+### Validators
 
-## FAQ about the uptime script
+- HTML
+  - 
 
-**Why have you added this script?**
+- CSS
+  - 
 
-It will help us to calculate how many running workspaces there are at any one time, which greatly helps us with cost and capacity planning. It will help us decide on the future direction of our cloud-based IDE strategy.
+- JS
+ -
 
-**How will this affect me?**
+### Lighthouse
 
-For everyday usage of Gitpod, it doesn’t have any effect at all. The script only captures the following data:
 
-- An ID that is randomly generated each time the workspace is started.
-- The current date and time
-- The workspace status of “started” or “running”, which is sent every 5 minutes.
+### Future features to include/update
 
-It is not possible for us or anyone else to trace the random ID back to an individual, and no personal data is being captured. It will not slow down the workspace or affect your work.
 
-**So….?**
+### Deployment
 
-We want to tell you this so that we are being completely transparent about the data we collect and what we do with it.
 
-**Can I opt out?**
+### Credits
+The colour pallet was found on: https://www.canva.com/learn/website-color-schemes/
 
-Yes, you can. Since no personally identifiable information is being captured, we'd appreciate it if you let the script run; however if you are unhappy with the idea, simply run the following commands from the terminal window after creating the workspace, and this will remove the uptime script:
-
-```
-pkill uptime.sh
-rm .vscode/uptime.sh
-```
-
-**Anything more?**
-
-Yes! We'd strongly encourage you to look at the source code of the `uptime.sh` file so that you know what it's doing. As future software developers, it will be great practice to see how these shell scripts work.
-
----
-
-Happy coding!
