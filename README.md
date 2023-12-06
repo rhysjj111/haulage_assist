@@ -35,22 +35,28 @@ The features listed are achievable in terms of timescales and technology availab
 - The app will have two main menu tabs at the bottom of the page so the user can flick with ease between data input and the wages calculator. Within data input, the user can choose between 'driver' and 'end day' sections. 
 - The app was designed mobile first, even though it is suspected it will be used more on the desktop. This is to ensure the content and navigation is kept simple. 
 
+### Security
+- 
+
 ### Wireframes
 Desktop wireframes:
-![Desktop wireframes](/wages_calculator/static/images/wireframes/PROJECT3-DESKTOP.png)
+![Desktop wireframes](/wages_calculator/static/images/wireframes/project3_desktop_wf.png)
 
 Tablet wireframes:
-![Tablet wireframes](/wages_calculator/static/images/wireframes/PROJECT3-TABLET.png)
+![Tablet wireframes](/wages_calculator/static/images/wireframes/project3_tablet_wf.png)
 
 Mobile wireframes:
-![Mobile wireframes](/wages_calculator/static/images/wireframes/PROJECT3-MOBILE.png)
+![Mobile wireframes](/wages_calculator/static/images/wireframes/project3_mobile_wf.png)
 
 
 
-##### Plan
+### Plan
+![Database structure and templates plan](/wages_calculator/static/images/wireframes/database_plan.png)
+
+- This is the structure of the database and jinja templates that will be used.
 
 
-##### End design similarity/difference
+### End design similarity/difference
 -JS
 
 
@@ -64,6 +70,18 @@ Fresh - #f7f5e6,
 Vermillion - #333a56,
 Sunshine - #52658f,
 Clean - #e8e8e8.
+
+### Form data validation
+#### Add Driver form
+First name - max characters 25.
+Second name - max characters 25.
+Base wage - Integer between 0 and 5000.
+Bonus percentage - Integer between 0 and 50.
+
+#### Day-end questions
+Total earned - integer between 0 and 3000.
+
+
 
 ## Testing 
 
@@ -97,6 +115,7 @@ Clean - #e8e8e8.
 
 
 ### Future features to include/update
+- NOTE: CONVERTING MONEY INTO INTEGER FOR STORAGE IN DATABASE AND CALCULATIONS(BETTER THAN FLOATING POINT)
 
 
 ### Deployment

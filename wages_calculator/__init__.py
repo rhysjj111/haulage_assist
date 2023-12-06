@@ -18,4 +18,4 @@ else:
 
 db = SQLAlchemy(app)
 
-from taskmanager import routes  # noqa
+from taskmanager import routes 
