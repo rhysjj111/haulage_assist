@@ -1,1 +1,1 @@
-from taskmanager import db
+from wages_calculator import db

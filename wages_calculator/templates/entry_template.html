@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block header %}
+    <div class="col s1 offset-s2 back-arrow-container valign-wrapper">
+        <a href=""><i class="medium material-icons back-arrow">arrow_back</i></a>
+    </div>
+    <div class="col s6 entry-heading-container heading-container">
+        <h1 class="center-align">{% block standard_title %}Tester Title{% endblock %}</h1>
+    </div>
+{% endblock %}
+
+{% block main %}
+    <div class="col s12 l5 offset-l1">
+        {% block entry_form %}
+            <p>test form</p>
+            <form>
+                <label for="fname">First name:</label><br>
+                <input type="text" id="fname" name="fname"><br>
+                <label for="lname">Last name:</label><br>
+                <input type="text" id="lname" name="lname">
+                <input type="submit">
+            </form>
+        {% endblock %}
+    </div>
+
+    <div class="col s12 l5 offset-l1">
+        {% block entry_history %}
+            <ul class="collapsible">
+                <li>
+                    <div class="collapsible-header"><i class="material-icons">filter_drama</i>test</div>
+                    <div class="collapsible-body"><span>tester</span></div>
+                </li>
+                <li>
+                    <div class="collapsible-header"><i class="material-icons">filter_drama</i>test</div>
+                    <div class="collapsible-body"><span>tester</span></div>
+                </li>
+                <li>
+                    <div class="collapsible-header"><i class="material-icons">filter_drama</i>test</div>
+                    <div class="collapsible-body"><span>tester</span></div>
+                </li>
+                <li>
+                    <div class="collapsible-header"><i class="material-icons">filter_drama</i>test</div>
+                    <div class="collapsible-body"><span>tester</span></div>
+                </li>
+                <li>
+                    <div class="collapsible-header"><i class="material-icons">filter_drama</i>test</div>
+                    <div class="collapsible-body"><span>tester</span></div>
+                </li>
+            </ul>
+        {% endblock %}
+    </div>
+{% endblock %}

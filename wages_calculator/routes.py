@@ -1,8 +1,8 @@
 from flask import render_template, request, redirect, url_for
-from taskmanager import app, db
-from taskmanager.models import Category, Task
+from wages_calculator import app, db
+# from wages_calculator.models import 
 
 
 @app.route("/")
 def home():
-    return render_template("base.html")
+    return render_template("entry_template.html")

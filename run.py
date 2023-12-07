@@ -1,5 +1,5 @@
 import os
-from taskmanager import app
+from wages_calculator import app
 
 
 if __name__ == "__main__":

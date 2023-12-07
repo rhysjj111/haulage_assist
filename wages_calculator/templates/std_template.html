@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block header %}
+<div class="col s6 center-align offset-s3 heading-container">
+    <h1>{% block standard_title %}Tester Title{% endblock %}</h1>
+</div>
+{% endblock %}
+
+{% block main %}
+    <div class="col s12">
+        {% block standard_content%}
+            <P>TEST CONTENT</P>
+        {% endblock %}
+    </div>
+{% endblock %}
