@@ -1,0 +1,11 @@
+{% extends "std_template.html" %}
+
+
+{% block standard_title %}DATA ENTRY{% endblock %}
+
+    {% block standard_content%}
+        <div class="row">
+            <div class="col s12 l5 main-button btn"><a href="{{ url_for('add_driver') }}">Add Driver</a></div>
+            <div class="col s12 l5 main-button btn"><a href="">Add Day End</a></div>
+        </div>
+    {% endblock %}

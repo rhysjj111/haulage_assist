@@ -2,10 +2,10 @@
 
 {% block header %}
     <div class="col s1 offset-s2 back-arrow-container valign-wrapper">
-        <a href=""><i class="medium material-icons back-arrow">arrow_back</i></a>
+        <i class="medium material-icons back-arrow"><a href="{{ url_for('home') }}">arrow_back</a></i>
     </div>
     <div class="col s6 entry-heading-container heading-container">
-        <h1 class="center-align">{% block entry_title %}Tester Title{% endblock %}</h1>
+        <h1 class="center-align">{% block entry_title %}{% endblock %}</h1>
     </div>
 {% endblock %}
 
@@ -19,7 +19,7 @@
     
     <div class="col s12 l5 entry-form" id="entry_form">
         <div class="section">
-            <h4>{% block entry_form_title %}test form{% endblock %}</h4>
+            <h4>{% block entry_form_title %}{% endblock %}</h4>
                 {% block entry_form %}
                 {% endblock %}
         </div>
