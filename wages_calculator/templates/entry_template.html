@@ -5,48 +5,32 @@
         <a href=""><i class="medium material-icons back-arrow">arrow_back</i></a>
     </div>
     <div class="col s6 entry-heading-container heading-container">
-        <h1 class="center-align">{% block standard_title %}Tester Title{% endblock %}</h1>
+        <h1 class="center-align">{% block entry_title %}Tester Title{% endblock %}</h1>
     </div>
 {% endblock %}
 
 {% block main %}
-    <div class="col s12 l5 offset-l1">
-        {% block entry_form %}
-            <p>test form</p>
-            <form>
-                <label for="fname">First name:</label><br>
-                <input type="text" id="fname" name="fname"><br>
-                <label for="lname">Last name:</label><br>
-                <input type="text" id="lname" name="lname">
-                <input type="submit">
-            </form>
-        {% endblock %}
+    <div class="col s4 offset-s4 hide-on-large-only">
+        <ul class="tabs z-depth-1 hide-tabs" id="sub-menu-tabs">
+            <li class="tab col s2"><a href="#entry_form">Entry</a></li>
+            <li class="tab col s2"><a href="#entry_history">History</a></li>
+        </ul>
     </div>
-
-    <div class="col s12 l5 offset-l1">
-        {% block entry_history %}
-            <ul class="collapsible">
-                <li>
-                    <div class="collapsible-header"><i class="material-icons">filter_drama</i>test</div>
-                    <div class="collapsible-body"><span>tester</span></div>
-                </li>
-                <li>
-                    <div class="collapsible-header"><i class="material-icons">filter_drama</i>test</div>
-                    <div class="collapsible-body"><span>tester</span></div>
-                </li>
-                <li>
-                    <div class="collapsible-header"><i class="material-icons">filter_drama</i>test</div>
-                    <div class="collapsible-body"><span>tester</span></div>
-                </li>
-                <li>
-                    <div class="collapsible-header"><i class="material-icons">filter_drama</i>test</div>
-                    <div class="collapsible-body"><span>tester</span></div>
-                </li>
-                <li>
-                    <div class="collapsible-header"><i class="material-icons">filter_drama</i>test</div>
-                    <div class="collapsible-body"><span>tester</span></div>
-                </li>
-            </ul>
-        {% endblock %}
+    
+    <div class="col s12 l5 entry-form" id="entry_form">
+        <div class="section">
+            <h4>{% block entry_form_title %}test form{% endblock %}</h4>
+                {% block entry_form %}
+                {% endblock %}
+        </div>
     </div>
+    
+    <div class="col s12 l5 offset-l1 entry-history" id="entry_history">
+        <div class="section">
+            <h4>{% block entry_history_title %}Test history{% endblock %}</h4>
+            {% block entry_history %}
+            {% endblock %}
+        </div>
+    </div>
+    
 {% endblock %}

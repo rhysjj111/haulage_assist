@@ -5,4 +5,4 @@ from wages_calculator import app, db
 
 @app.route("/")
 def home():
-    return render_template("entry_template.html")
+    return render_template("driver_entry.html")

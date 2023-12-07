@@ -1,0 +1,60 @@
+{% macro driver_questions(type, driver) %}
+    <!-- start_date -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
+            <input id="start_date" name="start_date"  type="text"
+                class="datepicker validate" required {% if driver is defined %} value="{{ driver.start_date.strftime('%d, %B, %Y') }}" {% endif %}>
+            <label for="start_date">Start date:</label>
+        </div>
+    </div>
+
+    <!-- first name -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="first_name" name="first_name" {% if driver is defined %} value="{{ driver.first_name }}" {% endif %}  minlength="1" maxlength="25"
+                type="text" class="validate" required>
+            <label for="first_name">First name:</label>
+        </div>
+    </div>
+    
+    <!-- second name -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="second_name" name="second_name" {% if driver is defined %} value="{{ driver.second_name }}" {% endif %}  minlength="1" maxlength="25"
+                type="text" class="validate" required>
+            <label for="second_name">Second name:</label>
+        </div>
+    </div>
+
+    <!-- bonus percentage -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="bonus_percentage" name="bonus_percentage" {% if driver is defined %} value="{{ driver.bonus_percentage }}" {% endif %}  min="0" max="50"
+                type="number" class="validate" required>
+            <label for="bonus_percentage">Bonus percentage (%):</label>
+        </div>
+    </div>
+
+    <!-- base wage -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="base_wage" name="base_wage" {% if driver is defined %} value="{{ driver.base_wage }}" {% endif %}  min="0" max="1000"
+                type="number" class="validate" required>
+            <label for="base_wage">Base wage (£):</label>
+        </div>
+    </div>
+
+    <!-- submit button -->
+    <div class="row">
+        <div class="col s12 center-align">
+            <button type="submit" class="btn-large submit">
+                {{ type }} Driver <i class="fas fa-edit right"></i>
+            </button>
+        </div>
+    </div>
+{% endmacro %}

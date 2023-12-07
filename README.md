@@ -75,7 +75,7 @@ Clean - #e8e8e8.
 #### Add Driver form
 First name - max characters 25.
 Second name - max characters 25.
-Base wage - Integer between 0 and 5000.
+Base wage - Integer between 0 and 1000.
 Bonus percentage - Integer between 0 and 50.
 
 #### Day-end questions
