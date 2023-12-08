@@ -36,7 +36,7 @@
                                 <p>The driver, {{ driver.first_name }} will be deleted permanently.</p>
                             </div>
                             <div class="modal-footer">
-                                <a href="" class="btn red">Delete</a>
+                                <a href="{{ url_for('delete_driver', driver_id=driver.id)}}" class="btn red">Delete</a>
                                 <a href="" class="modal-close btn grey">Cancel</a>
                             </div>
                         </div>
@@ -47,7 +47,7 @@
                             <h3 class="center-align">Edit Driver</h3>
                     
                             <div class="row">
-                                <form class="col s12" method="POST" action="">
+                                <form class="col s12" method="POST" action="{{ url_for('edit_driver', driver_id=driver.id) }}">
                                 {{ macros.driver_questions('edit', driver) }}
                             </div>
                         </div>
