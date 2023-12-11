@@ -1,0 +1,57 @@
+{% extends "entry_template.html" %}
+
+
+{% block entry_title %}+ DAY END{% endblock %}
+
+    {% block entry_form_title %}Add day end entry:{% endblock %}
+        {% block entry_form %}
+            <form method="post" action="{{ url_for('add_day_end') }}">
+                {{ macros.day_end_questions('add', day_end) }}
+            </form>
+        {% endblock %}
+
+    {% block entry_history_title %}Day end history:{% endblock %}
+        {% block entry_history %}
+            <ul class="collapsible">
+                {% for day in day_end_entries %}
+                    <li>
+                        <!-- collapsible header -->
+                        <div class="collapsible-header"><i class="material-icons">filter_drama</i>
+                        <strong>{{ day.date.strftime("%d, %B, %Y") }} - {{ driver.name }}</strong>
+                        </div>
+                        <!-- collapsible-body -->
+                        <div class="collapsible-body">
+                            Earned: £{{ day.earned }}<br>
+                            {{ "Overnight" if day.overnight else "" }}
+                        </div>
+                        <!-- buttons -->
+                        <a href="#modal_edit_{{ day.id }}" class="btn green accent-4 modal-trigger">Edit</a>
+                        <a href="#modal_delete_{{ day.id }}" class="btn red modal-trigger">Delete</a>
+
+                        <!-- Delete entry modal -->
+                        <div id="modal_delete_{{ day.id }}" class="modal">
+                            <div class="modal-content">
+                                <h4>Delete Day End Entry?</h4>
+                                <p>The entry, {{ day.date.strftime("%d, %B, %Y") }} - {{ driver.name }} will be deleted permanently.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <a href="{{ url_for('delete_day_end', day_end_id=day.id)}}" class="btn red">Delete</a>
+                                <a href="" class="modal-close btn grey">Cancel</a>
+                            </div>
+                        </div>
+
+                        <!-- Edit modal -->
+                        <div id="modal_edit_{{ day.id }}" class="modal">
+                            <div class="modal-content">
+                            <h3 class="center-align">Edit Day End Entry</h3>
+                    
+                            <div class="row">
+                                <form class="col s12" method="POST" action="{{ url_for('edit_day_end', day_end_id=day.id) }}">
+                                {{ macros.day_end_questions('edit', day) }}
+                                </form>
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endblock %}

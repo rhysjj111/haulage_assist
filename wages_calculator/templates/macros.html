@@ -29,23 +29,23 @@
         </div>
     </div>
 
-    <!-- bonus percentage -->
-    <div class="row">
-        <div class="input-field col s12">
-            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="bonus_percentage" name="bonus_percentage" {% if driver is defined %} value="{{ driver.bonus_percentage }}" {% endif %}  min="0" max="50"
-                type="number" class="validate" required>
-            <label for="bonus_percentage">Bonus percentage (%):</label>
-        </div>
-    </div>
-
     <!-- base wage -->
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="base_wage" name="base_wage" {% if driver is defined %} value="{{ driver.base_wage }}" {% endif %}  min="0" max="1000"
+            <input id="base_wage" name="base_wage" {% if driver is defined %} value="{{ driver.base_wage }}" {% endif %}  min="0" max="1000" step = "0.01"
                 type="number" class="validate" required>
             <label for="base_wage">Base wage (£):</label>
+        </div>
+    </div>
+
+    <!-- bonus percentage -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="bonus_percentage" name="bonus_percentage" {% if driver is defined %} value="{{ driver.bonus_percentage }}" {% endif %}  min="0" max="50" step="0.01"
+                type="number" class="validate" required>
+            <label for="bonus_percentage">Bonus percentage (%):</label>
         </div>
     </div>
 
@@ -54,6 +54,71 @@
         <div class="col s12 center-align">
             <button type="submit" class="btn-large submit">
                 {{ type }} Driver <i class="fas fa-edit right"></i>
+            </button>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro day_end_questions(type, day, drivers) %}
+
+    <!-- driver -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
+            <label for="driver">Select Driver:</label>
+            <select name="driver_id" id="driver_id" class="validate" required>
+                <option value="" disabled selected>Choose driver</option>
+                {% for driver in drivers %}
+                    {% if day is defined %}
+                        <option value="{{ driver.id }}" selected>{{ driver.name }}</option>
+                    {% else %}
+                        <option value="{{ driver.id }}" selected>{{ driver.name }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- date -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
+            <input id="date" name="date"  type="text"
+                class="datepicker validate" required {% if day is defined %} value="{{ day.date.strftime('%d, %B, %Y') }}" {% endif %}>
+            <label for="date">Date:</label>
+        </div>
+    </div>
+
+    <!-- earned -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="earned" name="earned" {% if day is defined %} value="{{ day.earned }}" {% endif %}  min="0" max="1000" step="0.01"
+                type="number" class="validate" required>
+            <label for="earned">Earned (£):</label>
+        </div>
+    </div>
+
+    <!-- overnight -->
+    <div class="row">
+        <div class="input-field col s12">
+            <div class="switch">
+                <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+                <label for="overnight">
+                    <input id="overnight" name="overnight" {% if day is defined %} value="{{ day.overnight }}" {% endif %}
+                    type="checkbox">
+                    <span class="lever"></span>
+                    Overnight:
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- submit button -->
+    <div class="row">
+        <div class="col s12 center-align">
+            <button type="submit" class="btn-large submit">
+                {{ type }} Day end entry <i class="fas fa-edit right"></i>
             </button>
         </div>
     </div>
