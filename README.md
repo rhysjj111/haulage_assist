@@ -122,6 +122,7 @@ Total earned - integer between 0 and 3000.
 
 
 ### Credits
-The colour pallet was found on: https://www.canva.com/learn/website-color-schemes/
-A helpful article on [Stack overflow](https://stackoverflow.com/questions/19216334/python-give-start-and-end-of-week-data-from-a-given-date) gave me the solution to finding the start and end date of the week from a given date.
+- The colour pallet was found on: https://www.canva.com/learn/website-color-schemes/
+- A helpful article on [Stack overflow](https://stackoverflow.com/questions/19216334/python-give-start-and-end-of-week-data-from-a-given-date) gave me the solution to finding the start and end date of the week from a given date.
+- [SQLAlchemy docs](https://docs.sqlalchemy.org/en/20) were used a lot to determine how to query the database via ORM.
 

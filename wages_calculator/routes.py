@@ -90,8 +90,24 @@ def wages_calculator():
         result_driver = Driver.query.get_or_404(request.form.get("search_driver_id"))
         search_driver_id = request.form.get("search_driver_id")
         results = DayEnd.query.filter(DayEnd.driver_id == search_driver_id, DayEnd.date >= start_date, DayEnd.date <= end_date).all()
+        total_earned = 0
+        total_overnight = 0
+        wages = 0
+        bonus_wage = 0
+        base_wage = 0
+        total_wages = 0
+        for result in results:
+            bonus_wage += result.earned * result.driver.bonus_percentage
+            total_earned += int(result.earned)
+            if result.overnight == True:
+                total_overnight += 30
+        base_wage = int(results[0].driver.base_wage)/100
+        total_wages = bonus_wage + total_overnight + base_wage
+
         
-        return render_template("wages_calculator.html", drivers=drivers, results=results, search_driver_id=search_driver_id)
+        
+        
+        return render_template("wages_calculator.html", drivers=drivers, results=results, total_earned=total_earned, total_overnight=total_overnight, base_wage=base_wage, bonus_wage=bonus_wage, total_wages=total_wages)
     return render_template("wages_calculator.html", drivers=drivers)
 
 
