@@ -1,6 +1,7 @@
 from flask import render_template, request, redirect, url_for
 from wages_calculator import app, db
 from wages_calculator.models import Driver, DayEnd
+from datetime import datetime, timedelta
 
 
 @app.route("/")
@@ -29,7 +30,7 @@ def add_driver():
 
 @app.route("/delete_driver/<int:driver_id>")
 def delete_driver(driver_id):
-    entry = Driver.query.get_or_404(driver_id)
+    entry = db.get_or_404(Driver, driver_id)
     db.session.delete(entry)
     db.session.commit()
     return redirect(url_for("add_driver"))
@@ -78,6 +79,19 @@ def edit_day_end(day_id):
     db.session.commit()
     return redirect(url_for("add_day_end"))
 
-
+@app.route("/wages_calculator", methods=["GET", "POST"])
+def wages_calculator():
+    drivers = drivers = list(Driver.query.order_by(Driver.first_name).all())
+    if request.method == "POST":
+        date = request.form.get("search_date")
+        dt = datetime.strptime(date, '%d %B, %Y')
+        start_date = dt - timedelta(days=dt.weekday())
+        end_date = start_date + timedelta(days=6)
+        result_driver = Driver.query.get_or_404(request.form.get("search_driver_id"))
+        search_driver_id = request.form.get("search_driver_id")
+        results = DayEnd.query.filter(DayEnd.driver_id == search_driver_id, DayEnd.date >= start_date, DayEnd.date <= end_date).all()
+        
+        return render_template("wages_calculator.html", drivers=drivers, results=results, search_driver_id=search_driver_id)
+    return render_template("wages_calculator.html", drivers=drivers)
 
 

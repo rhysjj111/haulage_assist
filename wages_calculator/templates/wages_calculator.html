@@ -1,11 +1,49 @@
 {% extends "std_template.html" %}
 
 
-{% block standard_title %}DATA ENTRY{% endblock %}
+{% block standard_title %}WAGES CALCULATOR{% endblock %}
 
     {% block standard_content%}
         <div class="row">
-            <div class="col s12 l5 main-button btn"><a href="{{ url_for('add_driver') }}">Add Driver</a></div>
-            <div class="col s12 l5 main-button btn"><a href="{{ url_for('add_day_end') }}">Add Day End</a></div>
+            <div class="col s12 l5 ">
+                <form action="" method="post">
+
+                    <!-- date -->
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
+                            <input id="date" name="search_date"  type="text" class="datepicker validate" required>
+                            <label for="date">Date:</label>
+                        </div>
+                    </div>
+
+                    <!-- driver -->
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
+                            <select name="search_driver_id" id="driver_id" class="validate" required>
+                                <option value="" disabled selected>Choose driver</option>
+                                {% for driver in drivers %}
+                                    <option value="{{ driver.id }}" >{{ driver.name() }}</option>
+                                {% endfor %}   
+                            </select>
+                            <label for="driver_id">Select Driver:</label>
+                        </div>
+                    </div>
+
+                    <!-- buttons -->
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <button type="submit" class="btn green accent-4 submit">Search </button>
+                            <button href="{{ url_for('wages_calculator')}}" class="btn grey" formnovalidate>Reset</button>
+                        </div>   
+                    </div>
+                </form>
+            </div>
+            <div class="col s12 l5">
+                {% if results is defined %}
+                    {{ results }}<br>
+                {% endif %}
+            </div>
         </div>
     {% endblock %}
