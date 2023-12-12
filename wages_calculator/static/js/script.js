@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
         i18n: {done: "Select"}
     })
 
+    // select initialization
+    let selects = document.querySelectorAll('select');
+    M.FormSelect.init(selects);
+
     function removeTabs() {
         const subTabs = document.querySelector('#sub-menu-tabs') 
         const tabs = M.Tabs.init(subTabs, swipeable=true);

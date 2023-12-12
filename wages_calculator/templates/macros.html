@@ -59,23 +59,35 @@
     </div>
 {% endmacro %}
 
+
+
+
+
+
+
 {% macro day_end_questions(type, day, drivers) %}
 
     <!-- driver -->
     <div class="row">
         <div class="input-field col s12">
-            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
-            <label for="driver">Select Driver:</label>
+            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
             <select name="driver_id" id="driver_id" class="validate" required>
-                <option value="" disabled selected>Choose driver</option>
-                {% for driver in drivers %}
-                    {% if day is defined %}
-                        <option value="{{ driver.id }}" selected>{{ driver.name }}</option>
-                    {% else %}
-                        <option value="{{ driver.id }}" selected>{{ driver.name }}</option>
-                    {% endif %}
-                {% endfor %}
+                {% if day is defined %}
+                    {% for driver in drivers %}
+                        {% if day.driver == driver %}
+                            <option value="{{ driver.id }}" selected>{{ driver.name() }}</option>
+                        {% else %}
+                            <option value="{{ driver.id }}">{{ driver.name() }}</option>
+                        {% endif %}
+                    {% endfor %}        
+                {% else %}
+                    <option value="" disabled selected>Choose driver</option>
+                    {% for driver in drivers %}
+                            <option value="{{ driver.id }}" >{{ driver.name() }}</option>
+                    {% endfor %}   
+                {% endif %}
             </select>
+            <label for="driver_id">Select Driver:</label>
         </div>
     </div>
 
@@ -104,12 +116,23 @@
         <div class="input-field col s12">
             <div class="switch">
                 <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-                <label for="overnight">
-                    <input id="overnight" name="overnight" {% if day is defined %} value="{{ day.overnight }}" {% endif %}
-                    type="checkbox">
-                    <span class="lever"></span>
-                    Overnight:
-                </label>
+                    {% if day is defined %}
+                        <label for="overnight_{{ type }}_{{ day.id }}">
+                            {% if day.overnight == True %}
+                            <input id="overnight_{{ type }}_{{ day.id }}" name="overnight" type="checkbox" checked>
+                            {% else %}
+                            <input id="overnight_{{ type }}_{{ day.id }}" name="overnight" type="checkbox">
+                            {% endif %}
+                            <span class="lever"></span>
+                            Overnight
+                        </label>
+                    {% else %}
+                        <label for="overnight_{{ type }}">
+                            <input id="overnight_{{ type }}" name="overnight" type="checkbox">
+                            <span class="lever"></span>
+                            Overnight
+                        </label>
+                    {% endif %}
             </div>
         </div>
     </div>
