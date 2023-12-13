@@ -81,33 +81,30 @@ def edit_day_end(day_id):
 
 @app.route("/wages_calculator", methods=["GET", "POST"])
 def wages_calculator():
-    drivers = drivers = list(Driver.query.order_by(Driver.first_name).all())
+    drivers = list(Driver.query.order_by(Driver.first_name).all())
     if request.method == "POST":
-        date = request.form.get("search_date")
-        dt = datetime.strptime(date, '%d %B, %Y')
-        start_date = dt - timedelta(days=dt.weekday())
+        start_date = datetime.strptime(request.form.get("search_date"), '%d %B, %Y')
         end_date = start_date + timedelta(days=6)
-        result_driver = Driver.query.get_or_404(request.form.get("search_driver_id"))
-        search_driver_id = request.form.get("search_driver_id")
-        results = DayEnd.query.filter(DayEnd.driver_id == search_driver_id, DayEnd.date >= start_date, DayEnd.date <= end_date).all()
+        driver_id = request.form.get("search_driver_id")
+        driver = Driver.query.get(driver_id)
+        day_end_entries = DayEnd.query.filter(DayEnd.driver_id == driver_id, DayEnd.date >= start_date, DayEnd.date <= end_date).all()
         total_earned = 0
         total_overnight = 0
-        wages = 0
         bonus_wage = 0
         base_wage = 0
         total_wages = 0
-        for result in results:
-            bonus_wage += result.earned * result.driver.bonus_percentage
-            total_earned += int(result.earned)
-            if result.overnight == True:
+        for day in day_end_entries:
+            bonus_wage += day.earned * day.driver.bonus_percentage
+            total_earned += int(day.earned)
+            if day.overnight == True:
                 total_overnight += 30
-        base_wage = int(results[0].driver.base_wage)/100
+        base_wage = int(driver.base_wage)/100
         total_wages = bonus_wage + total_overnight + base_wage
 
         
         
         
-        return render_template("wages_calculator.html", drivers=drivers, results=results, total_earned=total_earned, total_overnight=total_overnight, base_wage=base_wage, bonus_wage=bonus_wage, total_wages=total_wages)
+        return render_template("wages_calculator.html", drivers=drivers, day_end_entries=day_end_entries, total_earned=total_earned, total_overnight=total_overnight, base_wage=base_wage, bonus_wage=bonus_wage, total_wages=total_wages)
     return render_template("wages_calculator.html", drivers=drivers)
 
 

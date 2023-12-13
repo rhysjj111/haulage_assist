@@ -12,8 +12,8 @@
                     <div class="row">
                         <div class="input-field col s12">
                             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
-                            <input id="date" name="search_date"  type="text" class="datepicker validate" required>
-                            <label for="date">Date:</label>
+                            <input id="wages_date" name="search_date"  type="text" class="datepicker validate" required>
+                            <label for="wages_date">Start date:</label>
                         </div>
                     </div>
 
@@ -41,7 +41,7 @@
                 </form>
             </div>
             <div class="col s12 l5">
-                {% if results is defined %}
+                {% if day_end_entries is defined %}
 
                     <table class="centered">
                         <thead>
@@ -54,12 +54,12 @@
                         </thead>
                 
                         <tbody>
-                            {% for result in results %}    
+                            {% for day in day_end_entries %}    
                             <tr>
-                                <td>{{ result.date }}</td>
-                                <td>{{ result.earned }}</td>
-                                <td>{{ result.driver.bonus_percentage * result.earned }}</td>
-                                <td>{{ "y" if result.overnight == True else "n" }}</td>
+                                <td>{{ day.date }}</td>
+                                <td>{{ day.earned }}</td>
+                                <td>{{ day.driver.bonus_percentage * day.earned }}</td>
+                                <td>{{ "y" if day.overnight == True else "n" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

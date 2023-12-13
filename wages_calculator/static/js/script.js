@@ -11,7 +11,16 @@ document.addEventListener('DOMContentLoaded', function() {
     let datepicker = document.querySelectorAll('.datepicker');
     M.Datepicker.init(datepicker, {
         format: "dd mmmm, yyyy",
-        i18n: {done: "Select"}
+        i18n: {done: "Select"},
+        disableDayFn: function(date){
+            if(document.querySelector('#wages_date') != null){
+                if(date.getDay() == 1){
+                return false;
+                } else {
+                return true;
+                };
+            }   
+        }
     })
 
     // select initialization
