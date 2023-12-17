@@ -6,7 +6,7 @@
     {% block entry_form_title %}Add day end entry:{% endblock %}
         {% block entry_form %}
             <form method="POST" action="{{ url_for('add_day_end') }}">
-                {{ macros.day_end_questions('add', day, drivers) }}
+                {{ macros.day_end_questions('add', day, drivers, currency_to_web) }}
             </form>
         {% endblock %}
 
@@ -21,7 +21,7 @@
                         </div>
                         <!-- collapsible-body -->
                         <div class="collapsible-body">
-                            Earned: £{{ day.earned }}<br>
+                            Earned: {{ format_currency(currency_to_web(day.earned)) }}<br>
                             {% set overnight = '<span class="blue-text">Overnight: Yes </span>' %}
                             {% set no_overnight = '<span class="red-text">Overnight: No </span>' %}
                             {{ overnight|safe if day.overnight else no_overnight|safe }}
@@ -49,7 +49,7 @@
                     
                             <div class="row">
                                 <form class="col s12" method="POST" action="{{ url_for('edit_day_end', day_id=day.id)}}">
-                                {{ macros.day_end_questions('edit', day, drivers) }}
+                                {{ macros.day_end_questions('edit', day, drivers, currency_to_web) }}
                                 </form>
                             </div>
                         </div>

@@ -26,3 +26,5 @@ class DayEnd(db.Model):
     def __repr__(self):
         #represents itself in form of string
         return f"Enry for: {self.driver.first_name} {self.driver.second_name} on {self.date}"
+
+

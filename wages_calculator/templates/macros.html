@@ -1,4 +1,12 @@
-{% macro driver_questions(type, driver) %}
+
+
+
+
+
+
+<!----------------------------- question list macros -->
+
+{% macro driver_questions(type, driver, currency_to_web, percentage_to_web) %}
     <!-- start_date -->
     <div class="row">
         <div class="input-field col s12">
@@ -33,7 +41,7 @@
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="base_wage" name="base_wage" {% if driver is defined %} value="{{ driver.base_wage }}" {% endif %}  min="0" max="1000" step = "0.01"
+            <input id="base_wage" name="base_wage" {% if driver is defined %} value="{{'%0.2f' % currency_to_web(driver.base_wage) }}" {% endif %}  min="0" max="1000" step = "0.01"
                 type="number" class="validate" required>
             <label for="base_wage">Base wage (£):</label>
         </div>
@@ -43,7 +51,7 @@
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="bonus_percentage" name="bonus_percentage" {% if driver is defined %} value="{{ driver.bonus_percentage }}" {% endif %}  min="0" max="50" step="0.01"
+            <input id="bonus_percentage" name="bonus_percentage" {% if driver is defined %} value="{{'%0.2f' % percentage_to_web(driver.bonus_percentage) }}" {% endif %}  min="0" max="50" step="0.01"
                 type="number" class="validate" required>
             <label for="bonus_percentage">Bonus percentage (%):</label>
         </div>
@@ -61,11 +69,7 @@
 
 
 
-
-
-
-
-{% macro day_end_questions(type, day, drivers) %}
+{% macro day_end_questions(type, day, drivers, currency_to_web) %}
 
     <!-- driver -->
     <div class="row">
@@ -105,7 +109,7 @@
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="earned" name="earned" {% if day is defined %} value="{{ day.earned }}" {% endif %}  min="0" max="1000" step="0.01"
+            <input id="earned" name="earned" {% if day is defined %} value="{{'%0.2f' % currency_to_web(day.earned) }}" {% endif %}  min="0" max="1000" step="0.01"
                 type="number" class="validate" required>
             <label for="earned">Earned (£):</label>
         </div>
@@ -146,3 +150,19 @@
         </div>
     </div>
 {% endmacro %}
+
+
+<!----------------------------- Number reformat macros-->
+
+{% macro currency_to_web(value) %}
+    cunt|safe
+{% endmacro %}
+
+{% macro percentage_to_web(value) %}
+    {{ value*100 }}
+{% endmacro %}
+
+
+
+
+
