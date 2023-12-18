@@ -4,7 +4,7 @@
 {% block standard_title %}WAGES CALCULATOR{% endblock %}
 
     {% block standard_content%}
-        <div class="row">
+        <div class="row ">
             <div class="col s12 l5 ">
                 <form action="" method="post">
 
@@ -33,16 +33,20 @@
 
                     <!-- buttons -->
                     <div class="row">
-                        <div class="input-field col s12">
+                        <div class="input-field col s12 center-align">
                             <button type="submit" class="btn green accent-4 submit">Search </button>
                             <button href="{{ url_for('wages_calculator')}}" class="btn grey" formnovalidate>Reset</button>
                         </div>   
                     </div>
                 </form>
             </div>
-            <div class="col s12 l5">
-                {% if day_end_entries is defined %}
-
+            <div class="col s12 offset-l1 l5">
+                {% if day_end_entries == [] %}
+                <div class="">
+                    <h4 class="center-align">No results for the date and driver selected.</h4>  
+                    <h5 class="center-align"><a href="{{ url_for('add_day_end') }}">Click here to check history.</a></h5>  
+                </div>
+                {% elif day_end_entries is defined %}
                     <table class="centered">
                         <thead>
                           <tr>
@@ -57,35 +61,44 @@
                             {% for day in day_end_entries %}    
                             <tr>
                                 <td>{{ day.date }}</td>
-                                <td>{{ day.earned }}</td>
-                                <td>{{ day.driver.bonus_percentage * day.earned }}</td>
+                                <td>{{ format_currency(currency_to_web(day.earned)) }}</td>
+                                <td>{{ format_currency(day.driver.bonus_percentage * currency_to_web(day.earned)) }}</td>
                                 <td>{{ "y" if day.overnight == True else "n" }}</td>
                             </tr>
                             {% endfor %}
+                            <tr>
+                                <td><em>Totals:</em></td>
+                                <td><em>{{ format_currency(currency_to_web(total_earned)) }}</em></td>
+                                <td><em>{{ format_currency(currency_to_web(bonus_wage)) }}</em></td>
+                                <td><em>{{ format_currency(currency_to_web(total_overnight)) }}</em></td>
+                            </tr>
                         </tbody>
                     </table> 
+                    <br>
+                    <hr>
                     
                     <table class="centered">
                         <thead>
                             <tr>
-                                <th>Total earned</th>
-                                <th>Expenses</th>
-                                <th>Bonus</th>
                                 <th>Base wage</th>
                                 <th>Wages total</th>
                             </tr>
                             <tbody>    
                                 <tr>
-                                    <td>{{ total_earned }}</td>
-                                    <td>{{ total_overnight }}</td>
-                                    <td>{{ bonus_wage }}</td>
-                                    <td>{{ base_wage }}</td>
-                                    <td>{{ total_wages }}</td>
+                                    <td>{{ format_currency(currency_to_web(base_wage)) }}</td>
+                                    <td>{{ format_currency(currency_to_web(total_wages)) }}</td>
                                 </tr>
                             </tbody>
                         </table> 
                                 
-                    
+                {% else %}
+                
+                <div class="">
+                    <h4 class="center-align">Please select a date and driver.</h4>  
+                    <h5 class="center-align">(Weeks begin Monday and end Sunday)</h5>  
+                </div>
+
+                        
                 {% endif %}
             </div>
         </div>

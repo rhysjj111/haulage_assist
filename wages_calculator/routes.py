@@ -103,14 +103,13 @@ def wages_calculator():
         total_earned = 0
         total_overnight = 0
         bonus_wage = 0
-        base_wage = 0
         total_wages = 0
         for day in day_end_entries:
             bonus_wage += day.earned * day.driver.bonus_percentage
             total_earned += int(day.earned)
             if day.overnight == True:
-                total_overnight += 30
-        base_wage = int(driver.base_wage)/100
+                total_overnight += 3000
+        base_wage = driver.base_wage
         total_wages = bonus_wage + total_overnight + base_wage     
         
         return render_template("wages_calculator.html", drivers=drivers, day_end_entries=day_end_entries, total_earned=total_earned, total_overnight=total_overnight, base_wage=base_wage, bonus_wage=bonus_wage, total_wages=total_wages)
