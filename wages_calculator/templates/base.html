@@ -12,26 +12,30 @@
     <title>Wages Calculator</title>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="row">
+    <header>
+        <div class="container header-container">
+            <div class="row ">
                 {% block header %}
                 {% endblock %}
             </div>
         </div>
-        <div class="main container valign-wrapper">
+    </header>
+    <main>
+        <div class="container">
+            <div class="row">
                 {% block main %}
                 {% endblock %}
+            </div>
         </div>
-        <footer>
-            <nav>
-                <ul class="tabs-fixed-width tabs">
-                    <li class ="tab"><a href="{{ url_for('home') }}">DATA ENTRY</a></li>
-                    <li class ="tab"><a href="{{ url_for('wages_calculator') }}">WAGES CALCULATOR</a></li>
-                </ul>
-            </nav>
-        </footer>
-    </div>
+    </main>
+    <footer class="page-footer">
+        <nav>
+            <ul class="tabs-fixed-width tabs">
+                <li class ="tab"><a href="{{ url_for('home') }}">DATA ENTRY</a></li>
+                <li class ="tab"><a href="{{ url_for('wages_calculator') }}">WAGES CALCULATOR</a></li>
+            </ul>
+        </nav>
+    </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>

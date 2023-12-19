@@ -1,23 +1,23 @@
 {% extends "base.html" %}
 
 {% block header %}
-    <div class="col s1 offset-s2 back-arrow-container valign-wrapper">
-        <i class="medium material-icons back-arrow"><a href="{{ url_for('home') }}">arrow_back</a></i>
+    <div class="col s1 offset-m2 right-align">
+        <a href="{{ url_for('home') }}"><i class="small material-icons back-arrow">arrow_back</i></a>
     </div>
-    <div class="col s6 entry-heading-container heading-container">
-        <h1 class="center-align">{% block entry_title %}{% endblock %}</h1>
+    <div class="col s10 m6 heading-container">
+        <h1>   {% block entry_title %}{% endblock %}</h1>
     </div>
 {% endblock %}
 
 {% block main %}
-    <div class="col s4 offset-s4 hide-on-large-only">
+    <div class="col s12 m8 offset-m2 l6 offset-l3 hide-on-large-only">
         <ul class="tabs z-depth-1 hide-tabs" id="sub-menu-tabs">
             <li class="tab col s2"><a href="#entry_form">Entry</a></li>
             <li class="tab col s2"><a href="#entry_history">History</a></li>
         </ul>
     </div>
     
-    <div class="col s12 l5 entry-form" id="entry_form">
+    <div class="col s12 l6 entry-form content-container" id="entry_form">
         <div class="section">
             <h4>{% block entry_form_title %}{% endblock %}</h4>
                 {% block entry_form %}
@@ -25,7 +25,7 @@
         </div>
     </div>
     
-    <div class="col s12 l5 offset-l1 entry-history" id="entry_history">
+    <div class="col s12 l6 entry-history content-container" id="entry_history">
         <div class="section">
             <h4>{% block entry_history_title %}Test history{% endblock %}</h4>
             {% block entry_history %}

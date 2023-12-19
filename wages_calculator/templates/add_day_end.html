@@ -21,14 +21,16 @@
                         </div>
                         <!-- collapsible-body -->
                         <div class="collapsible-body">
-                            Earned: {{ format_currency(currency_to_web(day.earned)) }}<br>
+                            <p>Earned: {{ format_currency(currency_to_web(day.earned)) }}<br>
                             {% set overnight = '<span class="blue-text">Overnight: Yes </span>' %}
                             {% set no_overnight = '<span class="red-text">Overnight: No </span>' %}
-                            {{ overnight|safe if day.overnight else no_overnight|safe }}
+                            {{ overnight|safe if day.overnight else no_overnight|safe }}</p>
+                            <!-- buttons -->
+                            <a href="#modal_edit_{{ day.id }}" class="btn green accent-4 modal-trigger">Edit</a>
+                            <a href="#modal_delete_{{ day.id }}" class="btn red modal-trigger">Delete</a>
                         </div>
-                        <!-- buttons -->
-                        <a href="#modal_edit_{{ day.id }}" class="btn green accent-4 modal-trigger">Edit</a>
-                        <a href="#modal_delete_{{ day.id }}" class="btn red modal-trigger">Delete</a>
+                        
+
 
                         <!-- Delete entry modal -->
                         <div id="modal_delete_{{ day.id }}" class="modal">

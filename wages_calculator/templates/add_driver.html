@@ -21,13 +21,14 @@
                         </div>
                         <!-- collapsible-body -->
                         <div class="collapsible-body">
-                            Date joined: {{ driver.start_date }}<br>
+                            <p>Date joined: {{ driver.start_date }}<br>
                             Base wage: {{ format_currency(currency_to_web(driver.base_wage)) }}<br>
-                            Bonus percentage: {{ format_percentage(percentage_to_web(driver.bonus_percentage)) }}
+                            Bonus percentage: {{ format_percentage(percentage_to_web(driver.bonus_percentage)) }}</p>
+                            <!-- buttons -->
+                            <a href="#modal_edit_{{ driver.id }}" class="btn green accent-4 modal-trigger">Edit</a>
+                            <a href="#modal_delete_{{ driver.id }}" class="btn red modal-trigger">Delete</a>
                         </div>
-                        <!-- buttons -->
-                        <a href="#modal_edit_{{ driver.id }}" class="btn green accent-4 modal-trigger">Edit</a>
-                        <a href="#modal_delete_{{ driver.id }}" class="btn red modal-trigger">Delete</a>
+                        
 
                         <!-- Delete entry modal -->
                         <div id="modal_delete_{{ driver.id }}" class="modal">
