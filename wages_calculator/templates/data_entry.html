@@ -4,24 +4,26 @@
 {% block standard_title %}DATA ENTRY{% endblock %}
 
     {% block standard_content %}
-    <div class="data-entry-menu-container valign-wrapper">
-        <div class="row center-align">
-            <div class="col s12 xl6 content-container">
-                <a href="{{ url_for('add_driver', anchor='#entry_history') }}">
-                    <div class="main-button btn">
-                        <i class="large material-icons data-entry-icon">person_add</i>
-                        <h3 class="data-entry-title">Add Driver</h3>
-                    </div>
-                </a>
-            </div>
-            <div class="col s12 xl6 content-container">
-                <a href="{{ url_for('add_day_end') }}">
-                    <div class="main-button btn">
-                        <i class="large material-icons data-entry-icon">restore</i>
-                        <h3 class="data-entry-title">Add Day End</h3>
-                    </div>
-                </a>
+        <div class="data-entry-menu-container valign-wrapper">
+            <div class="row center-align">
+                <div class="col s12 xl6 data-entry-button-container">
+                    <a href="{{ url_for('add_driver') }}">
+                        <div class="main-button btn">
+                            <i class="large material-icons data-entry-icon">person_add</i>
+                            <h3 class="data-entry-title">Add Driver</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col s12 xl6 data-entry-button-container">
+                    <a href="{{ url_for('add_day_end') }}">
+                        <div class="main-button btn">
+                            <i class="large material-icons data-entry-icon">restore</i>
+                            <h3 class="data-entry-title">Add Day End</h3>
+                        </div>
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
     {% endblock %}
+
+    {% block data_entry %}active{% endblock %}

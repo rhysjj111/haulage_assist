@@ -1,5 +1,13 @@
 
+<!----------------------------- navigation macros -->
 
+{% macro nav_link(name, endpoint) %}
+        {% if ((request.endpoint in varargs) or (request.endpoint == endpoint)) %}
+            <li class="tab active"><a href="{{ url_for(endpoint) }}">{{ name }}</a></li>
+        {% else %}
+            <li class ="tab"><a href="{{ url_for(endpoint) }}">{{ name }}</a></li>
+        {% endif %}
+{% endmacro %}
 
 
 
@@ -152,15 +160,7 @@
 {% endmacro %}
 
 
-<!----------------------------- Number reformat macros-->
 
-{% macro currency_to_web(value) %}
-    cunt|safe
-{% endmacro %}
-
-{% macro percentage_to_web(value) %}
-    {{ value*100 }}
-{% endmacro %}
 
 
 

@@ -31,8 +31,8 @@
     <footer class="page-footer">
         <nav>
             <ul class="tabs-fixed-width tabs">
-                <li class ="tab"><a href="{{ url_for('home') }}">DATA ENTRY</a></li>
-                <li class ="tab"><a href="{{ url_for('wages_calculator') }}">WAGES CALCULATOR</a></li>
+                {{ macros.nav_link('DATA ENTRY', 'home', 'add_day_end', 'add_driver') }}
+                {{ macros.nav_link('WAGES CALCULATOR', 'wages_calculator') }}
             </ul>
         </nav>
     </footer>
