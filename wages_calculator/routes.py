@@ -16,8 +16,8 @@ def home():
 
 ################## CRUD driver
 
-@app.route("/add_driver", methods=["GET", "POST"])
-def add_driver():
+@app.route("/add_driver/<tab>", methods=["GET", "POST"])
+def add_driver(tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     if request.method == "POST":
         driver = Driver(
@@ -30,14 +30,14 @@ def add_driver():
         db.session.add(driver)
         db.session.commit()
         return redirect(url_for("add_driver", drivers=drivers))
-    return render_template("add_driver.html", drivers=drivers)
+    return render_template("add_driver.html", drivers=drivers, tab=tab)
 
 @app.route("/delete_driver/<int:driver_id>")
 def delete_driver(driver_id):
     entry = db.get_or_404(Driver, driver_id)
     db.session.delete(entry)
     db.session.commit()
-    return redirect(url_for("add_driver"))
+    return redirect(url_for("add_driver", tab='history'))
 
 @app.route("/edit_driver/<int:driver_id>", methods=["POST"])
 def edit_driver(driver_id):
@@ -48,12 +48,12 @@ def edit_driver(driver_id):
     driver.base_wage = currency_to_db(request.form.get("base_wage"))
     driver.bonus_percentage = percentage_to_db(request.form.get("bonus_percentage"))
     db.session.commit()
-    return redirect(url_for("add_driver"))
+    return redirect(url_for("add_driver", tab='history'))
 
 ################## CRUD day_end
 
-@app.route("/add_day_end", methods=["GET", "POST"])
-def add_day_end():
+@app.route("/add_day_end/<tab>", methods=["GET", "POST"])
+def add_day_end(tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     day_end_entries = list(DayEnd.query.order_by(DayEnd.date).all())
     if request.method == "POST":
@@ -66,14 +66,14 @@ def add_day_end():
         db.session.add(day_end_entry)
         db.session.commit()
         return redirect(url_for("add_day_end", drivers=drivers, day_end_entries=day_end_entries))
-    return render_template("add_day_end.html", drivers=drivers, day_end_entries=day_end_entries)
+    return render_template("add_day_end.html", drivers=drivers, day_end_entries=day_end_entries, tab=tab)
 
 @app.route("/delete_day_end/<int:day_id>")
 def delete_day_end(day_id):
     entry = DayEnd.query.get_or_404(day_id)
     db.session.delete(entry)
     db.session.commit()
-    return redirect(url_for("add_day_end"))
+    return redirect(url_for("add_day_end", tab='history'))
 
 @app.route("/edit_day_end/<int:day_id>", methods=["POST"])
 def edit_day_end(day_id):
@@ -83,7 +83,7 @@ def edit_day_end(day_id):
     entry.overnight = bool(True if request.form.get("overnight") else False)
     entry.driver_id = request.form.get("driver_id")
     db.session.commit()
-    return redirect(url_for("add_day_end"))
+    return redirect(url_for("add_day_end", tab='history'))
 
 ################## Wages calculator
 

@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
 {% block header %}
-    <div class="col s1 offset-m2 right-align">
-        <a href="{{ url_for('home') }}"><i class="small material-icons back-arrow">arrow_back</i></a>
-    </div>
+    <a href="{{ url_for('home') }}">
+        <div class="col s1 offset-m2 right-align">
+            <i class="small material-icons back-arrow">arrow_back</i>
+        </div>
+    </a>
     <div class="col s10 m6 heading-container">
         <h1>   {% block entry_title %}{% endblock %}</h1>
     </div>
@@ -13,8 +15,8 @@
     <div class="row">
         <div class="col s12 m8 offset-m2 l6 offset-l3 hide-on-large-only content-container">
             <ul class="tabs z-depth-1 hide-tabs" id="sub-menu-tabs">
-                <li class="tab col s2"><a href="#entry_form">Entry</a></li>
-                <li class="tab col s2"><a href="#entry_history">History</a></li>
+                <li class="tab col s2 "><a href="#entry_form">Entry</a></li>
+                <li class="tab col s2 "><a class="{{ 'active' if (tab == 'history') else '' }}" href="#entry_history">History</a></li>
             </ul>
         </div>
         
