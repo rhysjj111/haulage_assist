@@ -89,7 +89,6 @@ Total earned - integer between 0 and 3000.
 
 
 ### Issues
-
 - I had an issue getting the two large buttons, of 'data_entry.html', to resize but also keep an appealing page position when changing screen sizes. I overcame this by giving the buttons a height and with in vh and vw, so that the move with the screen size, but limiting them with max/min width/height. To keep them central to the page I used a container for the buttons and a similar technique to keep the container roughly 75% height of the screen, coupled with the Materializecss valign-wrapper. 
 
 - To keep calculations free from error, currency values input by the user are converted from £ to pence before entered into the database, and converted back, when rendering templates and displaying back to the user. I had trouble getting the edit_driver and edit_day_end edit questions to display previous currency answers as a value. The first issue was the questions are constructed using a macro for both edit_driver and edit_day end. After researching the problem, I found you can pass a macro a function/another macro, I tried both of these methods to convert the currency, but it wouldn't work. After much googling and an inspect element, I found the issue to be formatting. The functions I was using were returning £x.xx whereas the html form would only accept x.xx as a value for the corresponding form.
@@ -123,6 +122,36 @@ Total earned - integer between 0 and 3000.
 
 
 ### Deployment
+#### Deploy locally
+##### Fork the repository (creating a copy)
+- Create a Github account & login.
+- Locate the GitHub Repository [here](https://github.com/rhysjj111/PROJECT3_WAGE_CALCULATOR)
+- Locate the 'Fork' button and click.
+- Find the copied repository in your GitHub repository list.
+
+##### Clone the repository
+- Create a Github account & login.
+- Locate the GitHub Repository [here](https://github.com/rhysjj111/PROJECT3_WAGE_CALCULATOR)
+- Locate the 'code' button and click.
+- Copy the URL (be sure to click whether you prefer HTTPS, SSH or GitHub CLI).
+- Open Git Bash or Terminal or Command Prompt/Powershell.
+- Enter 'git clone' followed by copied url: `git clone https://github.com/rhysjj111/PROJECT3_WAGE_CALCULATOR.git`
+- Hit enter and you should have your local clone in the directory you have specified.
+
+#### Deploy with Heroku using ElephantSQL as the database
+##### Elephant SQL
+- Create an Elephant SQL account & login.
+- Fill in the 'Create new team' form.
+- Click 'Create instance'
+- Come up with a name for your instance and any tags necessary. Click 'Select Region'.
+- Select a location/data center near you. Click 'Review'.
+- Check details are correct and click 'Create instance'.
+- In your dashboard, go into the instance and copy the URL.
+- 
+- 
+- Create a Heroku account & login.
+- Cr
+
 
 
 ### Credits
