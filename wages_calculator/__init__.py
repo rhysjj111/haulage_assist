@@ -18,4 +18,4 @@ else:
 
 db = SQLAlchemy(app)
 
-from wages_calculator import routes 
+from taskmanager import routes  # noqa
