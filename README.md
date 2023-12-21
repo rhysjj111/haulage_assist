@@ -148,9 +148,29 @@ Total earned - integer between 0 and 3000.
 - Check details are correct and click 'Create instance'.
 - In your dashboard, go into the instance and copy the URL.
 - 
-- 
+##### Heroku
+- Make sure your repository contains your 'requirements.txt' file, which contains relevant packages, and a 'Procfile' which tells Heroku how to start your app.
 - Create a Heroku account & login.
-- Cr
+- Click 'New' followed by 'Create new app'.
+- Choose a name for your app and select a region close to you. Click 'Create app'.
+- Go to 'settings' and click 'Reveal Config Vars'.
+- Add Key value pairs as below, using your ElephantSQL URL that you copied earlier for the DATABASE_URL.
+
+|KEY         |VALUE                 |
+|------------|----------------------|
+|DATABASE_URL|(url from ElephantSQL)|
+|IP          |0.0.0.0               |
+|PORT        |5000                  |
+|SECRET_KEY  |(your secret key)                 |
+|DEBUG       |True                  |
+
+- Debug is set to True if you want to check for any bugs/errors. You can set to False straight away if you do not want debug mode, or once deployed and you are happy.
+- Locate 'Deploy' (next to settings). Click 'Connect to GitHub' (look for the logo).
+- Connect your repository.
+- Locate 'Deploy Branch' of Manual Deploy and click.
+- Look for conformation the app is deployed.
+- If not, enable automatic deploys and commit and push the repository to GitHub.
+- Next, add your tables to your database. Click 'More' and 'Run console'.
 
 
 
