@@ -15,23 +15,21 @@
     <div class="row">
         <div class="col s12 m8 offset-m2 l6 offset-l3 hide-on-large-only content-container">
             <ul class="tabs z-depth-1 hide-tabs" id="sub-menu-tabs">
-                <li class="tab col s2 "><a href="#entry_form">Entry</a></li>
+                <li class="tab col s2 "><a class="{{ 'active' if (tab == 'entry') else '' }}" href="#entry_form">Entry</a></li>
                 <li class="tab col s2 "><a class="{{ 'active' if (tab == 'history') else '' }}" href="#entry_history">History</a></li>
             </ul>
         </div>
         
-        <div class="col s12 l6 entry-form content-container" id="entry_form">
+        <div class="col s12 l6 entry-form content-container {{ 'active' if (tab == 'entry') else '' }}" id="entry_form">
             <h4>{% block entry_form_title %}{% endblock %}</h4>
                 {% block entry_form %}
                 {% endblock %}
         </div>
         
-        <div class="col s12 l6 entry-history content-container" id="entry_history">
+        <div class="col s12 l6 entry-history content-container {{ 'active' if (tab == 'history') else '' }}" id="entry_history">
             <h4>{% block entry_history_title %}Test history{% endblock %}</h4>
             {% block entry_history %}
             {% endblock %}
         </div>
     </div>
 {% endblock %}
-
-{% block data_entry %}active{% endblock %}

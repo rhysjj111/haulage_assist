@@ -44,9 +44,11 @@
                 {% if day_end_entries == [] %}
                 <div class="">
                     <h4 class="center-align">No results for the date and driver selected.</h4>  
-                    <h5 class="center-align"><a href="{{ url_for('add_day_end') }}">Click here to check history.</a></h5>  
+                    <p class=""><a href="{{ url_for('add_day_end', tab='entry') }}">Click here to add history.</a></p> 
+                    <p class=""><a href="{{ url_for('add_day_end', tab='history') }}">Click here to check history.</a></p>  
                 </div>
                 {% elif day_end_entries is defined %}
+                    <p class=""><a href="{{ url_for('add_day_end', tab='history') }}">Click here to edit/delete history.</a></p>
                     <table class="centered">
                         <thead>
                             <tr>

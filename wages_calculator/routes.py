@@ -29,7 +29,7 @@ def add_driver(tab):
             )
         db.session.add(driver)
         db.session.commit()
-        return redirect(url_for("add_driver", drivers=drivers))
+        return redirect(url_for("add_driver", drivers=drivers, tab=tab))
     return render_template("add_driver.html", drivers=drivers, tab=tab)
 
 @app.route("/delete_driver/<int:driver_id>")
@@ -65,7 +65,7 @@ def add_day_end(tab):
         )
         db.session.add(day_end_entry)
         db.session.commit()
-        return redirect(url_for("add_day_end", drivers=drivers, day_end_entries=day_end_entries))
+        return redirect(url_for("add_day_end", drivers=drivers, day_end_entries=day_end_entries, tab=tab))
     return render_template("add_day_end.html", drivers=drivers, day_end_entries=day_end_entries, tab=tab)
 
 @app.route("/delete_day_end/<int:day_id>")
