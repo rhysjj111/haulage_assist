@@ -118,7 +118,7 @@ Total earned - integer between 0 and 3000.
 
 
 ### Future features to include/update
-- NOTE: CONVERTING MONEY INTO INTEGER FOR STORAGE IN DATABASE AND CALCULATIONS(BETTER THAN FLOATING POINT)
+- 
 
 
 ### Deployment

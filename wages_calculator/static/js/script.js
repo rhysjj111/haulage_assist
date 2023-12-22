@@ -28,12 +28,14 @@ document.addEventListener('DOMContentLoaded', function() {
     M.FormSelect.init(selects);
 
     function removeTabs() {
-        const subTabs = document.querySelector('#sub-menu-tabs') 
-        const tabs = M.Tabs.init(subTabs, swipeable=true);
-        if(window.innerWidth > 992){
-            tabs.destroy();
-        } else {
-            tabs;
+        const subTabs = document.querySelector('#sub-menu-tabs')
+        if (subTabs) {
+            const tabs = M.Tabs.init(subTabs, swipeable=true);
+            if(window.innerWidth > 992){
+                tabs.destroy();
+            } else {
+                tabs;
+            }
         }
     }
     window.onresize = removeTabs;
