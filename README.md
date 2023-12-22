@@ -170,7 +170,10 @@ Total earned - integer between 0 and 3000.
 - Locate 'Deploy Branch' of Manual Deploy and click.
 - Look for conformation the app is deployed.
 - If not, enable automatic deploys and commit and push the repository to GitHub.
-- Next, add your tables to your database. Click 'More' and 'Run console'.
+- Next, add your tables to your database. Click 'More' and 'Run console'. It will say `Heroku run` - type 'python3' and click 'run'.
+- Create all tables, the commands you use will depend on the version of Flask you have in requirements.txt. I used `from wages_calculator import db` then `db.create_all()`. Close the console.
+- Finally go back to the dashboard and click 'Open app'.
+- Use the Heroku documentation if there are any issues
 
 
 
