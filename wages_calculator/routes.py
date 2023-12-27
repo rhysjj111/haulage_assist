@@ -25,20 +25,19 @@ def home():
 def add_driver(tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     if request.method == "POST":
-        driver = Driver(
-            start_date=request.form.get("start_date"),
-            first_name=request.form.get("first_name"),
-            second_name=request.form.get("second_name"),
-            base_wage=currency_to_db(request.form.get("base_wage")),
-            bonus_percentage=percentage_to_db(request.form.get("bonus_percentage"))
-            )
         try:
+            driver = Driver(
+                start_date=request.form.get("start_date"),
+                first_name=request.form.get("first_name"),
+                second_name=request.form.get("second_name"),
+                base_wage=currency_to_db(request.form.get("base_wage")),
+                bonus_percentage=percentage_to_db(request.form.get("bonus_percentage"))
+                )        
             db.session.add(driver)
-        except AssertionError:
-            flash('error recorded')
-        else:
             db.session.commit()
             flash("success")
+        except AssertionError:
+            flash('error recorded')
         return redirect(url_for("add_driver", drivers=drivers, tab=tab))
         
     return render_template("add_driver.html", drivers=drivers, tab=tab)

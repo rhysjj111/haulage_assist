@@ -95,6 +95,15 @@ Total earned - integer between 0 and 3000.
 
 - I had an issue when deploying my site to Heroku involving the versions of Flask I had installed. I had the latest version of Flask-SQLAlchemy in my requirements file and was following a tutorial to upload my app to Flask which used an older version. When trying to create the tables on my ElephantSQL database, `db.create_all` was throwing an error. This [Stack overflow](https://stackoverflow.com/questions/73961938/flask-sqlalchemy-db-create-all-raises-runtimeerror-working-outside-of-applicat) article informed me that I needed to push an app context before hand in the newer version.
 
+- When adding validation to attempted form submissions, I came across a tutorial on [Medium](https://ed-a-nunes.medium.com/field-validation-for-backend-apis-with-python-flask-and-sqlalchemy-30e8cc0d260c) which showed how to use SQLAlchemy's built in validator decorator. The problem I was having, is when a form is submited and the 'post' route is followed, an error was being raised but my try, except block was not catching. A post on [stack overflow](https://stackoverflow.com/questions/18982610/difference-between-except-and-except-exception-as-e) where someone was having the same issue, highlighted the fact that the calling of the model (Driver model initially), was outside the try, except block.  
+`Driver = first_name(...`    
+`try: `  
+&ensp;`db.session.add(driver)`  
+became  
+`try:`  
+&ensp;`Driver = first_name(...`  
+&ensp;`db.session.add(driver)`
+
 #### JS
 
 
@@ -187,4 +196,5 @@ Total earned - integer between 0 and 3000.
 - [Stack overflow](https://stackoverflow.com/questions/51205600/datepicker-materializecss-disabled-days-function) This article explained how to use the disable days funtion of the Materialize datepicker.
 - [Stack overflow](https://stackoverflow.com/questions/21991820/style-active-navigation-element-with-a-flask-jinja2-macro) and [TTL25's Jinja2 tutorial](https://ttl255.com/jinja2-tutorial-part-5-macros/) were both used when constructing the nav_link macro, used to determine which navigation link should be active. The Stack overflow thread gave me the basic structure of the macro, and the tutorial allowed me to understand Jinja's varargs keyword so that I could expand the macro to also take into account sub-menu pages.
 - [Stack overflow](https://stackoverflow.com/questions/73961938/flask-sqlalchemy-db-create-all-raises-runtimeerror-working-outside-of-applicat) - This article helped me update my ElephantSQL database with my tables, running the newest version of Flask-SQLAlchemy.
+- [Medium](https://ed-a-nunes.medium.com/field-validation-for-backend-apis-with-python-flask-and-sqlalchemy-30e8cc0d260c) and [stack overflow](https://stackoverflow.com/questions/18982610/difference-between-except-and-except-exception-as-e) helped with form validation at the back end.
 
