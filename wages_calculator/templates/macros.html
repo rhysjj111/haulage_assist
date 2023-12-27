@@ -20,7 +20,8 @@
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
             <input id="start_date" name="start_date"  type="text"
-                class="datepicker validate" required {% if driver is defined %} value="{{ driver.start_date.strftime('%d, %B, %Y') }}" {% endif %}>
+                class="datepicker validate" {% if driver is defined %} value="{{ driver.start_date.strftime('%d, %B, %Y') }}"
+                 {% endif %} required>
             <label for="start_date">Start date:</label>
         </div>
     </div>
@@ -30,7 +31,7 @@
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="first_name" name="first_name" {% if driver is defined %} value="{{ driver.first_name }}" {% endif %}  minlength="1" maxlength="25"
-                type="text" class="validate" required>
+                type="text" class="validate" >
             <label for="first_name">First name:</label>
         </div>
     </div>
@@ -40,7 +41,7 @@
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="second_name" name="second_name" {% if driver is defined %} value="{{ driver.second_name }}" {% endif %}  minlength="1" maxlength="25"
-                type="text" class="validate" required>
+                type="text" class="validate" >
             <label for="second_name">Second name:</label>
         </div>
     </div>

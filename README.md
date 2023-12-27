@@ -33,7 +33,7 @@ The features listed are achievable in terms of timescales and technology availab
 - I've chosen a simple design which can be expanded on with more data inputs and features in the future.
 - A professional, clean color scheme will be used, as this app will be used day to day by the fleet manager.
 - The app will have two main menu tabs at the bottom of the page so the user can flick with ease between data input and the wages calculator. Within data input, the user can choose between 'driver' and 'end day' sections. 
-- The app was designed mobile first, even though it is suspected it will be used more on the desktop. This is to ensure the content and navigation is kept simple. 
+- The app was designed mobile first, even though it is assumed it will be used more on the desktop. This is to ensure the content and navigation is kept simple. 
 
 ### Security
 - 
@@ -92,6 +92,8 @@ Total earned - integer between 0 and 3000.
 - I had an issue getting the two large buttons, of 'data_entry.html', to resize but also keep an appealing page position when changing screen sizes. I overcame this by giving the buttons a height and with in vh and vw, so that the move with the screen size, but limiting them with max/min width/height. To keep them central to the page I used a container for the buttons and a similar technique to keep the container roughly 75% height of the screen, coupled with the Materializecss valign-wrapper. 
 
 - To keep calculations free from error, currency values input by the user are converted from £ to pence before entered into the database, and converted back, when rendering templates and displaying back to the user. I had trouble getting the edit_driver and edit_day_end edit questions to display previous currency answers as a value. The first issue was the questions are constructed using a macro for both edit_driver and edit_day end. After researching the problem, I found you can pass a macro a function/another macro, I tried both of these methods to convert the currency, but it wouldn't work. After much googling and an inspect element, I found the issue to be formatting. The functions I was using were returning £x.xx whereas the html form would only accept x.xx as a value for the corresponding form.
+
+- I had an issue when deploying my site to Heroku involving the versions of Flask I had installed. I had the latest version of Flask-SQLAlchemy in my requirements file and was following a tutorial to upload my app to Flask which used an older version. When trying to create the tables on my ElephantSQL database, `db.create_all` was throwing an error. This [Stack overflow](https://stackoverflow.com/questions/73961938/flask-sqlalchemy-db-create-all-raises-runtimeerror-working-outside-of-applicat) article informed me that I needed to push an app context before hand in the newer version.
 
 #### JS
 
@@ -161,7 +163,7 @@ Total earned - integer between 0 and 3000.
 |DATABASE_URL|(url from ElephantSQL)|
 |IP          |0.0.0.0               |
 |PORT        |5000                  |
-|SECRET_KEY  |(your secret key)                 |
+|SECRET_KEY  |(your secret key)     |
 |DEBUG       |True                  |
 
 - Debug is set to True if you want to check for any bugs/errors. You can set to False straight away if you do not want debug mode, or once deployed and you are happy.
@@ -171,9 +173,9 @@ Total earned - integer between 0 and 3000.
 - Look for conformation the app is deployed.
 - If not, enable automatic deploys and commit and push the repository to GitHub.
 - Next, add your tables to your database. Click 'More' and 'Run console'. It will say `Heroku run` - type 'python3' and click 'run'.
-- Create all tables, the commands you use will depend on the version of Flask you have in requirements.txt. I used `from wages_calculator import db` then `db.create_all()`. Close the console.
+- Create all tables, the commands you use will depend on the version of Flask you have in requirements.txt. I used `from wages_calculator import app, db` then `app.app_context().push()` then `db.create_all()`. Close the console.
 - Finally go back to the dashboard and click 'Open app'.
-- Use the Heroku documentation if there are any issues
+- Use the Heroku documentation if there are any issues.
 
 
 
@@ -184,4 +186,5 @@ Total earned - integer between 0 and 3000.
 - This [Stack overflow](https://www.tutorialspoint.com/how-to-check-an-element-with-specific-id-exist-using-javascript) explained how to check an element for a particular Id, which I had needed for the Javascript to only show Mondays on the wages calculator datepicker.
 - [Stack overflow](https://stackoverflow.com/questions/51205600/datepicker-materializecss-disabled-days-function) This article explained how to use the disable days funtion of the Materialize datepicker.
 - [Stack overflow](https://stackoverflow.com/questions/21991820/style-active-navigation-element-with-a-flask-jinja2-macro) and [TTL25's Jinja2 tutorial](https://ttl255.com/jinja2-tutorial-part-5-macros/) were both used when constructing the nav_link macro, used to determine which navigation link should be active. The Stack overflow thread gave me the basic structure of the macro, and the tutorial allowed me to understand Jinja's varargs keyword so that I could expand the macro to also take into account sub-menu pages.
+- [Stack overflow](https://stackoverflow.com/questions/73961938/flask-sqlalchemy-db-create-all-raises-runtimeerror-working-outside-of-applicat) - This article helped me update my ElephantSQL database with my tables, running the newest version of Flask-SQLAlchemy.
 

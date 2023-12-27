@@ -1,9 +1,14 @@
-from flask import render_template, request, redirect, url_for
+from flask import render_template, request, redirect, url_for, flash
 from wages_calculator import app, db
 from wages_calculator.models import Driver, DayEnd
 from datetime import datetime, timedelta
 
 def currency_to_db(value):
+    # pence = 
+    # try:
+    #     pence > 0
+    # except:
+    #     flash
     return float(value)*100
 
 def percentage_to_db(value):
@@ -27,9 +32,15 @@ def add_driver(tab):
             base_wage=currency_to_db(request.form.get("base_wage")),
             bonus_percentage=percentage_to_db(request.form.get("bonus_percentage"))
             )
-        db.session.add(driver)
-        db.session.commit()
+        try:
+            db.session.add(driver)
+        except AssertionError:
+            flash('error recorded')
+        else:
+            db.session.commit()
+            flash("success")
         return redirect(url_for("add_driver", drivers=drivers, tab=tab))
+        
     return render_template("add_driver.html", drivers=drivers, tab=tab)
 
 @app.route("/delete_driver/<int:driver_id>")
