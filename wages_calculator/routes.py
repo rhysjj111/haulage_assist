@@ -3,17 +3,7 @@ from wages_calculator import app, db
 from wages_calculator.models import Driver, DayEnd
 from datetime import datetime, timedelta
 
-def currency_to_db(value):
-    # pence = 
-    # try:
-    #     pence > 0
-    # except:
-    #     flash
-    return float(value)*100
-
-def percentage_to_db(value):
-    return float(value)/100
-
+################### Routes
 
 @app.route("/")
 def home():
@@ -126,19 +116,33 @@ def wages_calculator():
     return render_template("wages_calculator.html", drivers=drivers)
 
 
+#################### Functions
+
+def currency_to_db(value):
+    """ To be used to convert £ to pence to store in the database """
+    return float(value)*100
+
+def percentage_to_db(value):
+    """ To be used to convert percentages to decimals to store in the database """
+    return float(value)/100
+
 @app.context_processor
 def context_processor():
 
     def format_currency(amount, currency="£"):
+        """ Formats a number to '£x.xx' from 'x.xx' ready to display to user """
         return f"{currency}{amount:.2f}"
 
     def format_percentage(percentage):
+        """ Formats a number to 'xx.xx%' from 'x.xx' ready to display to user """
         return f"{percentage:.0f}%"
 
     def currency_to_web(amount):
+        """ Formats a number to 'x.xx' from '£x.xx' ready to display to user """
         return float(amount/100)
 
     def percentage_to_web(percentage):
+        """ To be used to convert decimals to percentages to store in the database """
         return float((percentage*100))
 
     return dict(format_currency=format_currency, format_percentage=format_percentage,

@@ -19,6 +19,7 @@ class Driver(db.Model):
         #represents itself in form of string
         return f"Driver: {self.first_name} {self.second_name}"
     
+    #validation
     @validates('first_name')
     def validate_first_name(self, key, first_name):
         if len(first_name) == 3:

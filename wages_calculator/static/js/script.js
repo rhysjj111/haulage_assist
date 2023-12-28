@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.onresize = removeTabs;
     removeTabs();
     
-    //flash feedback timeout
+    //flash feedback timeout and remove container after a time interval
     const messageContainer = document.querySelector(".messages-container");
     setInterval(() => messageContainer.style.opacity = '0', 5000);
     messageContainer.addEventListener('transitionend', () => messageContainer.remove());
