@@ -14,17 +14,30 @@
 {% block main %}
 
 <!-- error messages -->
-    <div class="error-messages-container">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <ul class="messages">
-                    {% for message in messages %}
+    {% with messages = get_flashed_messages(category_filter=["error-msg"]) %}
+        {% if messages %}
+            <div class="messages-container error-msg">
+                {% for message in messages %}                    
+                    <ul>
                         <li> {{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
-    </div>
+                    </ul>
+                {% endfor %}
+            </div>    
+        {% endif %}
+    {% endwith %}
+<!-- success messages -->
+    {% with messages = get_flashed_messages(category_filter=["success-msg"]) %}
+        {% if messages %}
+            <div class="messages-container success-msg">
+                {% for message in messages %}
+                    <ul>
+                        <li> {{ message }}</li>
+                    </ul>                    
+                {% endfor %}
+            </div>    
+        {% endif %}
+    {% endwith %}
+
 
     <div class="row">
         <div class="col s12 m8 offset-m2 l6 offset-l3 hide-on-large-only content-container">

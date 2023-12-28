@@ -33,13 +33,13 @@ def add_driver(tab):
                 base_wage=currency_to_db(request.form.get("base_wage")),
                 bonus_percentage=percentage_to_db(request.form.get("bonus_percentage"))
                 )        
+        except ValueError as e:
+            flash(str(e), 'error-msg')
+        else:
             db.session.add(driver)
             db.session.commit()
-            flash("success")
-        except AssertionError:
-            flash('error recorded')
-        return redirect(url_for("add_driver", drivers=drivers, tab=tab))
-        
+            flash("success", "success-msg")
+        return redirect(url_for("add_driver", drivers=drivers, tab=tab))     
     return render_template("add_driver.html", drivers=drivers, tab=tab)
 
 @app.route("/delete_driver/<int:driver_id>")

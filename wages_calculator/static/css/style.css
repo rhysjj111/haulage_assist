@@ -103,3 +103,24 @@ footer{
     margin-top: 15px;
     font-size: 30px;
 }
+
+.messages-container{
+    width: 100%;
+    text-align: center;
+    font-size: 18px;
+    border: 2px solid;
+    border-radius: 5px;
+    padding: 3px;
+    transition: opacity 1s;
+}
+.messages-container > ul{
+    margin: 0px;
+}
+.error-msg{
+    border-color:rgb(227 22 22 / 66%);
+    background-color: rgb(227 22 22 / 26%);
+}
+.success-msg{
+    border-color: rgb(0 193 18 / 66%);
+    background-color: rgb(0 193 18 / 26%);
+}

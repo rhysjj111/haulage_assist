@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     M.Datepicker.init(datepicker, {
         format: "dd mmmm, yyyy",
         i18n: {done: "Select"},
+        // disable all days apart from Monday for 'wages' page datepicker
         disableDayFn: function(date){
             if(document.querySelector('#wages_date') != null){
                 if(date.getDay() == 1){
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selects = document.querySelectorAll('select');
     M.FormSelect.init(selects);
 
+    // remove sub menu tabs for 'entry' and 'history' of entry pages on screen sizes desktop and over
     function removeTabs() {
         const subTabs = document.querySelector('#sub-menu-tabs')
         if (subTabs) {
@@ -41,4 +43,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.onresize = removeTabs;
     removeTabs();
     
+    //flash feedback timeout
+    const messageContainer = document.querySelector(".messages-container");
+    setInterval(() => messageContainer.style.opacity = '0', 5000);
+    messageContainer.addEventListener('transitionend', () => messageContainer.remove());
 });

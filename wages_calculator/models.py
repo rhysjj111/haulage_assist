@@ -22,7 +22,7 @@ class Driver(db.Model):
     @validates('first_name')
     def validate_first_name(self, key, first_name):
         if len(first_name) == 3:
-            raise AssertionError
+            raise ValueError('Please enter a first name')
         return first_name
 
 class DayEnd(db.Model):
