@@ -2,6 +2,7 @@ from wages_calculator import db
 from sqlalchemy.orm import validates
 from flask import redirect, url_for, flash, request
 
+
 class Driver(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     start_date = db.Column(db.Date, nullable=False)
@@ -9,11 +10,9 @@ class Driver(db.Model):
     second_name = db.Column(db.String(30), nullable=False) 
     base_wage = db.Column(db.Integer, nullable=False)
     bonus_percentage = db.Column(db.Float, nullable=False)
+    full_name = db.Column(db.String(61), nullable=False)
     day_end_days = db.relationship("DayEnd", backref="driver", cascade="all, delete", lazy=True)
-
-    def name(self):
-        #returns full name of driver
-        return f"{self.first_name} {self.second_name}"
+    
         
     def __repr__(self): 
         #represents itself in form of string
@@ -22,9 +21,19 @@ class Driver(db.Model):
     #validation
     @validates('first_name')
     def validate_first_name(self, key, first_name):
-        if len(first_name) == 3:
+        if not first_name:
             raise ValueError('Please enter a first name')
         return first_name
+
+    
+    @validates('full_name')
+    def validate_full_name(self, key, full_name):
+        if Driver.query.filter(Driver.full_name == full_name).first():         
+            raise ValueError('Driver name already exists. Edit current entry or choose another name')
+        return full_name
+
+        
+
 
 class DayEnd(db.Model):
     id = db.Column(db.Integer, primary_key=True)

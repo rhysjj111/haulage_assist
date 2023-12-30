@@ -18,11 +18,12 @@ def add_driver(tab):
         try:
             driver = Driver(
                 start_date=request.form.get("start_date"),
-                first_name=request.form.get("first_name"),
-                second_name=request.form.get("second_name"),
+                first_name=name_to_db(request.form.get("first_name")),
+                second_name=name_to_db(request.form.get("second_name")),
                 base_wage=currency_to_db(request.form.get("base_wage")),
-                bonus_percentage=percentage_to_db(request.form.get("bonus_percentage"))
-                )        
+                bonus_percentage=percentage_to_db(request.form.get("bonus_percentage")),
+                full_name=(name_to_db(request.form.get("first_name")) + " " + name_to_db(request.form.get("second_name")))
+                )      
         except ValueError as e:
             flash(str(e), 'error-msg')
         else:
@@ -117,6 +118,10 @@ def wages_calculator():
 
 
 #################### Functions
+
+def name_to_db(value):
+    """ Converts a name to a string which is lowercase with no whitespace at start or end of string """
+    return value.capitalize().strip()
 
 def currency_to_db(value):
     """ To be used to convert £ to pence to store in the database """

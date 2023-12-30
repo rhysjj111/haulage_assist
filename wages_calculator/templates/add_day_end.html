@@ -17,7 +17,7 @@
                     <li>
                         <!-- collapsible header -->
                         <div class="collapsible-header"><i class="material-icons">filter_drama</i>
-                        <strong>{{ day.date.strftime("%d, %B, %Y") }} - {{ day.driver.name() }}</strong>
+                        <strong>{{ day.date.strftime("%d, %B, %Y") }} - {{ day.driver.full_name }}</strong>
                         </div>
                         <!-- collapsible-body -->
                         <div class="collapsible-body">
@@ -36,7 +36,7 @@
                         <div id="modal_delete_{{ day.id }}" class="modal">
                             <div class="modal-content">
                                 <h4>Delete Day End Entry?</h4>
-                                <p>The entry, {{ day.date.strftime("%d, %B, %Y") }} - {{ day.driver.name() }} will be deleted permanently.</p>
+                                <p>The entry, {{ day.date.strftime("%d, %B, %Y") }} - {{ day.driver.full_name }} will be deleted permanently.</p>
                             </div>
                             <div class="modal-footer">
                                 <a href="{{ url_for('delete_day_end', day_id=day.id, tab='history')}}" class="btn red">Delete</a>
