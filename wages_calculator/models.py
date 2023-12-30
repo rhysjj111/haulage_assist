@@ -1,6 +1,8 @@
+import re
 from wages_calculator import db
 from sqlalchemy.orm import validates
 from flask import redirect, url_for, flash, request
+
 
 
 class Driver(db.Model):
@@ -19,11 +21,15 @@ class Driver(db.Model):
         return f"Driver: {self.first_name} {self.second_name}"
     
     #validation
-    @validates('first_name')
-    def validate_first_name(self, key, first_name):
-        if not first_name:
+    @validates('first_name', 'second_name')
+    def validate_names(self, key, field):
+        if not field:
             raise ValueError('Please enter a first name')
-        return first_name
+        if len(field) <1 or len(field)>= 25:
+            raise ValueError('Please enter a name between 1 and 25 characters')
+        if bool(re.search(r"\s", field)):
+            raise ValueError('Please do not inlude spaces in "First name", for double barrel names use: "-"')
+        return field
 
     
     @validates('full_name')

@@ -14,9 +14,10 @@ def home():
 @app.route("/add_driver/<tab>", methods=["GET", "POST"])
 def add_driver(tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
+    driver = {}
     if request.method == "POST":
         try:
-            driver = Driver(
+            new_driver = Driver(
                 start_date=request.form.get("start_date"),
                 first_name=name_to_db(request.form.get("first_name")),
                 second_name=name_to_db(request.form.get("second_name")),
@@ -26,12 +27,16 @@ def add_driver(tab):
                 )      
         except ValueError as e:
             flash(str(e), 'error-msg')
+            #retrieve previous answers
+            driver = request.form
+            driver.base_wage = currency_to_db(request.form.get("base_wage"))
+            driver.bonus_percentage = percentage_to_db(request.form.get("bonus_percentage"))
         else:
-            db.session.add(driver)
+            db.session.add(new_driver)
             db.session.commit()
             flash("success", "success-msg")
-        return redirect(url_for("add_driver", drivers=drivers, tab=tab))     
-    return render_template("add_driver.html", drivers=drivers, tab=tab)
+            drivers = list(Driver.query.order_by(Driver.first_name).all())     
+    return render_template("add_driver.html", drivers=drivers, tab='entry', driver=driver)
 
 @app.route("/delete_driver/<int:driver_id>")
 def delete_driver(driver_id):
@@ -121,7 +126,7 @@ def wages_calculator():
 
 def name_to_db(value):
     """ Converts a name to a string which is lowercase with no whitespace at start or end of string """
-    return value.capitalize().strip()
+    return str(value).capitalize().strip()
 
 def currency_to_db(value):
     """ To be used to convert £ to pence to store in the database """

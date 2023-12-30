@@ -24,7 +24,7 @@
                             <select name="search_driver_id" id="driver_id" class="validate" required>
                                 <option value="" disabled selected>Choose driver</option>
                                 {% for driver in drivers %}
-                                    <option value="{{ driver.id }}" >{{ driver.name() }}</option>
+                                    <option value="{{ driver.id }}" >{{ driver.full_name }}</option>
                                 {% endfor %}   
                             </select>
                             <label for="driver_id">Select Driver:</label>
