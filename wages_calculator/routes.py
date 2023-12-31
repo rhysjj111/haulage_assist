@@ -11,8 +11,8 @@ def home():
 
 ################## CRUD driver
 
-@app.route("/add_driver/<tab>", methods=["GET", "POST"])
-def add_driver(tab):
+@app.route("/add_driver/<int:driver_id>/<tab>", methods=["GET", "POST"])
+def add_driver(driver_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     driver = {}
     if request.method == "POST":
@@ -35,26 +35,34 @@ def add_driver(tab):
             db.session.add(new_driver)
             db.session.commit()
             flash("success", "success-msg")
-            drivers = list(Driver.query.order_by(Driver.first_name).all())     
-    return render_template("add_driver.html", drivers=drivers, tab='entry', driver=driver)
+            return redirect(url_for("add_driver"))     
+    return render_template("add_driver.html", drivers=drivers, tab=tab, driver=driver, driver_id=driver_id)
 
 @app.route("/delete_driver/<int:driver_id>")
 def delete_driver(driver_id):
     entry = db.get_or_404(Driver, driver_id)
     db.session.delete(entry)
     db.session.commit()
-    return redirect(url_for("add_driver", tab='history'))
+    return redirect(url_for("add_driver", driver_id=0, tab='history'))
 
 @app.route("/edit_driver/<int:driver_id>", methods=["POST"])
 def edit_driver(driver_id):
-    driver = Driver.query.get_or_404(driver_id)
-    driver.start_date = request.form.get("start_date")
-    driver.first_name = request.form.get("first_name")
-    driver.second_name = request.form.get("second_name")
-    driver.base_wage = currency_to_db(request.form.get("base_wage"))
-    driver.bonus_percentage = percentage_to_db(request.form.get("bonus_percentage"))
-    db.session.commit()
-    return redirect(url_for("add_driver", tab='history'))
+    try:
+        driver = Driver.query.get_or_404(driver_id)
+        driver.start_date = request.form.get("start_date")
+        driver.first_name = request.form.get("first_name")
+        driver.second_name = request.form.get("second_name")
+        driver.base_wage = currency_to_db(request.form.get("base_wage"))
+        driver.bonus_percentage = percentage_to_db(request.form.get("bonus_percentage"))
+        driver.full_name = (name_to_db(request.form.get("first_name")) + " " + name_to_db(request.form.get("second_name")))
+    except ValueError as e:
+        flash(str(e), 'error-msg-modal')
+        return redirect(url_for("add_driver", driver_id=driver_id, tab='history'))
+    else: 
+        db.session.commit()
+        flash("success", "success-msg")
+        return redirect(url_for("add_driver", driver_id=0, tab='history'))
+
 
 ################## CRUD day_end
 

@@ -104,6 +104,8 @@ became
 &ensp;`Driver = first_name(...`  
 &ensp;`db.session.add(driver)`
 
+- I had a hard time getting my add_driver route to prepopulate the form after an error with the previous answers. This required a lot of fiddling around so that I could use the 'driver' variable as both the previous answers, but also for the edit version of the question macro.
+
 #### JS
 
 

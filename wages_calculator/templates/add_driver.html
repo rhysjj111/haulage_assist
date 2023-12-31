@@ -6,7 +6,7 @@
     {% block entry_form_title %}Add a driver:{% endblock %}
         {% block entry_form %}
         {{ driver.start_date }}
-            <form method="post" action="{{ url_for('add_driver', tab='entry') }}">
+            <form method="post" action="{{ url_for('add_driver', driver_id=0, tab='entry') }}">
                 {{ macros.driver_questions('add', driver, currency_to_web, percentage_to_web) }}
             </form>
         {% endblock %}
@@ -38,7 +38,7 @@
                                 <p>The driver, {{ driver.first_name }} will be deleted permanently.</p>
                             </div>
                             <div class="modal-footer">
-                                <a href="{{ url_for('delete_driver', driver_id=driver.id, tab='history')}}" class="btn red">Delete</a>
+                                <a href="{{ url_for('delete_driver', driver_id=driver.id)}}" class="btn red">Delete</a>
                                 <a href="" class="modal-close btn grey">Cancel</a>
                             </div>
                         </div>
@@ -47,10 +47,23 @@
                         <div id="modal_edit_{{ driver.id }}" class="modal">
                             <div class="modal-content">
                             <h3 class="center-align">Edit Driver</h3>
-                    
+
+                            <!-- error messages -->
+                            {% with messages = get_flashed_messages(category_filter=["error-msg-modal"]) %}
+                                {% if messages %}
+                                    <div class="messages-container error-msg">
+                                        {% for message in messages %}                    
+                                            <ul>
+                                                <li> {{ message }}</li>
+                                            </ul>
+                                        {% endfor %}
+                                    </div>    
+                                {% endif %}
+                            {% endwith %}
+                                            
                             <div class="row">
-                                <form class="col s12" method="POST" action="{{ url_for('edit_driver', driver_id=driver.id, tab='history') }}">
-                                {{ macros.driver_questions('edit', driver, currency_to_web, percentage_to_web) }}
+                                <form class="col s12" method="POST" class="modal-trigger" action="{{ url_for('edit_driver', driver_id=driver.id) }}">
+                                    {{ macros.driver_questions('edit', driver, currency_to_web, percentage_to_web) }}
                                 </form>
                             </div>
                         </div>

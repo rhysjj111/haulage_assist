@@ -3,10 +3,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const collapsibles = document.querySelectorAll('.collapsible');
     M.Collapsible.init(collapsibles);
 
-    // modal initialization
-    let modal = document.querySelectorAll('.modal');
-    M.Modal.init(modal);
-
     // datepicker initialization
     let datepicker = document.querySelectorAll('.datepicker');
     M.Datepicker.init(datepicker, {
@@ -23,6 +19,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }   
         }
     })
+
+    // modal initialisation
+    let modal = document.querySelectorAll('.modal');
+    M.Modal.init(modal);
 
     // select initialization
     let selects = document.querySelectorAll('select');
