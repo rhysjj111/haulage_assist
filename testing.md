@@ -26,6 +26,10 @@ Base wage | 425.001 | Validation warning message. Form not submitted.| 'Please e
 Base wage | 1250 | Success message. Form submitted. Data stored in database | 'Success'. Data in database | Pass
 Bonus percentage | 51 | Validation warning message. Form not submitted.| 'Please enter a bonus percentage between 15 and 50'. Form not submitted | Pass
 Bonus percentage | 14 | Validation warning message. Form not submitted.| 'Please enter a bonus percentage between 15 and 50'. Form not submitted | Pass
+Bonus percentage | abc | Validation warning message. Form not submitted.| 'Please enter a bonus percentage between 15 and 50'. Form not submitted | Pass
+Bonus percentage | 400.002 | Validation warning message. Form not submitted.| 'Please enter a bonus percentage in %, to 2 decimal places; ie "35.25" or "27"'. Form not submitted | Pass
+Bonus percentage | 25 | Success message. Form submitted. Data stored in database | 'Success'. Data in database | Pass
+
 
 
 

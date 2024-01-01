@@ -22,6 +22,7 @@ class Driver(db.Model):
         #represents itself in form of string
         return f"Driver: {self.first_name} {self.second_name}"
     
+
     ##################################### validation
     @validates('start_date')
     def validate_start_date(self, key, start_date):
@@ -53,21 +54,20 @@ class Driver(db.Model):
     
     @validates('base_wage')
     def validate_base_wage(self, key, base_wage):
-        if (len(base_wage.rsplit('.')[-1]) > 2) and not base_wage.isalpha():
+        if (len(base_wage.rsplit('.')[-1]) > 2) and str(base_wage).isalpha():
             raise ValueError('Please enter a base wage in £; ie "450.50" or "450"')
         try:
             base_wage = currency_to_db(base_wage)
         except:
             raise ValueError('Please enter a base wage between 400 and 2000')
         else:
-            if not(40000 <= base_wage <= 200000):
+            if not(40000 < base_wage < 200000):
                 raise ValueError('Please enter a base wage between 400 and 2000')
-        
         return base_wage
 
     @validates('bonus_percentage')
     def validate_bonus_percentage(self, key, bonus_percentage):
-        if (len(bonus_percentage.rsplit('.')[-1]) > 2) and not bonus_percentage.isalpha():
+        if (len(bonus_percentage.rsplit('.')[-1]) > 2) and str(bonus_percentage).isalpha():
             raise ValueError('Please enter a bonus percentage in %, to 2 decimal places; ie "35.25" or "27"')
         try:
             bonus_percentage = percentage_to_db(bonus_percentage)
@@ -92,4 +92,20 @@ class DayEnd(db.Model):
         #represents itself in form of string
         return f"Enry for: {self.driver.first_name} {self.driver.second_name} on {self.date}"
 
+
+    ############ validation
+    @validates('date')
+    def validate_start_date(self, key, date):
+        try:
+            date = datetime.strptime(date, "%d/%m/%Y")
+        except:
+            raise ValueError('Please enter date in format dd/mm/yyyy')
+        return date
+    
+    @validates('select_driver')
+    def validate_select_driver(self, key, driver_id):
+        if not(Driver.query.filter(Driver.id == driver_id)):
+            raise ValueError('Driver selected not in database, please try again')
+        return driver_id
+    
 
