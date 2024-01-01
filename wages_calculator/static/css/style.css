@@ -124,3 +124,8 @@ footer{
     border-color: rgb(0 193 18 / 66%);
     background-color: rgb(0 193 18 / 26%);
 }
+.modal{
+    top: 5% !important;
+    width: 75% !important;
+    max-height: 90% !important;
+}

@@ -6,7 +6,7 @@
     {% block entry_form_title %}Add a driver:{% endblock %}
         {% block entry_form %}
             <form method="post" action="{{ url_for('add_driver', driver_id=0, tab='entry') }}">
-                {{ macros.driver_questions('add', driver, currency_to_web, percentage_to_web) }}
+                {{ macros.driver_questions('add', driver, f) }}
             </form>
         {% endblock %}
 
@@ -21,9 +21,9 @@
                         </div>
                         <!-- collapsible-body -->
                         <div class="collapsible-body">
-                            <p>Date joined: {{ driver.start_date }}<br>
-                            Base wage: {{ format_currency(currency_to_web(driver.base_wage)) }}<br>
-                            Bonus percentage: {{ format_percentage(percentage_to_web(driver.bonus_percentage)) }}</p>
+                            <p>Date joined: {{ f.date_to_web(driver.start_date) }}<br>
+                            Base wage: {{ f.format_currency(f.currency_to_web(driver.base_wage)) }}<br>
+                            Bonus percentage: {{ f.format_percentage(f.percentage_to_web(driver.bonus_percentage)) }}</p>
                             <!-- buttons -->
                             <a href="#modal_edit_{{ driver.id }}" class="btn green accent-4 modal-trigger">Edit</a>
                             <a href="#modal_delete_{{ driver.id }}" class="btn red modal-trigger">Delete</a>
@@ -62,7 +62,7 @@
                                             
                             <div class="row">
                                 <form class="col s12" method="POST" class="modal-trigger" action="{{ url_for('edit_driver', driver_id=driver.id) }}">
-                                    {{ macros.driver_questions('edit', driver, currency_to_web, percentage_to_web) }}
+                                    {{ macros.driver_questions('edit', driver, f) }}
                                 </form>
                             </div>
                         </div>

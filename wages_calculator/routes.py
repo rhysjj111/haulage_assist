@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash
 from wages_calculator import app, db
-from wages_calculator.functions import *
+import wages_calculator.functions as f
 from wages_calculator.models import Driver, DayEnd
 from datetime import datetime, timedelta
 
@@ -35,7 +35,7 @@ def add_driver(driver_id, tab):
         else:
             db.session.add(new_driver)
             db.session.commit()
-            flash("success", "success-msg")
+            flash("success", "Success-msg")
             return redirect(url_for("add_driver", tab='entry', driver_id=0))     
     return render_template("add_driver.html", drivers=drivers, tab=tab, driver=driver, driver_id=driver_id)
 
@@ -48,20 +48,22 @@ def delete_driver(driver_id):
 
 @app.route("/edit_driver/<int:driver_id>", methods=["POST"])
 def edit_driver(driver_id):
+    driver = Driver.query.get_or_404(driver_id)
     try:
-        driver = Driver.query.get_or_404(driver_id)
+        #checks if driver full_name has not been edited by the user to avoid validation which checks if full_name is already in database
+        if driver.full_name != (f.name_to_db(request.form.get("first_name")) + " " + f.name_to_db(request.form.get("second_name"))):
+            driver.full_name = (f.name_to_db(request.form.get("first_name")) + " " + f.name_to_db(request.form.get("second_name")))
         driver.start_date = request.form.get("start_date")
         driver.first_name = request.form.get("first_name")
         driver.second_name = request.form.get("second_name")
-        driver.base_wage = currency_to_db(request.form.get("base_wage"))
-        driver.bonus_percentage = percentage_to_db(request.form.get("bonus_percentage"))
-        driver.full_name = (name_to_db(request.form.get("first_name")) + " " + name_to_db(request.form.get("second_name")))
+        driver.base_wage = request.form.get("base_wage")
+        driver.bonus_percentage = request.form.get("bonus_percentage")
     except ValueError as e:
         flash(str(e), 'error-msg-modal')
         return redirect(url_for("add_driver", driver_id=driver_id, tab='history'))
     else: 
         db.session.commit()
-        flash("success", "success-msg")
+        flash("Success", "success-msg")
         return redirect(url_for("add_driver", driver_id=0, tab='history'))
 
 
@@ -137,8 +139,7 @@ def wages_calculator():
 @app.context_processor
 def context_processor():
 
-    return dict(format_currency=format_currency, format_percentage=format_percentage,
-     currency_to_web=currency_to_web, percentage_to_web=percentage_to_web)
+    return dict(f=f)
 
 
 

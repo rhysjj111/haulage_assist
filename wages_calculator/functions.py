@@ -1,4 +1,4 @@
-
+from datetime import datetime
 #functions format to db
 def name_to_db(value):
     """ Converts a name to a string which is lowercase with no whitespace at start or end of string """
@@ -13,6 +13,10 @@ def percentage_to_db(value):
     return float(value)/100
 
 #functions format to display on web
+def date_to_web(date):
+    """ Formats a date to a string for display to the user """
+    return datetime.strftime(date, "%d/%m/%Y")
+    
 def format_currency(amount, currency="£"):
     """ Formats a number to '£x.xx' from 'x.xx' ready to display to user """
     return f"{currency}{amount:.2f}"

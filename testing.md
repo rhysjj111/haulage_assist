@@ -22,8 +22,10 @@ First name/Second name | (A combination of strings that is unique) | Success mes
 Base wage | 2001 | Validation warning message. Form not submitted.| 'Please enter a base wage between 400 and 2000'. Form not submitted | Pass
 Base wage | 300 | Validation warning message. Form not submitted.| 'Please enter a base wage between 400 and 2000'. Form not submitted | Pass
 Base wage | abc | Validation warning message. Form not submitted.| 'Please enter a base wage between 400 and 2000'. Form not submitted | Pass
+Base wage | 425.001 | Validation warning message. Form not submitted.| 'Please enter a base wage in £; ie "450.50" or "450"'. Form not submitted | Pass
 Base wage | 1250 | Success message. Form submitted. Data stored in database | 'Success'. Data in database | Pass
-
+Bonus percentage | 51 | Validation warning message. Form not submitted.| 'Please enter a bonus percentage between 15 and 50'. Form not submitted | Pass
+Bonus percentage | 14 | Validation warning message. Form not submitted.| 'Please enter a bonus percentage between 15 and 50'. Form not submitted | Pass
 
 
 
