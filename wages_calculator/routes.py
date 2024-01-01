@@ -1,7 +1,9 @@
 from flask import render_template, request, redirect, url_for, flash
 from wages_calculator import app, db
+from wages_calculator.functions import *
 from wages_calculator.models import Driver, DayEnd
 from datetime import datetime, timedelta
+
 
 ################### Routes 
 
@@ -20,19 +22,16 @@ def add_driver(driver_id, tab):
         try:
             new_driver = Driver(
                 start_date=request.form.get("start_date"),
-                first_name=name_to_db(request.form.get("first_name")),
-                second_name=name_to_db(request.form.get("second_name")),
-                base_wage=currency_to_db(request.form.get("base_wage")),
-                bonus_percentage=percentage_to_db(request.form.get("bonus_percentage")),
+                first_name=request.form.get("first_name"),
+                second_name=request.form.get("second_name"),
+                base_wage=request.form.get("base_wage"),
+                bonus_percentage=request.form.get("bonus_percentage"),
                 full_name=(name_to_db(request.form.get("first_name")) + " " + name_to_db(request.form.get("second_name")))
                 )    
         except ValueError as e:
             flash(str(e), 'error-msg')
-            #retrieve previous answers: base_wage and bonus_percentage are formatted as
-            #if going to database so that they are correctly reformatted by display question macro
+            #retrieve previous answers
             driver = request.form
-            driver.base_wage = currency_to_db(request.form.get("base_wage"))
-            driver.bonus_percentage = percentage_to_db(request.form.get("bonus_percentage"))
         else:
             db.session.add(new_driver)
             db.session.commit()
@@ -134,36 +133,9 @@ def wages_calculator():
 
 #################### Functions
 
-def name_to_db(value):
-    """ Converts a name to a string which is lowercase with no whitespace at start or end of string """
-    return str(value).capitalize().strip()
-
-def currency_to_db(value):
-    """ To be used to convert £ to pence to store in the database """
-    return float(value)*100
-
-def percentage_to_db(value):
-    """ To be used to convert percentages to decimals to store in the database """
-    return float(value)/100
 
 @app.context_processor
 def context_processor():
-
-    def format_currency(amount, currency="£"):
-        """ Formats a number to '£x.xx' from 'x.xx' ready to display to user """
-        return f"{currency}{amount:.2f}"
-
-    def format_percentage(percentage):
-        """ Formats a number to 'xx.xx%' from 'x.xx' ready to display to user """
-        return f"{percentage:.0f}%"
-
-    def currency_to_web(amount):
-        """ Formats a number to 'x.xx' from '£x.xx' ready to display to user """
-        return float(amount/100)
-
-    def percentage_to_web(percentage):
-        """ To be used to convert decimals to percentages to store in the database """
-        return float((percentage*100))
 
     return dict(format_currency=format_currency, format_percentage=format_percentage,
      currency_to_web=currency_to_web, percentage_to_web=percentage_to_web)

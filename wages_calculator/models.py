@@ -1,5 +1,6 @@
 import re
 from wages_calculator import db
+from wages_calculator.functions import *
 from sqlalchemy.orm import validates
 from flask import redirect, url_for, flash, request
 from datetime import datetime
@@ -36,11 +37,12 @@ class Driver(db.Model):
             raise ValueError('Please enter first and second name')
         if len(field) <1 or len(field)>= 25:
             raise ValueError('Please enter name(s) between 1 and 25 characters')
-        if bool(re.search(r"\s", field)):
-            raise ValueError('Please do not inlude spaces in name(s). For double barrel names use: "-"')
+        #regex to make sure no special characters are present except '-' and '_'
+        if bool(re.search(r'[^\w-]', field)):
+            raise ValueError('Please do not inlude spaces or special characters in name(s), for double barrel names use: "-"')
         if any(character.isdigit() for character in field):
             raise ValueError('Please do not include numbers in name(s)')
-        return field
+        return name_to_db(field)
 
     
     @validates('full_name')
@@ -48,6 +50,28 @@ class Driver(db.Model):
         if Driver.query.filter(Driver.full_name == full_name).first():         
             raise ValueError('Driver name already exists. Edit current entry or choose another name')
         return full_name
+    
+    @validates('base_wage')
+    def validate_base_wage(self, key, base_wage):
+        try:
+            base_wage = currency_to_db(base_wage)
+        except:
+            raise ValueError('Please enter a base wage between 400 and 2000')
+        else:
+            if not(40000 <= base_wage <= 200000):
+                raise ValueError('Please enter a base wage between 400 and 2000')
+        return base_wage
+
+    @validates('bonus_percentage')
+    def validate_bonus_percentage(self, key, bonus_percentage):
+        try:
+            bonus_percentage = percentage_to_db(bonus_percentage)
+        except:
+            raise ValueError('Please enter a bonus percentage between 15 and 50')
+        else:
+            if not (0.15 <= bonus_percentage <= 0.5):
+                raise ValueError('Please enter a bonus percentage between 15 and 50')
+        return bonus_percentage
 
         
 

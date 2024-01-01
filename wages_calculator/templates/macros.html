@@ -50,8 +50,13 @@
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="base_wage" name="base_wage" {% if driver.base_wage is defined %} value="{{'%0.2f' % currency_to_web(driver.base_wage) }}" {% endif %}
-                type="number" >
+            <input id="base_wage" name="base_wage" 
+                {% if driver.base_wage is defined and type == "edit" %} 
+                    value="{{'%0.2f' % currency_to_web(driver.base_wage) }}" 
+                {% elif driver.base_wage is defined %} 
+                    value="{{driver.base_wage}}" 
+                {% endif %}
+                type="number">
             <label for="base_wage">Base wage (£):</label>
         </div>
     </div>
@@ -60,8 +65,13 @@
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="bonus_percentage" name="bonus_percentage" {% if driver.bonus_percentage is defined %} value="{{'%0.2f' % percentage_to_web(driver.bonus_percentage) }}" {% endif %}
-                type="number" >
+            <input id="bonus_percentage" name="bonus_percentage" 
+            {% if driver.bonus_percentage is defined and type == "edit" %} 
+                value="{{'%0.2f' % percentage_to_web(driver.bonus_percentage) }}" 
+            {% elif driver is defined %}
+                value="{{driver.bonus_percentage}}"
+            {% endif %}
+            type="number">
             <label for="bonus_percentage">Bonus percentage (%):</label>
         </div>
     </div>
