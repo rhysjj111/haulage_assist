@@ -20,8 +20,8 @@
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
             <input id="start_date" name="start_date"  type="text"
-                class="datepicker validate" {% if driver.start_date is defined %} value="{{ driver.start_date }}"
-                 {% endif %} required>
+                class="datepicker" {% if driver.start_date is defined %} value="{{ driver.start_date }}"
+                 {% endif %} >
             <label for="start_date">Start date:</label>
         </div>
     </div>
@@ -30,8 +30,8 @@
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="first_name" name="first_name" {% if driver.first_name is defined %} value="{{ driver.first_name }}" {% endif %}  minlength="1" maxlength="25"
-                type="text" class="validate" >
+            <input id="first_name" name="first_name" {% if driver.first_name is defined %} value="{{ driver.first_name }}" {% endif %}
+                type="text" >
             <label for="first_name">First name:</label>
         </div>
     </div>
@@ -40,8 +40,8 @@
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="second_name" name="second_name" {% if driver.second_name is defined %} value="{{ driver.second_name }}" {% endif %}  minlength="1" maxlength="25"
-                type="text" class="validate" >
+            <input id="second_name" name="second_name" {% if driver.second_name is defined %} value="{{ driver.second_name }}" {% endif %}
+                type="text" >
             <label for="second_name">Second name:</label>
         </div>
     </div>
@@ -50,8 +50,8 @@
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="base_wage" name="base_wage" {% if driver.base_wage is defined %} value="{{'%0.2f' % currency_to_web(driver.base_wage) }}" {% endif %}  min="0" max="1000" step = "0.01"
-                type="number" class="validate" required>
+            <input id="base_wage" name="base_wage" {% if driver.base_wage is defined %} value="{{'%0.2f' % currency_to_web(driver.base_wage) }}" {% endif %}
+                type="number" >
             <label for="base_wage">Base wage (£):</label>
         </div>
     </div>
@@ -60,8 +60,8 @@
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="bonus_percentage" name="bonus_percentage" {% if driver.bonus_percentage is defined %} value="{{'%0.2f' % percentage_to_web(driver.bonus_percentage) }}" {% endif %}  min="0" max="50" step="0.01"
-                type="number" class="validate" required>
+            <input id="bonus_percentage" name="bonus_percentage" {% if driver.bonus_percentage is defined %} value="{{'%0.2f' % percentage_to_web(driver.bonus_percentage) }}" {% endif %}
+                type="number" >
             <label for="bonus_percentage">Bonus percentage (%):</label>
         </div>
     </div>

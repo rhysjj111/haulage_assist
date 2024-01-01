@@ -2,6 +2,7 @@ import re
 from wages_calculator import db
 from sqlalchemy.orm import validates
 from flask import redirect, url_for, flash, request
+from datetime import datetime
 
 
 
@@ -20,15 +21,25 @@ class Driver(db.Model):
         #represents itself in form of string
         return f"Driver: {self.first_name} {self.second_name}"
     
-    #validation
+    ##################################### validation
+    @validates('start_date')
+    def validate_start_date(self, key, start_date):
+        try:
+            start_date = datetime.strptime(start_date, "%d/%m/%Y")
+        except:
+            raise ValueError('Please enter date in format dd/mm/yyyy')
+        return start_date
+
     @validates('first_name', 'second_name')
     def validate_names(self, key, field):
         if not field:
-            raise ValueError('Please enter a first name')
+            raise ValueError('Please enter first and second name')
         if len(field) <1 or len(field)>= 25:
-            raise ValueError('Please enter a name between 1 and 25 characters')
+            raise ValueError('Please enter name(s) between 1 and 25 characters')
         if bool(re.search(r"\s", field)):
-            raise ValueError('Please do not inlude spaces in "First name", for double barrel names use: "-"')
+            raise ValueError('Please do not inlude spaces in name(s). For double barrel names use: "-"')
+        if any(character.isdigit() for character in field):
+            raise ValueError('Please do not include numbers in name(s)')
         return field
 
     

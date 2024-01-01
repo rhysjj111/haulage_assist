@@ -3,7 +3,7 @@ from wages_calculator import app, db
 from wages_calculator.models import Driver, DayEnd
 from datetime import datetime, timedelta
 
-################### Routes
+################### Routes 
 
 @app.route("/")
 def home():
@@ -14,6 +14,7 @@ def home():
 @app.route("/add_driver/<int:driver_id>/<tab>", methods=["GET", "POST"])
 def add_driver(driver_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
+    #empty driver dictionary incase there are any errors in submitted data
     driver = {}
     if request.method == "POST":
         try:
@@ -24,10 +25,11 @@ def add_driver(driver_id, tab):
                 base_wage=currency_to_db(request.form.get("base_wage")),
                 bonus_percentage=percentage_to_db(request.form.get("bonus_percentage")),
                 full_name=(name_to_db(request.form.get("first_name")) + " " + name_to_db(request.form.get("second_name")))
-                )      
+                )    
         except ValueError as e:
             flash(str(e), 'error-msg')
-            #retrieve previous answers
+            #retrieve previous answers: base_wage and bonus_percentage are formatted as
+            #if going to database so that they are correctly reformatted by display question macro
             driver = request.form
             driver.base_wage = currency_to_db(request.form.get("base_wage"))
             driver.bonus_percentage = percentage_to_db(request.form.get("bonus_percentage"))
@@ -35,7 +37,7 @@ def add_driver(driver_id, tab):
             db.session.add(new_driver)
             db.session.commit()
             flash("success", "success-msg")
-            return redirect(url_for("add_driver"))     
+            return redirect(url_for("add_driver", tab='entry', driver_id=0))     
     return render_template("add_driver.html", drivers=drivers, tab=tab, driver=driver, driver_id=driver_id)
 
 @app.route("/delete_driver/<int:driver_id>")

@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // datepicker initialization
     let datepicker = document.querySelectorAll('.datepicker');
     M.Datepicker.init(datepicker, {
-        format: "dd mmmm, yyyy",
+        format: "dd/mm/yyyy",
         i18n: {done: "Select"},
         // disable all days apart from Monday for 'wages' page datepicker
         disableDayFn: function(date){
@@ -44,7 +44,11 @@ document.addEventListener('DOMContentLoaded', function() {
     removeTabs();
     
     //flash feedback timeout and remove container after a time interval
-    const messageContainer = document.querySelector(".messages-container");
-    setInterval(() => messageContainer.style.opacity = '0', 5000);
-    messageContainer.addEventListener('transitionend', () => messageContainer.remove());
+    const messageContainer = document.querySelector(".success-msg");
+    if (messageContainer){
+        setInterval(() => messageContainer.style.opacity = '0', 5000);
+        messageContainer.addEventListener('transitionend', () => messageContainer.remove());
+    }
+        
+    
 });

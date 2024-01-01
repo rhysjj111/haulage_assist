@@ -5,7 +5,6 @@
 
     {% block entry_form_title %}Add a driver:{% endblock %}
         {% block entry_form %}
-        {{ driver.start_date }}
             <form method="post" action="{{ url_for('add_driver', driver_id=0, tab='entry') }}">
                 {{ macros.driver_questions('add', driver, currency_to_web, percentage_to_web) }}
             </form>
