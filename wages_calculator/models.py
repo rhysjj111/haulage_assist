@@ -94,6 +94,12 @@ class DayEnd(db.Model):
 
 
     ############ validation
+    @validates('driver_id')
+    def validate_select_driver(self, key, driver_id):
+        if not (DayEnd.query.filter(DayEnd.driver_id == driver_id).first()):
+            raise ValueError('Driver selected not in database, please try again')
+        return driver_id
+    
     @validates('date')
     def validate_start_date(self, key, date):
         try:
@@ -102,10 +108,6 @@ class DayEnd(db.Model):
             raise ValueError('Please enter date in format dd/mm/yyyy')
         return date
     
-    @validates('select_driver')
-    def validate_select_driver(self, key, driver_id):
-        if not(Driver.query.filter(Driver.id == driver_id)):
-            raise ValueError('Driver selected not in database, please try again')
-        return driver_id
+
     
 

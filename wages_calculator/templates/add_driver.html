@@ -37,7 +37,7 @@
                                 <p>The driver, {{ driver.first_name }} will be deleted permanently.</p>
                             </div>
                             <div class="modal-footer">
-                                <a href="{{ url_for('delete_driver', driver_id=driver.id)}}" class="btn red">Delete</a>
+                                <a href="{{ url_for('delete_driver', driver_id=driver.id, delete_all=False)}}" class="btn red">Delete</a>
                                 <a href="" class="modal-close btn grey">Cancel</a>
                             </div>
                         </div>
@@ -68,5 +68,17 @@
                         </div>
                     </li>
                 {% endfor %}
+                <li><a href="#modal_delete_all" class="btn red modal-trigger">Delete All</a></li>
+                <!-- Delete all modal -->
+                <div id="modal_delete_all" class="modal">
+                    <div class="modal-content">
+                        <h4>Delete ALL Drivers?</h4>
+                        <p>ALL drivers will be deleted permanently.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{{ url_for('delete_driver', driver_id=0, delete_all=True)}}" class="btn red">Delete All</a>
+                        <a href="" class="modal-close btn grey">Cancel</a>
+                    </div>
+                </div>
             </ul>
         {% endblock %}

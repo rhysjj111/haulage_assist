@@ -39,11 +39,16 @@ def add_driver(driver_id, tab):
             return redirect(url_for("add_driver", tab='entry', driver_id=0))     
     return render_template("add_driver.html", drivers=drivers, tab=tab, driver=driver, driver_id=0)
 
-@app.route("/delete_driver/<int:driver_id>")
-def delete_driver(driver_id):
-    entry = db.get_or_404(Driver, driver_id)
-    db.session.delete(entry)
-    db.session.commit()
+@app.route("/delete_driver/<int:driver_id><delete_all>")
+def delete_driver(driver_id, delete_all):
+    if delete_all:
+        all = db.session.query(Driver)
+        all.delete()
+        db.session.commit()
+    else:
+        entry = db.get_or_404(Driver, driver_id)
+        db.session.delete(entry)
+        db.session.commit()
     return redirect(url_for("add_driver", driver_id=0, tab='history'))
 
 @app.route("/edit_driver/<int:driver_id>", methods=["POST"])
@@ -139,13 +144,9 @@ def wages_calculator():
         return render_template("wages_calculator.html", drivers=drivers, day_end_entries=day_end_entries, total_earned=total_earned, total_overnight=total_overnight, base_wage=base_wage, bonus_wage=bonus_wage, total_wages=total_wages)
     return render_template("wages_calculator.html", drivers=drivers)
 
-
-#################### Functions
-
-
+#makes functions available globally
 @app.context_processor
 def context_processor():
-
     return dict(f=f)
 
 
