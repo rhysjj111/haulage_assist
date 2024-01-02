@@ -151,7 +151,7 @@ def wages_calculator():
             total_earned += int(day.earned)
             if day.overnight == True:
                 total_overnight += 3000
-        total_wages = bonus_wage + total_overnight + base_wage     
+        total_wages = total_bonus_wage + total_overnight + base_wage     
         
         return render_template("wages_calculator.html", date=start_date, sel_driver=driver, drivers=drivers, day_end_entries=day_end_entries, total_earned=total_earned, total_overnight=total_overnight, total_bonus_wage=total_bonus_wage, total_wages=total_wages)
     return render_template("wages_calculator.html", drivers=drivers)
