@@ -145,6 +145,7 @@ In future, I'd like to:
 - Update the CSS
 - Include javascript to provide the user with more feedback
 - Expand the functionality and scope of the data input by user.
+- I'd liked to have checked all the python, html, css and Javascript code in validators.
 
 
 ### Deployment
