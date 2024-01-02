@@ -5,6 +5,7 @@
 
     {% block entry_form_title %}Add day end entry:{% endblock %}
         {% block entry_form %}
+        {{overnight}}
             <form method="POST" action="{{ url_for('add_day_end', day_id=0, tab='entry') }}">
                 {{ macros.day_end_questions('add', day, drivers, f) }}
             </form>

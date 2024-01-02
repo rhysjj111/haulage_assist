@@ -54,28 +54,24 @@ class Driver(db.Model):
     
     @validates('base_wage')
     def validate_base_wage(self, key, base_wage):
-        if (len(base_wage.rsplit('.')[-1]) > 2) and str(base_wage).isalpha():
-            raise ValueError('Please enter a base wage in £; ie "450.50" or "450"')
         try:
             base_wage = currency_to_db(base_wage)
         except:
-            raise ValueError('Please enter a base wage between 400 and 2000')
+            raise ValueError('Please enter a base wage value between 400 and 2000')
         else:
             if not(40000 < base_wage < 200000):
-                raise ValueError('Please enter a base wage between 400 and 2000')
+                raise ValueError('Please enter a base wage value between 400 and 2000')
         return base_wage
 
     @validates('bonus_percentage')
     def validate_bonus_percentage(self, key, bonus_percentage):
-        if (len(bonus_percentage.rsplit('.')[-1]) > 2) and str(bonus_percentage).isalpha():
-            raise ValueError('Please enter a bonus percentage in %, to 2 decimal places; ie "35.25" or "27"')
         try:
             bonus_percentage = percentage_to_db(bonus_percentage)
         except:
-            raise ValueError('Please enter a bonus percentage between 15 and 50')
+            raise ValueError('Please enter a bonus percentage value between 15 and 50')
         else:
             if not (0.15 <= bonus_percentage <= 0.5):
-                raise ValueError('Please enter a bonus percentage between 15 and 50')
+                raise ValueError('Please enter a bonus percentage value between 15 and 50')
         return bonus_percentage
 
         
@@ -96,18 +92,39 @@ class DayEnd(db.Model):
     ############ validation
     @validates('driver_id')
     def validate_select_driver(self, key, driver_id):
-        if not (DayEnd.query.filter(DayEnd.driver_id == driver_id).first()):
-            raise ValueError('Driver selected not in database, please try again')
+        if not (Driver.query.filter(Driver.id == driver_id).first()):
+            raise ValueError('Selection not available in database. Please select a driver')
         return driver_id
     
     @validates('date')
     def validate_start_date(self, key, date):
         try:
-            date = datetime.strptime(date, "%d/%m/%Y")
+            date_to_db(date)
         except:
             raise ValueError('Please enter date in format dd/mm/yyyy')
         return date
     
+    @validates('earned')
+    def validate_earned(self, key, earned):
+        try:
+            earned = currency_to_db(earned)
+        except:
+            raise ValueError('Please enter a value earned between 1 and 2000')
+        else:
+            if not(100 < earned < 200000):
+                raise ValueError('Please enter a value earned between 1 and 2000')
+        return earned
+
+    @validates('overnight')
+    def validate_overnight(self, key, overnight):
+        if overnight == 'on':
+            overnight = True
+        elif overnight is None:
+            overnight = False
+        else:
+            raise ValueError('Please use the selector to indicate whether overnight is present')
+        return overnight
+
 
     
 

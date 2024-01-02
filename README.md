@@ -106,6 +106,7 @@ became
 
 - I had a hard time getting my add_driver route to prepopulate the form after an error with the previous answers. This required a lot of fiddling around so that I could use the 'driver' variable as both the previous answers, but also for the edit version of the question macro.
 
+- Originally, I had functions at routes.py with a context processor so I could access them on the html pages. At routes.py most of the functions were used to alter values before they are committed to the database. I decided to primarily use the conversion functions at the validation stage, as they could be used to check for errors and actually convert values to the database. I found it difficult to find a way to migrate the functions from routes to models and I also wanted to use more functions in some macros (which take max 4). I came across [this article on Stack Overflow](https://stackoverflow.com/questions/6761825/importing-multiple-functions-from-a-python-module) which solved both of these issues. Moving all my functions to a module functions.py, I was able to access functions easily on each page and using 'import the functions as f', I could pass f to a macro and have access to all fucntions.
 #### JS
 
 

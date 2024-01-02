@@ -1,16 +1,22 @@
 from datetime import datetime
+
+
 #functions format to db
+def date_to_db(date):
+    """Converts a string to a date"""
+    return datetime.strptime(date, "%d/%m/%Y")
+
 def name_to_db(value):
     """ Converts a name to a string which is lowercase with no whitespace at start or end of string """
     return str(value).capitalize().strip()
 
 def currency_to_db(value):
     """ To be used to convert £ to pence to store in the database """
-    return float(value)*100
+    return round(float(value), 2)*100
 
 def percentage_to_db(value):
     """ To be used to convert percentages to decimals to store in the database """
-    return float(value)/100
+    return round(float(value), 2)/100
 
 #functions format to display on web
 def date_to_web(date):
