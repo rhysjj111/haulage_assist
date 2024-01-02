@@ -99,9 +99,12 @@ class DayEnd(db.Model):
     @validates('date')
     def validate_start_date(self, key, date):
         try:
-            date_to_db(date)
+            date = date_to_db(date)
         except:
             raise ValueError('Please enter date in format dd/mm/yyyy')
+        else: 
+            if DayEnd.query.filter(DayEnd.date == date, DayEnd.driver_id == self.driver_id).first():
+                raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
         return date
     
     @validates('earned')
@@ -124,6 +127,21 @@ class DayEnd(db.Model):
         else:
             raise ValueError('Please use the selector to indicate whether overnight is present')
         return overnight
+
+@db.event.listens_for(db.session, 'before_flush')
+def validate_day_end_date(session, flush_context, instances):
+    """
+    Validation checking Driver and date have not already been entered. Cannot be performed with @valdiates
+    """
+    for instance in session.new:
+        if isinstance(instance, DayEnd):
+                date = instance.date
+                driver_id = instance.driver_id
+                if DayEnd.query.filter(DayEnd.date == date, DayEnd.driver_id == driver_id).first() is not None:
+                    raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
+
+
+
 
 
     

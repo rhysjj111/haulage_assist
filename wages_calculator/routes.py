@@ -37,7 +37,7 @@ def add_driver(driver_id, tab):
             db.session.commit()
             flash("Success", "success-msg")
             return redirect(url_for("add_driver", tab='entry', driver_id=0))     
-    return render_template("add_driver.html", drivers=drivers, tab=tab, driver=driver, driver_id=0)
+    return render_template("add_driver.html", drivers=drivers, tab=tab, driver=driver, driver_id=driver_id)
 
 @app.route("/delete_driver/<int:driver_id><delete_all>")
 def delete_driver(driver_id, delete_all):
@@ -89,16 +89,16 @@ def add_day_end(day_id, tab):
                 overnight = request.form.get("overnight"),
                 driver_id = request.form.get("driver_id")
             )
+            db.session.add(day_end_entry)
+            db.session.commit()
         except ValueError as e:
             flash(str(e), 'error-msg')
             #retrieve previous answers
             day = request.form
         else:
             flash("Success", "success-msg")
-            db.session.add(day_end_entry)
-            db.session.commit()
             return redirect(url_for("add_day_end", drivers=drivers, day_end_entries=day_end_entries, tab='entry', day_id=0))
-    return render_template("add_day_end.html", drivers=drivers, day_end_entries=day_end_entries, tab=tab, day=day)
+    return render_template("add_day_end.html", drivers=drivers, day_end_entries=day_end_entries, tab=tab, day=day, day_id=day_id)
 
 @app.route("/delete_day_end/<int:day_id>")
 def delete_day_end(day_id):
@@ -115,14 +115,13 @@ def edit_day_end(day_id):
         entry.date = request.form.get("date")
         entry.earned = request.form.get("earned")
         entry.overnight = request.form.get("overnight")
-        entry.driver_id = request.form.get("driver_id")
-    except ValueError as e:
-        flash(str(e), 'error-msg')
-        return redirect(url_for("add_day_end", day_id=day_id, tab='history'))
-    else:
         db.session.commit()
+    except ValueError as e:
+        flash(str(e), 'error-msg-modal')
+        return redirect(url_for("add_day_end", day_id=day_id, tab='edit'))
+    else:
         flash("Success", "success-msg")
-        return redirect(url_for("add_day_end", day_id=0, tab='history'))
+        return redirect(url_for("add_day_end", day_id=0, tab='edit'))
 
 ################## Wages calculator
 

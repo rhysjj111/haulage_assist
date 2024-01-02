@@ -11,6 +11,7 @@
         {% endblock %}
 
     {% block entry_history_title %}Driver entry history:{% endblock %}
+    {{driver_id}}
         {% block entry_history %}
             <ul class="collapsible">
                 {% for driver in drivers %}
