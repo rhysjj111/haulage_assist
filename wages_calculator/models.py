@@ -102,9 +102,7 @@ class DayEnd(db.Model):
             date = date_to_db(date)
         except:
             raise ValueError('Please enter date in format dd/mm/yyyy')
-        else: 
-            if DayEnd.query.filter(DayEnd.date == date, DayEnd.driver_id == self.driver_id).first():
-                raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
+        
         return date
     
     @validates('earned')
@@ -135,10 +133,12 @@ def validate_day_end_date(session, flush_context, instances):
     """
     for instance in session.new:
         if isinstance(instance, DayEnd):
-                date = instance.date
-                driver_id = instance.driver_id
-                if DayEnd.query.filter(DayEnd.date == date, DayEnd.driver_id == driver_id).first() is not None:
-                    raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
+            id = instance.id
+            date = instance.date
+            driver_id = instance.driver_id
+            database_entry = DayEnd.query.filter(DayEnd.date == date, DayEnd.driver_id == driver_id).first()
+            if database_entry is not None and database_entry.id != id:
+                raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
 
 
 

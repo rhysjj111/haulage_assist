@@ -1,5 +1,8 @@
 # A wage calculator for the drivers of a haulage business.
 
+Live site: https://wages-calc-app-3e4a74ee3637.herokuapp.com/ <br>
+Github: https://github.com/rhysjj111/PROJECT3_WAGE_CALCULATOR
+
 ## UX
 
 ### Overview
@@ -36,7 +39,9 @@ The features listed are achievable in terms of timescales and technology availab
 - The app was designed mobile first, even though it is assumed it will be used more on the desktop. This is to ensure the content and navigation is kept simple. 
 
 ### Security
-- 
+- I added back end validation to better protect my database from attacks. I would like to spend more time strengthening my validation as there will be sensitive information stored.
+- I would like to add a login feature. Initially I didn't include this in my designs as it will only be used by one person. On reflection, the database will potentially be storing sensitive information and the extra layer of protection afforded by a login barrier is essential.
+- I would also like to add some validation to the 'wages_calculator.html' form as I believe someone can easily cause harm there. I ran out of time.
 
 ### Wireframes
 Desktop wireframes:
@@ -57,10 +62,8 @@ Mobile wireframes:
 
 
 ### End design similarity/difference
--JS
-
-
-- HTML & CSS
+- The finished product is fairly similar to the original plan. Key differences would be more robust validation in the finished product. The feedback to user was originally going to be predominantly Javascript but the finished product relies heavily on Flask's 'Flash'. 
+- A lot of the styling also did not get implimented.
 
 
 
@@ -70,6 +73,7 @@ Fresh - #f7f5e6,
 Vermillion - #333a56,
 Sunshine - #52658f,
 Clean - #e8e8e8.
+- This was the original plan but I had run out of time.
 
 ### Form data validation
 #### Add Driver form
@@ -84,8 +88,7 @@ Total earned - integer between 0 and 3000.
 
 
 ## Testing 
-
-### Functionality testing
+[Testing.md](./testing.md)
 
 
 ### Issues
@@ -107,14 +110,19 @@ became
 - I had a hard time getting my add_driver route to prepopulate the form after an error with the previous answers. This required a lot of fiddling around so that I could use the 'driver' variable as both the previous answers, but also for the edit version of the question macro.
 
 - Originally, I had functions at routes.py with a context processor so I could access them on the html pages. At routes.py most of the functions were used to alter values before they are committed to the database. I decided to primarily use the conversion functions at the validation stage, as they could be used to check for errors and actually convert values to the database. I found it difficult to find a way to migrate the functions from routes to models and I also wanted to use more functions in some macros (which take max 4). I came across [this article on Stack Overflow](https://stackoverflow.com/questions/6761825/importing-multiple-functions-from-a-python-module) which solved both of these issues. Moving all my functions to a module functions.py, I was able to access functions easily on each page and using 'import the functions as f', I could pass f to a macro and have access to all fucntions.
-#### JS
 
+- I had trouble with validating based on two seperate fields of a day_end submission. I needed any new entries to have a unique driver and date so to avoid duplicate days for any one driver. I found [this helpful article](https://stackoverflow.com/questions/68366099/flask-sqlalchemy-validation-prevent-adding-to-relationship-based-on-other-field) and [SQLAlchemys documents](https://docs.sqlalchemy.org/en/20/orm/events.html#sqlalchemy.orm.SessionEvents.after_attach) which allowed me to use an event listener before flush and do some custom validation. The user can now edit existing entries with the same driver and date but cannot add new entries under same conditions.
+
+#### JS
+- Most of my Javascript was just initalizing Materialize components. There is some inline JS in base.html which I would like to consolidate but I ran out of time.
 
 #### CSS
-- 
+- I used Materialize CSS framework. Although I got the layout to a point I was happy, I would like to have spent more time on the colours and fonts.
 
 #### Features
-
+- Add driver and add day-end forms which feed to a database. Both tables are related.
+- The information from these two tables can be queried and 'wages' calculated by the user.
+- CRUD functionality means user can edit (in a modal) and delete all entries.
 
 
 ### Validators
@@ -132,7 +140,11 @@ became
 
 
 ### Future features to include/update
-- 
+In future, I'd like to:
+- Include a login page for security
+- Update the CSS
+- Include javascript to provide the user with more feedback
+- Expand the functionality and scope of the data input by user.
 
 
 ### Deployment

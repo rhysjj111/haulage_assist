@@ -53,12 +53,19 @@ Overnight | (entered a string) | Validation warning message. Form not submitted.
 Earned | abc | Validation warning message. Form not submitted. | 'Please use the selector to indicate whether overnight is present'. Form not submitted.| Pass
 Earned | abc | Validation warning message. Form not submitted. | 'Please use the selector to indicate whether overnight is present'. Form not submitted.| Pass
 Earned | (use selector) | Success message. Form submitted. Data stored in database | 'Success'. Data stored in database.| Pass
+Date & Driver | (driver and date already in database) | Validation warning message. Form not submitted.| 'This date already has an entry for the driver selected. Edit the entry or select another date'. Form not submitted | Pass
+Date & Driver | (edit entry with same driver and date) | Success message. Form submitted. Data stored in database | 'Success'. Data in database | Pass
+Date & Driver | (new unique driver and date) | Success message. Form submitted. Data stored in database | 'Success'. Data in database | Pass
 
 #### Edit entries
 Each of the above parameters were tested when editing an entry. A key difference is the user edits an entry in a modal and this must be re-opened with the pre-populated form, and warning message. If no validation is required, the main driver entry page is loaded with the success message. Another difference comes because, if the user does not change the name, the validation checks the database and finds the same name and throws an error. A check at the edit route skips this validation if the name is the same as it was before the user submits the edit form.
 
 #### Delete entries
 A warning modal pops up prompting the user to confirm deleting an entry. On confirmation, the selected driver gets deleted each time.
+
+## Wages calculator
+- Calculations were checked for multiple drivers with varying earnings and came back correct.
+- 
 
 
 

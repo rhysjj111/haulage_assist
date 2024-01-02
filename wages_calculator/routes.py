@@ -115,6 +115,7 @@ def edit_day_end(day_id):
         entry.date = request.form.get("date")
         entry.earned = request.form.get("earned")
         entry.overnight = request.form.get("overnight")
+        entry.driver_id = request.form.get("driver_id")
         db.session.commit()
     except ValueError as e:
         flash(str(e), 'error-msg-modal')
