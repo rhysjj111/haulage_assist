@@ -131,27 +131,29 @@ def wages_calculator():
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     if request.method == "POST":
         # generate start and end date, from user submited date
-        start_date = f.date_to_db(request.form.get("search_date"))
+        date = request.form.get("search_date")
+        start_date = f.date_to_db(date)
         end_date = start_date + timedelta(days=6)
         # query day_end table based on user inputs of driver and date
         driver_id = request.form.get("search_driver_id")
         driver = Driver.query.get(driver_id)
         day_end_entries = DayEnd.query.filter(
-            DayEnd.driver_id == driver_id, DayEnd.date >= start_date, DayEnd.date <= end_date).all()
+            DayEnd.driver_id == driver_id, 
+            DayEnd.date >= start_date, 
+            DayEnd.date <= end_date).all()
         # wages calculations
         total_earned = 0
         total_overnight = 0
-        bonus_wage = 0
+        total_bonus_wage = 0
         total_wages = 0
         for day in day_end_entries:
-            bonus_wage += day.earned * day.driver.bonus_percentage
+            total_bonus_wage += day.earned * day.driver.bonus_percentage
             total_earned += int(day.earned)
             if day.overnight == True:
                 total_overnight += 3000
-        base_wage = driver.base_wage
         total_wages = bonus_wage + total_overnight + base_wage     
         
-        return render_template("wages_calculator.html", drivers=drivers, day_end_entries=day_end_entries, total_earned=total_earned, total_overnight=total_overnight, base_wage=base_wage, bonus_wage=bonus_wage, total_wages=total_wages)
+        return render_template("wages_calculator.html", date=start_date, sel_driver=driver, drivers=drivers, day_end_entries=day_end_entries, total_earned=total_earned, total_overnight=total_overnight, total_bonus_wage=total_bonus_wage, total_wages=total_wages)
     return render_template("wages_calculator.html", drivers=drivers)
 
 #makes functions available globally
