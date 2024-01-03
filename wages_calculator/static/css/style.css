@@ -111,16 +111,19 @@ footer{
     border: 2px solid;
     border-radius: 5px;
     padding: 3px;
-    transition: opacity 1s;
+    height: 35px;
+    transition: opacity 1s, height 1s 1s, margin 1s 1s;
+    /* transition: height 3s 1s;
+    transition: margin 3s 1s; */
 }
 .messages-container > ul{
     margin: 0px;
 }
-.error-msg{
+.err-msg{
     border-color:rgb(227 22 22 / 66%);
     background-color: rgb(227 22 22 / 26%);
 }
-.success-msg{
+.scc-msg{
     border-color: rgb(0 193 18 / 66%);
     background-color: rgb(0 193 18 / 26%);
 }
@@ -128,4 +131,7 @@ footer{
     top: 5% !important;
     width: 75% !important;
     max-height: 90% !important;
+}
+.open-edit-modal{
+    display: none;
 }

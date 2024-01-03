@@ -42,23 +42,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-    
-    {% if driver_id is defined and driver_id > 0 %}
-        <script>
-          
-            document.addEventListener('DOMContentLoaded', function() {
-                let modalEdit = document.querySelector('#modal_edit_{{driver_id}}');
-                M.Modal.init(modalEdit).open();
-            });
-        </script>   
-    {% elif day_id is defined and day_id > 0 %}
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                let modalEdit = document.querySelector('#modal_edit_{{day_id}}');
-                M.Modal.init(modalEdit).open();
-            });
-        </script>
-    {% endif %}
 
 </body>
 </html>

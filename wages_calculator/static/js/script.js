@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // collapsible initialization
     const collapsibles = document.querySelectorAll('.collapsible');
     M.Collapsible.init(collapsibles);
@@ -23,10 +23,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // modal initialisation
     let modal = document.querySelectorAll('.modal');
     M.Modal.init(modal);
+    // edit-modal re-open when invalid form submission
+    let modalOpen = document.querySelector('.open-edit-modal')
+    if (modalOpen){
+        modalOpen = modalOpen.textContent;
+        modalOpen = document.querySelector(`#${modalOpen}`);
+        M.Modal.init(modalOpen).open();
+    };
+
 
     // select initialization
     let selects = document.querySelectorAll('select');
     M.FormSelect.init(selects);
+
 
     // remove sub menu tabs for 'entry' and 'history' of entry pages on screen sizes desktop and over
     function removeTabs() {
@@ -44,11 +53,19 @@ document.addEventListener('DOMContentLoaded', function() {
     removeTabs();
     
     //flash feedback timeout and remove container after a time interval
-    const messageContainer = document.querySelector(".success-msg");
+    const messageContainer = document.querySelector(".scc-msg");
     if (messageContainer){
-        setInterval(() => messageContainer.style.opacity = '0', 5000);
+        setInterval(removeMsgContainer, 500);
         messageContainer.addEventListener('transitionend', () => messageContainer.remove());
     }
-        
+    function removeMsgContainer(){
+        messageContainer.style.opacity = '0';
+        messageContainer.style.height = '0';
+        messageContainer.style.margin = '0';
+        messageContainer.style.display = 'none';
+
+    }    
     
-});
+})
+
+

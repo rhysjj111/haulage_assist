@@ -14,9 +14,11 @@
 {% block main %}
 
 <!-- error messages -->
-    {% with messages = get_flashed_messages(category_filter=["error-msg"]) %}
+    {% set err_msg = get_flashed_messages(category_filter=["error-msg"]) %}
+    {% set scc_msg = get_flashed_messages(category_filter=["success-msg"]) %}
+    {% with messages = err_msg if err_msg else scc_msg %}
         {% if messages %}
-            <div class="messages-container error-msg">
+            <div class="messages-container {{'err-msg' if (err_msg) else 'scc-msg'}}">
                 {% for message in messages %}                    
                     <ul>
                         <li> {{ message }}</li>
@@ -25,19 +27,6 @@
             </div>    
         {% endif %}
     {% endwith %}
-<!-- success messages -->
-    {% with messages = get_flashed_messages(category_filter=["success-msg"]) %}
-        {% if messages %}
-            <div class="messages-container success-msg">
-                {% for message in messages %}
-                    <ul>
-                        <li> {{ message }}</li>
-                    </ul>                    
-                {% endfor %}
-            </div>    
-        {% endif %}
-    {% endwith %}
-
 
     <div class="row">
         <div class="col s12 m8 offset-m2 l6 offset-l3 hide-on-large-only content-container">
@@ -60,6 +49,13 @@
         </div>
     </div>
 
+    <!-- triggers edit-modal if invalid form submission -->
+    {% set id = driver_id if driver_id is defined else day_id %}
+    {% if id > 0 %}
+        <div class="open-edit-modal">modal_edit_{{id}}</div>
+    {% endif %}    
     
+        
+
 
 {% endblock %}

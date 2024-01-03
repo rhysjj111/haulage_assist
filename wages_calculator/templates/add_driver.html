@@ -51,7 +51,7 @@
                             <!-- error messages -->
                             {% with messages = get_flashed_messages(category_filter=["error-msg-modal"]) %}
                                 {% if messages %}
-                                    <div class="messages-container error-msg">
+                                    <div class="messages-container err-msg">
                                         {% for message in messages %}                    
                                             <ul>
                                                 <li> {{ message }}</li>
