@@ -112,9 +112,7 @@ footer{
     border-radius: 5px;
     padding: 3px;
     height: 35px;
-    transition: opacity 1s, height 1s 1s, margin 1s 1s;
-    /* transition: height 3s 1s;
-    transition: margin 3s 1s; */
+    transition: opacity 1.5s, height 1s 1.5s, margin 1s 1.5s, padding 1s 1.5s, border 1s 1.5s allow-discrete;
 }
 .messages-container > ul{
     margin: 0px;

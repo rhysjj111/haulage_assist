@@ -55,15 +55,11 @@ document.addEventListener('DOMContentLoaded', function () {
     //flash feedback timeout and remove container after a time interval
     const messageContainer = document.querySelector(".scc-msg");
     if (messageContainer){
-        setInterval(removeMsgContainer, 500);
-        messageContainer.addEventListener('transitionend', () => messageContainer.remove());
+        setInterval(changePropertiesToZero, 5000, 'opacity', 'height', 'margin', 'padding', 'border');
     }
-    function removeMsgContainer(){
-        messageContainer.style.opacity = '0';
-        messageContainer.style.height = '0';
-        messageContainer.style.margin = '0';
-        messageContainer.style.display = 'none';
-
+    //pass message container style property names
+    function changePropertiesToZero(...properties){
+        properties.forEach((value) => messageContainer.style[value] = '0')
     }    
     
 })
