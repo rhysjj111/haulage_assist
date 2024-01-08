@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 @app.route("/")
 def home():
-    return render_template("data_entry.html")
+    return render_template("entry_menu.html")
 
 ################## CRUD driver
 
