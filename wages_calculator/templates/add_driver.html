@@ -1,85 +1,36 @@
+
+
 {% extends "entry_template.html" %}
 
 
 {% block entry_title %}+ DRIVER{% endblock %}
 
     {% block entry_form_title %}Add a driver:{% endblock %}
-        {% block entry_form %}
-            <form method="post" action="{{ url_for('add_driver', driver_id=0, tab='entry') }}">
-                {{ macros.driver_questions('add', driver, f) }}
+        {% block entry_form_questions %}
+            <form method="post" action="{{ url_for('add_driver', item_id=0, tab='entry') }}">
+                {{ macros[type]('add', driver, f) }}
             </form>
         {% endblock %}
 
     {% block entry_history_title %}Driver entry history:{% endblock %}
-    {{driver_id}}
-        {% block entry_history %}
-            <ul class="collapsible">
-                {% for driver in drivers %}
-                    <li>
-                        <!-- collapsible header -->
-                        <div class="collapsible-header"><i class="material-icons">filter_drama</i>
-                        <strong>{{ driver.full_name }}</strong>
-                        </div>
-                        <!-- collapsible-body -->
-                        <div class="collapsible-body">
-                            <p>Date joined: {{ f.date_to_web(driver.start_date) }}<br>
-                            Base wage: {{ f.format_currency(f.currency_to_web(driver.base_wage)) }}<br>
-                            Bonus percentage: {{ f.format_percentage(f.percentage_to_web(driver.bonus_percentage)) }}</p>
-                            <!-- buttons -->
-                            <a href="#modal_edit_{{ driver.id }}" class="btn green accent-4 modal-trigger">Edit</a>
-                            <a href="#modal_delete_{{ driver.id }}" class="btn red modal-trigger">Delete</a>
-                        </div>
-                        
+        {% block collapsible_header %}{{ item.full_name }}{% endblock %}
 
-                        <!-- Delete entry modal -->
-                        <div id="modal_delete_{{ driver.id }}" class="modal">
-                            <div class="modal-content">
-                                <h4>Delete Driver?</h4>
-                                <p>The driver, {{ driver.first_name }} will be deleted permanently.</p>
-                            </div>
-                            <div class="modal-footer">
-                                <a href="{{ url_for('delete_driver', driver_id=driver.id, delete_all=False)}}" class="btn red">Delete</a>
-                                <a href="" class="modal-close btn grey">Cancel</a>
-                            </div>
-                        </div>
-
-                        <!-- Edit modal -->
-                        <div id="modal_edit_{{ driver.id }}" class="modal">
-                            <div class="modal-content">
-                            <h3 class="center-align">Edit Driver</h3>
-
-                            <!-- error messages -->
-                            {% with messages = get_flashed_messages(category_filter=["error-msg-modal"]) %}
-                                {% if messages %}
-                                    <div class="messages-container err-msg">
-                                        {% for message in messages %}                    
-                                            <ul>
-                                                <li> {{ message }}</li>
-                                            </ul>
-                                        {% endfor %}
-                                    </div>    
-                                {% endif %}
-                            {% endwith %}
-                                            
-                            <div class="row">
-                                <form class="col s12" method="POST" class="modal-trigger" action="{{ url_for('edit_driver', driver_id=driver.id) }}">
-                                    {{ macros.driver_questions('edit', driver, f) }}
-                                </form>
-                            </div>
-                        </div>
-                    </li>
-                {% endfor %}
-                <li><a href="#modal_delete_all" class="btn red modal-trigger">Delete All Drivers</a></li>
-                <!-- Delete all modal -->
-                <div id="modal_delete_all" class="modal">
-                    <div class="modal-content">
-                        <h4>Delete ALL Drivers?</h4>
-                        <p>ALL drivers will be deleted permanently.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="{{ url_for('delete_driver', driver_id=0, delete_all=True)}}" class="btn red">Delete All</a>
-                        <a href="" class="modal-close btn grey">Cancel</a>
-                    </div>
-                </div>
-            </ul>
+        {% block collapsible_body %}
+            <p>
+                Date joined: {{ f.date_to_web(item.start_date) }}<br>
+                Base wage: {{ f.format_currency(f.currency_to_web(item.base_wage)) }}<br>
+                Bonus percentage: {{ f.format_percentage(f.percentage_to_web(item.bonus_percentage)) }}
+            </p>
         {% endblock %}
+    
+        {% block entry_history_questions scoped %}
+            <form class="col s12" method="POST" class="modal-trigger" action="{{ url_for('edit_'+type, item_id=item.id, tab='history') }}">                                        
+                {{ macros[type]('edit', item, f) }}                                        
+            </form>
+        {% endblock %}
+
+
+            
+ 
+    
+        

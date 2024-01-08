@@ -1,27 +1,30 @@
 import re
 from wages_calculator import db
 from wages_calculator.functions import *
-from sqlalchemy.orm import validates
+from sqlalchemy.orm import validates 
+from sqlalchemy.ext.hybrid import hybrid_property
 from flask import redirect, url_for, flash, request
 from datetime import datetime
 
 
 
 class Driver(db.Model):
+    __table_args__ = (db.UniqueConstraint('first_name', 'second_name', name='_full_name_uc'),)
     id = db.Column(db.Integer, primary_key=True)
     start_date = db.Column(db.Date, nullable=False)
     first_name = db.Column(db.String(30), nullable=False) 
     second_name = db.Column(db.String(30), nullable=False) 
     base_wage = db.Column(db.Integer, nullable=False)
     bonus_percentage = db.Column(db.Float, nullable=False)
-    full_name = db.Column(db.String(61), nullable=False)
     day_end_days = db.relationship("DayEnd", backref="driver", cascade="all, delete", lazy=True)
     
-        
     def __repr__(self): 
         #represents itself in form of string
         return f"Driver: {self.first_name} {self.second_name}"
-    
+
+    @hybrid_property
+    def full_name(self):
+        return self.first_name + " " + self.second_name
 
     ##################################### validation
     @validates('start_date')
@@ -44,13 +47,6 @@ class Driver(db.Model):
         if any(character.isdigit() for character in field):
             raise ValueError('Please do not include numbers in name(s)')
         return name_to_db(field)
-
-    
-    @validates('full_name')
-    def validate_full_name(self, key, full_name):
-        if Driver.query.filter(Driver.full_name == full_name).first():         
-            raise ValueError('Driver name already exists. Edit current entry or choose another name')
-        return full_name
     
     @validates('base_wage')
     def validate_base_wage(self, key, base_wage):
@@ -59,7 +55,7 @@ class Driver(db.Model):
         except:
             raise ValueError('Please enter a base wage value between 400 and 2000')
         else:
-            if not(40000 < base_wage < 200000):
+            if not(40000 <= base_wage <= 200000):
                 raise ValueError('Please enter a base wage value between 400 and 2000')
         return base_wage
 
@@ -73,6 +69,18 @@ class Driver(db.Model):
             if not (0.15 <= bonus_percentage <= 0.5):
                 raise ValueError('Please enter a bonus percentage value between 15 and 50')
         return bonus_percentage
+    
+    @db.event.listens_for(db.session, 'before_flush')
+    def validate_full_name(session, flush_context, instances):
+        """
+        Validation checking Driver full name does not already exist. Cannot be performed with @valdiates
+        """
+        for instance in session.new:
+            if isinstance(instance, Driver):
+                full_name = instance.full_name
+                database_entry = Driver.query.filter(Driver.full_name == full_name).first()
+                if database_entry is not None:
+                    raise ValueError('Driver already exists in the database, please choose another name or edit/delete current driver to replace.')
 
         
 
@@ -83,10 +91,11 @@ class DayEnd(db.Model):
     earned = db.Column(db.Integer, nullable=False)
     overnight = db.Column(db.Boolean, nullable=False)
     driver_id = db.Column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False)
+    __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_uc'),)
 
     def __repr__(self):
         #represents itself in form of string
-        return f"Enry for: {self.driver.first_name} {self.driver.second_name} on {self.date}"
+        return f"Day end enry: {self.driver.first_name} {self.driver.second_name} ({date_to_web(self.date)})"
 
 
     ############ validation
@@ -126,19 +135,21 @@ class DayEnd(db.Model):
             raise ValueError('Please use the selector to indicate whether overnight is present')
         return overnight
 
-@db.event.listens_for(db.session, 'before_flush')
-def validate_day_end_date(session, flush_context, instances):
-    """
-    Validation checking Driver and date have not already been entered. Cannot be performed with @valdiates
-    """
-    for instance in session.new:
-        if isinstance(instance, DayEnd):
-            id = instance.id
-            date = instance.date
-            driver_id = instance.driver_id
-            database_entry = DayEnd.query.filter(DayEnd.date == date, DayEnd.driver_id == driver_id).first()
-            if database_entry is not None and database_entry.id != id:
-                raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
+    @db.event.listens_for(db.session, 'before_flush')
+    def validate_day_end_check_for_duplicate(session, flush_context, instances):
+        """
+        Validation checking driver and date have not already been entered. Cannot be performed with @valdiates
+        """
+        for instance in session.new:
+            if isinstance(instance, DayEnd):
+                id = instance.id
+                date = instance.date
+                driver_id = instance.driver_id
+                database_entry = DayEnd.query.filter(DayEnd.date == date, DayEnd.driver_id == driver_id).first()
+                if database_entry is not None and database_entry.id != id:
+                    raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
+
+
 
 
 

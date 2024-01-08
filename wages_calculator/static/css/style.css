@@ -133,3 +133,7 @@ footer{
 .open-edit-modal{
     display: none;
 }
+.delete-all-collapsible{
+    background-color: rgb(57, 83, 134);
+    color: white;
+}

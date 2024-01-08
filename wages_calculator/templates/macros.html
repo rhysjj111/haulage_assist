@@ -14,7 +14,7 @@ from datetime import datetime
 
 <!----------------------------- question list macros -->
 
-{% macro driver_questions(type, driver, f) %}
+{% macro driver(type, driver, f) %}
     <!-- start_date -->
     <div class="row">
         <div class="input-field col s12">
@@ -93,7 +93,7 @@ from datetime import datetime
 
 
 
-{% macro day_end_questions(type, day, drivers, f) %}
+{% macro day_end(type, day, drivers, f) %}
 
     <!-- driver -->
     <div class="row">
@@ -182,6 +182,16 @@ from datetime import datetime
             </button>
         </div>
     </div>
+{% endmacro %}
+
+
+
+
+{% macro history(list_item, list) %}
+    <li>
+        
+    </li>
+
 {% endmacro %}
 
 

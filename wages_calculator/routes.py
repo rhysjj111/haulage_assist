@@ -13,8 +13,8 @@ def home():
 
 ################## CRUD driver
 
-@app.route("/add_driver/<int:driver_id>/<tab>", methods=["GET", "POST"])
-def add_driver(driver_id, tab):
+@app.route("/add_driver/<int:item_id>/<tab>", methods=["GET", "POST"])
+def add_driver(item_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     #empty driver dictionary incase there are any errors in submitted data
     driver = {}
@@ -26,36 +26,37 @@ def add_driver(driver_id, tab):
                 second_name=request.form.get("second_name"),
                 base_wage=request.form.get("base_wage"),
                 bonus_percentage=request.form.get("bonus_percentage"),
-                full_name=(f.name_to_db(request.form.get("first_name")) + " " + f.name_to_db(request.form.get("second_name")))
                 )    
+            db.session.add(new_driver)
+            db.session.commit()
         except ValueError as e:
             flash(str(e), 'error-msg')
             #retrieve previous answers
             driver = request.form
-        else:
-            db.session.add(new_driver)
-            db.session.commit()
-            flash("Success", "success-msg")
-            return redirect(url_for("add_driver", tab='entry', driver_id=0))     
-    return render_template("add_driver.html", drivers=drivers, tab=tab, driver=driver, driver_id=driver_id)
 
-@app.route("/delete_driver/<int:driver_id><delete_all>")
-def delete_driver(driver_id, delete_all):
-    if delete_all:
+        else:
+
+            flash("Success", "success-msg")
+            return redirect(url_for("add_driver", tab='entry', item_id=0))     
+    return render_template("add_driver.html", list=drivers, tab=tab, driver=driver, item_id=item_id, type='driver')
+
+@app.route("/delete_driver/<int:item_id>")
+def delete_driver(item_id):
+    if item_id == 0:
         all = db.session.query(Driver)
         all.delete()
         db.session.commit()
         flash("All entries deleted", "success-msg")
     else:
-        entry = db.get_or_404(Driver, driver_id)
+        entry = db.get_or_404(Driver, item_id)
         db.session.delete(entry)
         db.session.commit()
         flash("Entry deleted", "success-msg")
-    return redirect(url_for("add_driver", driver_id=0, tab='history'))
+    return redirect(url_for("add_driver", item_id=0, tab='history'))
 
-@app.route("/edit_driver/<int:driver_id>", methods=["POST"])
-def edit_driver(driver_id):
-    driver = Driver.query.get_or_404(driver_id)
+@app.route("/edit_driver/<int:item_id>", methods=["POST"])
+def edit_driver(item_id):
+    driver = Driver.query.get_or_404(item_id)
     try:
         #checks if driver full_name has not been edited by the user to avoid validation which checks if full_name is already in database
         if driver.full_name != (f.name_to_db(request.form.get("first_name")) + " " + f.name_to_db(request.form.get("second_name"))):
@@ -67,17 +68,17 @@ def edit_driver(driver_id):
         driver.bonus_percentage = request.form.get("bonus_percentage")
     except ValueError as e:
         flash(str(e), 'error-msg-modal')
-        return redirect(url_for("add_driver", driver_id=driver_id, tab='history'))
+        return redirect(url_for("add_driver", item_id=item_id, tab='history'))
     else: 
         db.session.commit()
         flash("Success", "success-msg")
-        return redirect(url_for("add_driver", driver_id=0, tab='history'))
+        return redirect(url_for("add_driver", item_id=0, tab='history'))
 
 
 ################## CRUD day_end
 
-@app.route("/add_day_end/<int:day_id>/<tab>", methods=["GET", "POST"])
-def add_day_end(day_id, tab):
+@app.route("/add_day_end/<int:item_id>/<tab>", methods=["GET", "POST"])
+def add_day_end(item_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     day_end_entries = list(DayEnd.query.order_by(DayEnd.date).all())
     day = {}
@@ -97,20 +98,20 @@ def add_day_end(day_id, tab):
             day = request.form
         else:
             flash("Success", "success-msg")
-            return redirect(url_for("add_day_end", drivers=drivers, day_end_entries=day_end_entries, tab='entry', day_id=0))
-    return render_template("add_day_end.html", drivers=drivers, day_end_entries=day_end_entries, tab=tab, day=day, day_id=day_id)
+            return redirect(url_for("add_day_end", drivers=drivers, day_end_entries=day_end_entries, tab='entry', item_id=0))
+    return render_template("add_day_end.html", drivers=drivers, list=day_end_entries, tab=tab, day=day, item_id=item_id, type='day_end')
 
-@app.route("/delete_day_end/<int:day_id>")
-def delete_day_end(day_id):
-    entry = DayEnd.query.get_or_404(day_id)
+@app.route("/delete_day_end/<int:item_id>")
+def delete_day_end(item_id):
+    entry = DayEnd.query.get_or_404(item_id)
     db.session.delete(entry)
     db.session.commit()
     flash("Entry deleted", "success-msg")
-    return redirect(url_for("add_day_end", day_id=0, tab='history'))
+    return redirect(url_for("add_day_end", item_id=0, tab='history'))
 
-@app.route("/edit_day_end/<int:day_id>", methods=["POST"])
-def edit_day_end(day_id):
-    entry = DayEnd.query.get_or_404(day_id)
+@app.route("/edit_day_end/<int:item_id>", methods=["POST"])
+def edit_day_end(item_id):
+    entry = DayEnd.query.get_or_404(item_id)
     try:
         entry.date = request.form.get("date")
         entry.earned = request.form.get("earned")
@@ -119,10 +120,10 @@ def edit_day_end(day_id):
         db.session.commit()
     except ValueError as e:
         flash(str(e), 'error-msg-modal')
-        return redirect(url_for("add_day_end", day_id=day_id, tab='edit'))
+        return redirect(url_for("add_day_end", item_id=item_id, tab='edit'))
     else:
         flash("Success", "success-msg")
-        return redirect(url_for("add_day_end", day_id=0, tab='edit'))
+        return redirect(url_for("add_day_end", item_id=0, tab='edit'))
 
 ################## Wages calculator
 
