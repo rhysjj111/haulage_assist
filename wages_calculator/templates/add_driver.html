@@ -18,7 +18,7 @@
         {% block collapsible_body %}
             <p>
                 Date joined: {{ f.date_to_web(item.start_date) }}<br>
-                Base wage: {{ f.format_currency(f.currency_to_web(item.base_wage)) }}<br>
+                Basic wage: {{ f.format_currency(f.currency_to_web(item.basic_wage)) }}<br>
                 Bonus percentage: {{ f.format_percentage(f.percentage_to_web(item.bonus_percentage)) }}
             </p>
         {% endblock %}

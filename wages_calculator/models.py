@@ -8,23 +8,101 @@ from datetime import datetime
 
 
 
-class Driver(db.Model):
-    __table_args__ = (db.UniqueConstraint('first_name', 'second_name', name='_full_name_uc'),)
+
+class Payslip(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    start_date = db.Column(db.Date, nullable=False)
-    first_name = db.Column(db.String(30), nullable=False) 
-    second_name = db.Column(db.String(30), nullable=False) 
-    base_wage = db.Column(db.Integer, nullable=False)
-    bonus_percentage = db.Column(db.Float, nullable=False)
-    day_end_days = db.relationship("DayEnd", backref="driver", cascade="all, delete", lazy=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    date = db.Column(db.Date, nullable=False)
+    total_wage = db.Column(db.Integer, nullable=False)
+    total_cost_to_employer = db.Column(db.Integer, nullable=False)
+    driver_id = db.Column(db.Integer, db.ForeignKey("driver.id"), nullable=False)
+    driver = relationship("Driver", backpopulates="payslips")
+
+    def __repr__(self): 
+    #represents itself in form of string
+        return f"Payslip for: {self.driver.full_name} on {self.date}"
+
+class Fuel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    date = db.Column(db.Date, nullable=False)
+    fuel_volume = db.Column(db.Integer, nullable=False)
+    fuel_cost = db.Column(db.Integer, nullable=False)
+    fuel_card_name = db.Column(db.String(20), nullable=False)
+    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id"), nullable=False)
+    truck = relationship("Truck", backpopulates="fuel_entries")
+
+    def __repr__(self): 
+    #represents itself in form of string
+        return f"Fuel entry for: {self.truck.registration} on {self.date}"
+
+class Job(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    earned = db.Column(db.Integer, nullable=False)
+    collection = db.Column(db.String(20), nullable=False) 
+    delivery = db.Column(db.String(20), nullable=False) 
+    notes = db.Column(db.String(15), nullable=False) 
+    split = db.Column(db.Boolean, nullable=False)
+    day_id = db.Column(db.Integer, db.ForeignKey("day.id", ondelete="CASCADE"), nullable=False)
+    day = db.relationship("Day", backpopulates="jobs")
+
+    def __repr__(self): 
+    #represents itself in form of string
+        return f"Job from: {self.collection} to: {self.delivery} completed by:{self.day.driver.first_name} on {self.day.date}"
+
+class Truck (db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    registration = db.Column(db.String(8), nullable=False)
+    make = db.Column(db.String(15), nullable=False)
+    model = db.Column(db.String(15), nullable=False)
+    fuel_entries = db.relationship("Fuel", backpopulates="truck", lazy=True)
+    days = db.relationship("Day", backpopulates="truck", cascade="all, delete", lazy=True)
+    driver = relationship("Driver", backpopulates="truck")
+
+    def __repr__(self): 
+    #represents itself in form of string
+        return f"{self.make} {self.model} with registration: {self.registration}"
+
+class RunningCosts (db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    year = db.Column(db.Date, nullable=False)
+    office_staff = db.Column(db.Integer, nullable=False)
+    truck_finance =  db.Column(db.Integer, nullable=False)
+    goods_in_transit =  db.Column(db.Integer, nullable=False)
+    truck_maintenance =  db.Column(db.Integer, nullable=False)
+
+    def __repr__(self): 
+    #represents itself in form of string
+        return f"Running costs for year: {self.year}"
+
+
+class Driver(db.Model):
+    __table_args__ = (db.UniqueConstraint('first_name', 'last_name', name='_full_name_uc'),)
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    first_name = db.Column(db.String(20), nullable=False) 
+    last_name = db.Column(db.String(20), nullable=False) 
+    basic_wage = db.Column(db.Integer, nullable=False)
+    daily_bonus_threshold = db.Column(db.Integer, nullable=False)
+    daily_bonus_percentage = db.Column(db.Float, nullable=False)
+    weekly_bonus_threshold = db.Column(db.Integer, nullable=False)
+    weekly_bonus_percentage = db.Column(db.Float, nullable=False)
+    overnight_value = db.Column(db.Integer, nullable=False)
+    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id"))
+    truck = relationship("Truck")
+    days = db.relationship("Day", backpopulates="driver", cascade="all, delete", lazy=True)
+    payslips = db.relationship("Payslip", backpopulates="driver", cascade="all, delete", lazy=True)
     
     def __repr__(self): 
         #represents itself in form of string
-        return f"Driver: {self.first_name} {self.second_name}"
+        return f"Driver: {self.first_name} {self.last_name}"
 
     @hybrid_property
     def full_name(self):
-        return self.first_name + " " + self.second_name
+        return self.first_name + " " + self.last_name
 
     ##################################### validation
     @validates('start_date')
@@ -35,10 +113,10 @@ class Driver(db.Model):
             raise ValueError('Please enter date in format dd/mm/yyyy')
         return start_date
 
-    @validates('first_name', 'second_name')
+    @validates('first_name', 'last_name')
     def validate_names(self, key, field):
         if not field:
-            raise ValueError('Please enter first and second name')
+            raise ValueError('Please enter first and last name')
         if len(field) <1 or len(field)>= 25:
             raise ValueError('Please enter name(s) between 1 and 25 characters')
         #regex to make sure no special characters are present except '-' and '_'
@@ -48,16 +126,16 @@ class Driver(db.Model):
             raise ValueError('Please do not include numbers in name(s)')
         return name_to_db(field)
     
-    @validates('base_wage')
-    def validate_base_wage(self, key, base_wage):
+    @validates('basic_wage')
+    def validate_basic_wage(self, key, basic_wage):
         try:
-            base_wage = currency_to_db(base_wage)
+            basic_wage = currency_to_db(basic_wage)
         except:
-            raise ValueError('Please enter a base wage value between 400 and 2000')
+            raise ValueError('Please enter a basic wage value between 400 and 2000')
         else:
-            if not(40000 <= base_wage <= 200000):
-                raise ValueError('Please enter a base wage value between 400 and 2000')
-        return base_wage
+            if not(40000 <= basic_wage <= 200000):
+                raise ValueError('Please enter a basic wage value between 400 and 2000')
+        return basic_wage
 
     @validates('bonus_percentage')
     def validate_bonus_percentage(self, key, bonus_percentage):
@@ -85,18 +163,25 @@ class Driver(db.Model):
         
 
 
-class DayEnd(db.Model):
+class Day(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.Date, nullable=False)
-    earned = db.Column(db.Integer, nullable=False)
-    overnight = db.Column(db.Boolean, nullable=False)
     driver_id = db.Column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False)
+    status = db.Column(db.String(15), nullable=False, default="Working")
+    additional_earned = db.Column(db.Integer, nullable=False, default=0)
+    additional_wages = db.Column(db.Integer, nullable=False, default=0)
+    overnight = db.Column(db.Boolean, nullable=False, default=True)
+    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE", default=driver.truck_id), nullable=False)    
+    start_mileage = db.Column(db.Integer)
+    end_mileage = db.Column(db.Integer)
     __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_uc'),)
+    driver = relationship("Driver", backpopulates="days")
+    truck = relationship("Truck", backpopulates="days")
+    jobs = db.relationship("Job", backpopulates="day", cascade="all, delete", lazy=True)
 
     def __repr__(self):
         #represents itself in form of string
-        return f"Day end enry: {self.driver.first_name} {self.driver.second_name} ({date_to_web(self.date)})"
-
+        return f"Day entry: {self.driver.first_name} {self.driver.last_name} ({date_to_web(self.date)})"
 
     ############ validation
     @validates('driver_id')

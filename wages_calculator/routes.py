@@ -23,8 +23,8 @@ def add_driver(item_id, tab):
             new_driver = Driver(
                 start_date=request.form.get("start_date"),
                 first_name=request.form.get("first_name"),
-                second_name=request.form.get("second_name"),
-                base_wage=request.form.get("base_wage"),
+                last_name=request.form.get("last_name"),
+                basic_wage=request.form.get("basic_wage"),
                 bonus_percentage=request.form.get("bonus_percentage"),
                 )    
             db.session.add(new_driver)
@@ -33,9 +33,7 @@ def add_driver(item_id, tab):
             flash(str(e), 'error-msg')
             #retrieve previous answers
             driver = request.form
-
         else:
-
             flash("Success", "success-msg")
             return redirect(url_for("add_driver", tab='entry', item_id=0))     
     return render_template("add_driver.html", list=drivers, tab=tab, driver=driver, item_id=item_id, type='driver')
@@ -59,12 +57,12 @@ def edit_driver(item_id):
     driver = Driver.query.get_or_404(item_id)
     try:
         #checks if driver full_name has not been edited by the user to avoid validation which checks if full_name is already in database
-        if driver.full_name != (f.name_to_db(request.form.get("first_name")) + " " + f.name_to_db(request.form.get("second_name"))):
-            driver.full_name = (f.name_to_db(request.form.get("first_name")) + " " + f.name_to_db(request.form.get("second_name")))
+        if driver.full_name != (f.name_to_db(request.form.get("first_name")) + " " + f.name_to_db(request.form.get("last_name"))):
+            driver.full_name = (f.name_to_db(request.form.get("first_name")) + " " + f.name_to_db(request.form.get("last_name")))
         driver.start_date = request.form.get("start_date")
         driver.first_name = request.form.get("first_name")
-        driver.second_name = request.form.get("second_name")
-        driver.base_wage = request.form.get("base_wage")
+        driver.last_name = request.form.get("last_name")
+        driver.basic_wage = request.form.get("basic_wage")
         driver.bonus_percentage = request.form.get("bonus_percentage")
     except ValueError as e:
         flash(str(e), 'error-msg-modal')
@@ -152,7 +150,7 @@ def wages_calculator():
             total_earned += int(day.earned)
             if day.overnight == True:
                 total_overnight += 3000
-        total_wages = total_bonus_wage + total_overnight + driver.base_wage     
+        total_wages = total_bonus_wage + total_overnight + driver.basic_wage     
         
         return render_template("wages_calculator.html", date=start_date, sel_driver=driver, drivers=drivers, day_end_entries=day_end_entries, total_earned=total_earned, total_overnight=total_overnight, total_bonus_wage=total_bonus_wage, total_wages=total_wages)
     return render_template("wages_calculator.html", drivers=drivers)
