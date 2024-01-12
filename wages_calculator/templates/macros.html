@@ -524,7 +524,7 @@ from datetime import datetime
         </div>
     </div>
 
-    {% if job is not defined %}
+    {% if type == 'add' %}
         <!-- split -->
         <div class="row">
             <div class="input-field col s12">
@@ -536,6 +536,19 @@ from datetime import datetime
                         Split
                     </label>                          
                 </div>
+            </div>
+        </div>
+
+        <!-- next working date -->
+        <div class="row">
+            <div class="input-field col s12 nwd">
+                <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
+                <input id="next_working_date" name="next_working_date"  type="text" class="datepicker" required
+                    {% if job is defined %}
+                        value="{{ job.next_working_date}}"
+                    {% endif %}
+                    >
+                <label for="next_working_date">Next working date:</label>
             </div>
         </div>
     {% endif %}
@@ -554,6 +567,21 @@ from datetime import datetime
 {% endmacro %}
 
 {% macro fuel_entry(type, fuel_entry, trucks, f) %}
+
+    <!-- date -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
+            <input id="date" name="date"  type="text" class="datepicker" required
+                {% if fuel_entry is defined and type == 'edit' %} 
+                    value="{{ f.date_to_web(fuel_entry.date) }}" 
+                {% elif fuel_entry is defined %}
+                    value="{{ fuel_entry.date}}"
+                {% endif %}
+                >
+            <label for="date">Date:</label>
+        </div>
+    </div>
 
     <!-- trucks -->
     <div class="row">
@@ -579,18 +607,19 @@ from datetime import datetime
         </div>
     </div>
 
-    <!-- date -->
+    <!-- fuel card name -->
     <div class="row">
         <div class="input-field col s12">
-            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
-            <input id="date" name="date"  type="text" class="datepicker" required
-                {% if fuel_entry is defined and type == 'edit' %} 
-                    value="{{ f.date_to_web(fuel_entry.date) }}" 
-                {% elif fuel_entry is defined %}
-                    value="{{ fuel_entry.date}}"
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <select name="fuel_card_name" id="fuel_card_name" class="validate" required>
+                {% if fuel_entry.fuel_card_name is defined %} 
+                    <option value="{{ fuel_entry.fuel_card_name }}" selected>{{ fuel_entry.fuel_card_name }}</option>
                 {% endif %}
-                >
-            <label for="date">Date:</label>
+                <option value="UK Fuels">UK Fuels</option>
+                <option value="Silvey" >Silvey</option>
+                <option value="The Fuel Card Company" >The Fuel Card Company</option>
+            </select>
+            <label for="fuel_card_name">Fuel card:</label>
         </div>
     </div>
 
@@ -621,22 +650,6 @@ from datetime import datetime
                     {% endif %}
                     >
             <label for="fuel_cost">Fuel cost (£):</label>
-        </div>
-    </div>
-
-    <!-- fuel card name -->
-    <div class="row">
-        <div class="input-field col s12">
-            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <select name="fuel_card_name" id="fuel_card_name" class="validate" required>
-                {% if fuel_entry.fuel_card_name is defined %} 
-                    <option value="{{ fuel_entry.fuel_card_name }}" selected>{{ fuel_entry.fuel_card_name }}</option>
-                {% endif %}
-                <option value="UK Fuels">UK Fuels</option>
-                <option value="Silvey" >Silvey</option>
-                <option value="The Fuel Card Company" >The Fuel Card Company</option>
-            </select>
-            <label for="fuel_card_name">Fuel card:</label>
         </div>
     </div>
 

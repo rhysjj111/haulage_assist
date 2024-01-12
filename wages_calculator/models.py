@@ -7,78 +7,6 @@ from flask import redirect, url_for, flash, request
 from datetime import datetime
 
 
-
-
-class Payslip(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    date = db.Column(db.Date, nullable=False)
-    total_wage = db.Column(db.Integer, nullable=False)
-    total_cost_to_employer = db.Column(db.Integer, nullable=False)
-    driver_id = db.Column(db.Integer, db.ForeignKey("driver.id"), nullable=False)
-    driver = relationship("Driver", backpopulates="payslips")
-
-    def __repr__(self): 
-    #represents itself in form of string
-        return f"Payslip for: {self.driver.full_name} on {self.date}"
-
-class Fuel(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    date = db.Column(db.Date, nullable=False)
-    fuel_volume = db.Column(db.Integer, nullable=False)
-    fuel_cost = db.Column(db.Integer, nullable=False)
-    fuel_card_name = db.Column(db.String(20), nullable=False)
-    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id"), nullable=False)
-    truck = relationship("Truck", backpopulates="fuel_entries")
-
-    def __repr__(self): 
-    #represents itself in form of string
-        return f"Fuel entry for: {self.truck.registration} on {self.date}"
-
-class Job(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    earned = db.Column(db.Integer, nullable=False)
-    collection = db.Column(db.String(20), nullable=False) 
-    delivery = db.Column(db.String(20), nullable=False) 
-    notes = db.Column(db.String(15), nullable=False) 
-    split = db.Column(db.Boolean, nullable=False)
-    day_id = db.Column(db.Integer, db.ForeignKey("day.id", ondelete="CASCADE"), nullable=False)
-    day = db.relationship("Day", backpopulates="jobs")
-
-    def __repr__(self): 
-    #represents itself in form of string
-        return f"Job from: {self.collection} to: {self.delivery} completed by:{self.day.driver.first_name} on {self.day.date}"
-
-class Truck (db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    registration = db.Column(db.String(8), nullable=False)
-    make = db.Column(db.String(15), nullable=False)
-    model = db.Column(db.String(15), nullable=False)
-    fuel_entries = db.relationship("Fuel", backpopulates="truck", lazy=True)
-    days = db.relationship("Day", backpopulates="truck", cascade="all, delete", lazy=True)
-    driver = relationship("Driver", backpopulates="truck")
-
-    def __repr__(self): 
-    #represents itself in form of string
-        return f"{self.make} {self.model} with registration: {self.registration}"
-
-class RunningCosts (db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    year = db.Column(db.Date, nullable=False)
-    office_staff = db.Column(db.Integer, nullable=False)
-    truck_finance =  db.Column(db.Integer, nullable=False)
-    goods_in_transit =  db.Column(db.Integer, nullable=False)
-    truck_maintenance =  db.Column(db.Integer, nullable=False)
-
-    def __repr__(self): 
-    #represents itself in form of string
-        return f"Running costs for year: {self.year}"
-
-
 class Driver(db.Model):
     __table_args__ = (db.UniqueConstraint('first_name', 'last_name', name='_full_name_uc'),)
     id = db.Column(db.Integer, primary_key=True)
@@ -92,7 +20,6 @@ class Driver(db.Model):
     weekly_bonus_percentage = db.Column(db.Float, nullable=False)
     overnight_value = db.Column(db.Integer, nullable=False)
     truck_id = db.Column(db.Integer, db.ForeignKey("truck.id"))
-    truck = relationship("Truck")
     days = db.relationship("Day", backpopulates="driver", cascade="all, delete", lazy=True)
     payslips = db.relationship("Payslip", backpopulates="driver", cascade="all, delete", lazy=True)
     
@@ -160,7 +87,20 @@ class Driver(db.Model):
                 if database_entry is not None:
                     raise ValueError('Driver already exists in the database, please choose another name or edit/delete current driver to replace.')
 
-        
+
+class Truck (db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    registration = db.Column(db.String(8), nullable=False, unique=True)
+    make = db.Column(db.String(15), nullable=False)
+    model = db.Column(db.String(15), nullable=False)
+
+    fuel_entries = db.relationship("Fuel", backpopulates="truck", lazy=True)
+    days = db.relationship("Day", backpopulates="truck", cascade="all, delete", lazy=True)
+
+    def __repr__(self): 
+    #represents itself in form of string
+        return f"{self.make} {self.model} with registration: {self.registration}"
 
 
 class Day(db.Model):
@@ -233,6 +173,80 @@ class Day(db.Model):
                 database_entry = DayEnd.query.filter(DayEnd.date == date, DayEnd.driver_id == driver_id).first()
                 if database_entry is not None and database_entry.id != id:
                     raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
+
+
+class Job(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    day_id = db.Column(db.Integer, db.ForeignKey("day.id", ondelete="CASCADE"), nullable=False)
+    earned = db.Column(db.Integer, nullable=False)
+    collection = db.Column(db.String(20), nullable=False) 
+    delivery = db.Column(db.String(20), nullable=False) 
+    notes = db.Column(db.String(15)) 
+    split = db.Column(db.Boolean, nullable=False, default=False)
+
+    day = db.relationship("Day", backpopulates="jobs")
+
+    def __repr__(self): 
+    #represents itself in form of string
+        return f"Job from: {self.collection} to: {self.delivery} completed by:{self.day.driver.first_name} on {self.day.date}"
+
+
+class Payslip(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+
+    date = db.Column(db.Date, nullable=False)
+    driver_id = db.Column(db.Integer, db.ForeignKey("driver.id"), nullable=False)
+    total_wage = db.Column(db.Integer, nullable=False)
+    total_cost_to_employer = db.Column(db.Integer, nullable=False)
+
+    driver = relationship("Driver", backpopulates="payslips")
+
+    def __repr__(self): 
+    #represents itself in form of string
+        return f"Payslip for: {self.driver.full_name} on {self.date}"
+
+
+class Fuel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    date = db.Column(db.Date, nullable=False)
+    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id"), nullable=False)
+    fuel_card_name = db.Column(db.String(20), nullable=False)    
+    fuel_volume = db.Column(db.Integer, nullable=False)
+    fuel_cost = db.Column(db.Integer, nullable=False)
+
+    truck = relationship("Truck", backpopulates="fuel_entries")
+
+    def __repr__(self): 
+    #represents itself in form of string
+        return f"Fuel entry for: {self.truck.registration} on {self.date}"
+
+
+
+
+class RunningCosts (db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    year = db.Column(db.Date, nullable=False)
+    office_staff = db.Column(db.Integer, nullable=False)
+    truck_finance =  db.Column(db.Integer, nullable=False)
+    goods_in_transit =  db.Column(db.Integer, nullable=False)
+    truck_maintenance =  db.Column(db.Integer, nullable=False)
+
+    def __repr__(self): 
+    #represents itself in form of string
+        return f"Running costs for year: {self.year}"
+
+
+
+
+        
+
+
+
+
 
 
 
