@@ -15,10 +15,42 @@
                     </a>
                 </div>
                 <div class="col s12 xl6 data-entry-button-container">
-                    <a href="{{ url_for('add_day_end', item_id=0, tab='entry') }}">
+                    <a href="{{ url_for('add_day', item_id=0, tab='entry') }}">
                         <div class="main-button btn">
                             <i class="large material-icons data-entry-icon">restore</i>
                             <h3 class="data-entry-title">Add Day End</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col s12 xl6 data-entry-button-container">
+                    <a href="{{ url_for('add_truck', item_id=0, tab='entry') }}">
+                        <div class="main-button btn">
+                            <i class="large material-icons data-entry-icon">restore</i>
+                            <h3 class="data-entry-title">Add Truck</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col s12 xl6 data-entry-button-container">
+                    <a href="{{ url_for('add_job', item_id=0, tab='entry', invalid_dates='adf') }}">
+                        <div class="main-button btn">
+                            <i class="large material-icons data-entry-icon">restore</i>
+                            <h3 class="data-entry-title">Add Job</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col s12 xl6 data-entry-button-container">
+                    <a href="{{ url_for('add_payslip', item_id=0, tab='entry') }}">
+                        <div class="main-button btn">
+                            <i class="large material-icons data-entry-icon">restore</i>
+                            <h3 class="data-entry-title">Add Payslip</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col s12 xl6 data-entry-button-container">
+                    <a href="{{ url_for('add_fuel', item_id=0, tab='entry') }}">
+                        <div class="main-button btn">
+                            <i class="large material-icons data-entry-icon">restore</i>
+                            <h3 class="data-entry-title">Add Fuel</h3>
                         </div>
                     </a>
                 </div>

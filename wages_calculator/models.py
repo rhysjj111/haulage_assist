@@ -6,6 +6,8 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from flask import redirect, url_for, flash, request
 from datetime import datetime
 
+def preferred_truck(context):
+    return context.get_current_parameters()['driver.truck_id']
 
 class Driver(db.Model):
     __table_args__ = (db.UniqueConstraint('first_name', 'last_name', name='_full_name_uc'),)
@@ -20,8 +22,8 @@ class Driver(db.Model):
     weekly_bonus_percentage = db.Column(db.Float, nullable=False)
     overnight_value = db.Column(db.Integer, nullable=False)
     truck_id = db.Column(db.Integer, db.ForeignKey("truck.id"))
-    days = db.relationship("Day", backpopulates="driver", cascade="all, delete", lazy=True)
-    payslips = db.relationship("Payslip", backpopulates="driver", cascade="all, delete", lazy=True)
+    days = db.relationship("Day", back_populates="driver", cascade="all, delete", lazy=True)
+    payslips = db.relationship("Payslip", back_populates="driver", cascade="all, delete", lazy=True)
     
     def __repr__(self): 
         #represents itself in form of string
@@ -95,8 +97,8 @@ class Truck (db.Model):
     make = db.Column(db.String(15), nullable=False)
     model = db.Column(db.String(15), nullable=False)
 
-    fuel_entries = db.relationship("Fuel", backpopulates="truck", lazy=True)
-    days = db.relationship("Day", backpopulates="truck", cascade="all, delete", lazy=True)
+    fuel_entries = db.relationship("Fuel", back_populates="truck", lazy=True)
+    days = db.relationship("Day", back_populates="truck", cascade="all, delete", lazy=True)
 
     def __repr__(self): 
     #represents itself in form of string
@@ -111,13 +113,13 @@ class Day(db.Model):
     additional_earned = db.Column(db.Integer, nullable=False, default=0)
     additional_wages = db.Column(db.Integer, nullable=False, default=0)
     overnight = db.Column(db.Boolean, nullable=False, default=True)
-    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE", default=driver.truck_id), nullable=False)    
+    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=False, default=preferred_truck)  
     start_mileage = db.Column(db.Integer)
     end_mileage = db.Column(db.Integer)
     __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_uc'),)
-    driver = relationship("Driver", backpopulates="days")
-    truck = relationship("Truck", backpopulates="days")
-    jobs = db.relationship("Job", backpopulates="day", cascade="all, delete", lazy=True)
+    driver = db.relationship("Driver", back_populates="days", lazy=True)
+    truck = db.relationship("Truck", back_populates="days")
+    jobs = db.relationship("Job", back_populates="day", cascade="all, delete", lazy=True)
 
     def __repr__(self):
         #represents itself in form of string
@@ -161,16 +163,16 @@ class Day(db.Model):
         return overnight
 
     @db.event.listens_for(db.session, 'before_flush')
-    def validate_day_end_check_for_duplicate(session, flush_context, instances):
+    def validate_day_check_for_duplicate(session, flush_context, instances):
         """
         Validation checking driver and date have not already been entered. Cannot be performed with @valdiates
         """
         for instance in session.new:
-            if isinstance(instance, DayEnd):
+            if isinstance(instance, Day):
                 id = instance.id
                 date = instance.date
                 driver_id = instance.driver_id
-                database_entry = DayEnd.query.filter(DayEnd.date == date, DayEnd.driver_id == driver_id).first()
+                database_entry = Day.query.filter(Day.date == date, Day.driver_id == driver_id).first()
                 if database_entry is not None and database_entry.id != id:
                     raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
 
@@ -185,7 +187,7 @@ class Job(db.Model):
     notes = db.Column(db.String(15)) 
     split = db.Column(db.Boolean, nullable=False, default=False)
 
-    day = db.relationship("Day", backpopulates="jobs")
+    day = db.relationship("Day", back_populates="jobs")
 
     def __repr__(self): 
     #represents itself in form of string
@@ -201,7 +203,7 @@ class Payslip(db.Model):
     total_wage = db.Column(db.Integer, nullable=False)
     total_cost_to_employer = db.Column(db.Integer, nullable=False)
 
-    driver = relationship("Driver", backpopulates="payslips")
+    driver = db.relationship("Driver", back_populates="payslips")
 
     def __repr__(self): 
     #represents itself in form of string
@@ -217,7 +219,7 @@ class Fuel(db.Model):
     fuel_volume = db.Column(db.Integer, nullable=False)
     fuel_cost = db.Column(db.Integer, nullable=False)
 
-    truck = relationship("Truck", backpopulates="fuel_entries")
+    truck = db.relationship("Truck", back_populates="fuel_entries")
 
     def __repr__(self): 
     #represents itself in form of string

@@ -1,0 +1,36 @@
+
+
+{% extends "entry_template.html" %}
+
+
+{% block entry_title %}+ TRUCK{% endblock %}
+
+    {% block entry_form_title %}Add a truck:{% endblock %}
+        {% block entry_form_questions %}
+            <form method="post" action="{{ url_for('add_'+type, item_id=0, tab='entry') }}">
+                {{ macros[type]('add', truck, f) }}
+            </form>
+        {% endblock %}
+
+    {% block entry_history_title %}Truck entry history:{% endblock %}
+        {% block collapsible_header %}{{ item.registration }}{% endblock %}
+
+        {% block collapsible_body %}
+            <p>
+                Registration: {{ item.registration }}<br>
+                Make: {{ item.make }}<br>
+                Model: {{ item.model }}
+            </p>
+        {% endblock %}
+    
+        {% block entry_history_questions scoped %}
+            <form  method="POST" class="modal-trigger" action="{{ url_for('edit_'+type, item_id=item.id, tab='history') }}">                                        
+                {{ macros[type]('edit', item, f) }}                                        
+            </form>
+        {% endblock %}
+
+
+            
+ 
+    
+        

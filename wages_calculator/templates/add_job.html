@@ -1,0 +1,31 @@
+
+{% extends "entry_template.html" %}
+
+
+{% block entry_title %}+ JOB{% endblock %}
+
+    {% block entry_form_title %}Add a job:{% endblock %}
+        {% block entry_form_questions %}
+            <form method="post" action="{{ url_for('add_'+type, item_id=0, tab='entry', invalid_dates='') }}">
+                {{ macros[type]('add', job, drivers, f) }}
+            </form>
+        {% endblock %}
+
+    {% block entry_history_title %}Job entry history:{% endblock %}
+        {% block collapsible_header %}{{ item }}{% endblock %}
+
+        {% block collapsible_body %}
+            <p>
+                Date: {{ item.day.date }}<br>
+                Driver: {{ item.day.driver }}<br>
+                Collection: {{ item.collection }}<br>
+                Delivery: {{ item.delivery }}<br>
+                Split: {{'Yes' if True else 'No'}}
+            </p>
+        {% endblock %}
+    
+        {% block entry_history_questions scoped %}
+            <form  method="POST" class="modal-trigger" action="{{ url_for('edit_'+type, item_id=item.id, tab='history', invalid_dates='') }}">                                        
+                {{ macros[type]('edit', item, drivers, f) }}                                        
+            </form>
+        {% endblock %}

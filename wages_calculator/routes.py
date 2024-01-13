@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash
 from wages_calculator import app, db
 import wages_calculator.functions as f
-from wages_calculator.models import Driver, DayEnd
+from wages_calculator.models import Driver, Day, Fuel, Payslip, Job, Truck, RunningCosts
 from datetime import datetime, timedelta
 
 
@@ -17,6 +17,7 @@ def home():
 @app.route("/add_driver/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_driver(item_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
+    trucks = list(Truck.query.order_by(Truck.registration).all())
     #empty driver dictionary incase there are any errors in submitted data
     driver = {}
     if request.method == "POST":
@@ -40,7 +41,7 @@ def add_driver(item_id, tab):
         else:
             flash("Success", "success-msg")
             return redirect(url_for("add_driver", tab='entry', item_id=0))     
-    return render_template("add_driver.html", list=drivers, tab=tab, driver=driver, 
+    return render_template("add_driver.html", list=drivers, tab=tab, driver=driver, trucks=trucks,
                            item_id=item_id, type='driver')
 
 @app.route("/delete_driver/<int:item_id>")
@@ -88,7 +89,7 @@ def edit_driver(item_id):
 
 @app.route("/add_truck/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_truck(item_id, tab):
-    drivers = list(Driver.query.order_by(Driver.first_name).all())
+    trucks = list(Truck.query.order_by(Truck.registration).all())
     #empty driver dictionary incase there are any errors in submitted data
     truck = {}
     if request.method == "POST":
@@ -107,7 +108,7 @@ def add_truck(item_id, tab):
         else:
             flash("Success", "success-msg")
             return redirect(url_for("add_truck", tab='entry', item_id=0))     
-    return render_template("add_truck.html", list=drivers, tab=tab, truck=truck, 
+    return render_template("add_truck.html", list=trucks, tab=tab, truck=truck, 
                            item_id=item_id, type='truck')
 
 @app.route("/delete_truck/<int:item_id>")
@@ -116,7 +117,7 @@ def delete_truck(item_id):
     db.session.delete(entry)
     db.session.commit()
     flash("Entry deleted", "success-msg")
-return redirect(url_for("add_truck", item_id=0, tab='history'))
+    return redirect(url_for("add_truck", item_id=0, tab='history'))
 
 @app.route("/edit_truck/<int:item_id>", methods=["POST"])
 def edit_truck(item_id):
@@ -141,7 +142,7 @@ def add_day(item_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())
     components = {'drivers':drivers, 'trucks':trucks}
-    day_entries = list(DayEnd.query.order_by(Day.date).all())
+    day_entries = list(Day.query.order_by(Day.date).all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     day = {}
@@ -166,28 +167,28 @@ def add_day(item_id, tab):
             day = request.form
         else:
             flash("Success", "success-msg")
-            return redirect(url_for("add_day", drivers=drivers, day_end_entries=day_end_entries, 
+            return redirect(url_for("add_day", drivers=drivers, day_entries=day_entries, 
                             tab='entry', item_id=0))
-    return render_template("add_day.html", components=components, list=day_end_entries, tab=tab, 
-                           day=day, item_id=item_id, type='day_end')
+    return render_template("add_day.html", components=components, list=day_entries, tab=tab, 
+                           day=day, item_id=item_id, type='day')
 
 @app.route("/delete_day/<int:item_id>")
-def delete_day_end(item_id):
+def delete_day(item_id):
     if item_id == 0:
         all = db.session.query(Day)
         all.delete()
         db.session.commit()
         flash("All entries deleted", "success-msg")
     else:
-        entry = DayEnd.query.get_or_404(item_id)
+        entry = Day.query.get_or_404(item_id)
         db.session.delete(entry)
         db.session.commit()
         flash("Entry deleted", "success-msg")
     return redirect(url_for("add_day", item_id=0, tab='history'))
 
 @app.route("/edit_day/<int:item_id>", methods=["POST"])
-def edit_day_end(item_id):
-    entry = DayEnd.query.get_or_404(item_id)
+def edit_day(item_id):
+    entry = Day.query.get_or_404(item_id)
     try:
         entry.date = request.form.get("date")
         entry.driver_id = request.form.get("driver_id")
@@ -212,8 +213,8 @@ def edit_day_end(item_id):
 @app.route("/add_job/<int:item_id>/<tab>/<invalid_dates>", methods=["GET", "POST"])
 def add_job(item_id, tab, invalid_dates):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
-    day_entries = list(DayEnd.query.order_by(Day.date).all())
-    job_entries = list(DayEnd.query.oreder_by(Job.date).all())
+    days = list(Day.query.order_by(Day.date).all())
+    jobs = list(Job.query.all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     job = {}
@@ -255,46 +256,28 @@ def add_job(item_id, tab, invalid_dates):
                 job = request.form
             else:
                 flash("Success", "success-msg")
-                return redirect(url_for("add_job", drivers=drivers,
-                                tab='entry', item_id=0))
-    return render_template("add_job.html", trucks=trucks, list=job_entries, tab=tab, 
-                           job=job, item_id=item_id, type='job', invalid_dates=invalid_dates)
+                return redirect(url_for("add_job", tab='entry', item_id=0, invalid_dates=''))
+    return render_template("add_job.html", drivers=drivers, list=jobs, tab=tab, 
+                           job=job, item_id=item_id, type='job', dates=invalid_dates)
 
-@app.route("/delete_fuel_entry/<int:item_id>")
-def delete_fuel_entry(item_id):
-    entry = Fuel.query.get_or_404(item_id)
+@app.route("/delete_job/<int:item_id>")
+def delete_job(item_id):
+    entry = Job.query.get_or_404(item_id)
     db.session.delete(entry)
     db.session.commit()
     flash("Entry deleted", "success-msg")
-return redirect(url_for("add_job", item_id=0, tab='history'))
-
-@app.route("/edit_add_job/<int:item_id>", methods=["POST"])
-def edit_add_job(item_id):
-    entry = Fuel.query.get_or_404(item_id)
-    try:
-        entry.date = request.form.get("date")
-        entry.truck_id = request.form.get("truck_id")
-        entry.fuel_card_name = request.form.get("fuel_card_name")
-        entry.fuel_volume = request.form.get("fuel_volume")
-        entry.fuel_cost = request.form.get("fuel_cost")
-        db.session.commit()
-    except ValueError as e:
-        flash(str(e), 'error-msg-modal')
-        return redirect(url_for("add_job", item_id=item_id, tab='edit'))
-    else:
-        flash("Success", "success-msg")
-        return redirect(url_for("add_job", item_id=0, tab='edit'))
+    return redirect(url_for("add_job", item_id=0, tab='history'))
 
 
 #################################################### FUEL ROUTES
 
-@app.route("/add_fuel_entry/<int:item_id>/<tab>", methods=["GET", "POST"])
-def add_fuel_entry(item_id, tab):
+@app.route("/add_fuel/<int:item_id>/<tab>", methods=["GET", "POST"])
+def add_fuel(item_id, tab):
     trucks = list(Truck.query.order_by(Truck.registration).all())
     fuel_entries = list(Fuel.query.order_by(Fuel.date).all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
-    fuel_entry = {}
+    fuel = {}
     if request.method == "POST":
         try:
             new_entry = Fuel(
@@ -309,23 +292,23 @@ def add_fuel_entry(item_id, tab):
         except ValueError as e:
             flash(str(e), 'error-msg')
             #retrieve previous answers
-            fuel_entry = request.form
+            fuel = request.form
         else:
             flash("Success", "success-msg")
-            return redirect(url_for("add_fuel_entry", trucks=trucks, fuel_entries=fuel_entries, 
+            return redirect(url_for("add_fuel", trucks=trucks, fuel_entries=fuel_entries, 
                             tab='entry', item_id=0))
-    return render_template("add_fuel_entry.html", trucks=trucks, list=fuel_entries, tab=tab, 
-                           fuel_entry=fuel_entry, item_id=item_id, type='fuel_entry')
+    return render_template("add_fuel.html", trucks=trucks, list=fuel_entries, tab=tab, 
+                           fuel=fuel, item_id=item_id, type='fuel')
 
-@app.route("/delete_fuel_entry/<int:item_id>")
-def delete_fuel_entry(item_id):
+@app.route("/delete_fuel/<int:item_id>")
+def delete_fuel(item_id):
     entry = Fuel.query.get_or_404(item_id)
     db.session.delete(entry)
     db.session.commit()
     flash("Entry deleted", "success-msg")
-return redirect(url_for("add_fuel_entry", item_id=0, tab='history'))
+    return redirect(url_for("add_fuel", item_id=0, tab='history'))
 
-@app.route("/edit_fuel_entry/<int:item_id>", methods=["POST"])
+@app.route("/edit_fuel/<int:item_id>", methods=["POST"])
 def edit_fuel_entries(item_id):
     entry = Fuel.query.get_or_404(item_id)
     try:
@@ -337,10 +320,10 @@ def edit_fuel_entries(item_id):
         db.session.commit()
     except ValueError as e:
         flash(str(e), 'error-msg-modal')
-        return redirect(url_for("add_fuel_entry", item_id=item_id, tab='edit'))
+        return redirect(url_for("add_fuel", item_id=item_id, tab='edit'))
     else:
         flash("Success", "success-msg")
-        return redirect(url_for("add_fuel_entry", item_id=0, tab='edit'))
+        return redirect(url_for("add_fuel", item_id=0, tab='edit'))
 
 
 #################################################### PAYSLIP ROUTES
@@ -379,7 +362,7 @@ def delete_payslip(item_id):
     db.session.delete(entry)
     db.session.commit()
     flash("Entry deleted", "success-msg")
-return redirect(url_for("add_payslip", item_id=0, tab='history'))
+    return redirect(url_for("add_payslip", item_id=0, tab='history'))
 
 @app.route("/edit_payslip/<int:item_id>", methods=["POST"])
 def edit_payslip(item_id):
@@ -411,19 +394,19 @@ def wages_calculator():
         date = request.form.get("search_date")
         start_date = f.date_to_db(date)
         end_date = start_date + timedelta(days=6)
-        # query day_end table based on user inputs of driver and date
+        # query day table based on user inputs of driver and date
         driver_id = request.form.get("search_driver_id")
         driver = Driver.query.get(driver_id)
-        day_end_entries = DayEnd.query.filter(
-            DayEnd.driver_id == driver_id, 
-            DayEnd.date >= start_date, 
-            DayEnd.date <= end_date).all()
+        day_entries = Day.query.filter(
+            Day.driver_id == driver_id, 
+            Day.date >= start_date, 
+            Day.date <= end_date).all()
         # wages calculations
         total_earned = 0
         total_overnight = 0
         total_bonus_wage = 0
         total_wages = 0
-        for day in day_end_entries:
+        for day in day_entries:
             total_bonus_wage += day.earned * day.driver.bonus_percentage
             total_earned += int(day.earned)
             if day.overnight == True:
@@ -431,7 +414,7 @@ def wages_calculator():
         total_wages = total_bonus_wage + total_overnight + driver.basic_wage     
         
         return render_template("wages_calculator.html", date=start_date, sel_driver=driver, 
-                               drivers=drivers, day_end_entries=day_end_entries, 
+                               drivers=drivers, day_entries=day_entries, 
                                total_earned=total_earned, total_overnight=total_overnight, 
                                total_bonus_wage=total_bonus_wage, total_wages=total_wages)
     return render_template("wages_calculator.html", drivers=drivers)

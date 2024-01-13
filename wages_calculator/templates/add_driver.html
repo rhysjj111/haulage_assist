@@ -7,8 +7,8 @@
 
     {% block entry_form_title %}Add a driver:{% endblock %}
         {% block entry_form_questions %}
-            <form method="post" action="{{ url_for('add_driver', item_id=0, tab='entry') }}">
-                {{ macros[type]('add', driver, f) }}
+            <form method="post" action="{{ url_for('add_'+type, item_id=0, tab='entry') }}">
+                {{ macros[type]('add', driver, trucks, f) }}
             </form>
         {% endblock %}
 
@@ -17,15 +17,18 @@
 
         {% block collapsible_body %}
             <p>
-                Date joined: {{ f.date_to_web(item.start_date) }}<br>
                 Basic wage: {{ f.format_currency(f.currency_to_web(item.basic_wage)) }}<br>
-                Bonus percentage: {{ f.format_percentage(f.percentage_to_web(item.bonus_percentage)) }}
+                Daily bonus threshold: {{ f.format_currency(f.currency_to_web(item.daily_bonus_threshold)) }}<br>
+                Daily bonus percentage: {{ f.format_percentage(f.percentage_to_web(item.daily_bonus_percentage)) }}<br>
+                Weekly bonus threshold: {{ f.format_currency(f.currency_to_web(item.weekly_bonus_threshold)) }}<br>
+                Weekly bonus percentage: {{ f.format_percentage(f.percentage_to_web(item.weekly_bonus_percentage)) }}<br>
+                Overnight: {{ f.format_currency(f.currency_to_web(item.overnight_value)) }}<br>
             </p>
         {% endblock %}
     
         {% block entry_history_questions scoped %}
-            <form class="col s12" method="POST" class="modal-trigger" action="{{ url_for('edit_'+type, item_id=item.id, tab='history') }}">                                        
-                {{ macros[type]('edit', item, f) }}                                        
+            <form method="POST" class="modal-trigger" action="{{ url_for('edit_'+type, item_id=item.id, tab='history') }}">                                        
+                {{ macros[type]('edit', item, trucks, f) }}                                        
             </form>
         {% endblock %}
 

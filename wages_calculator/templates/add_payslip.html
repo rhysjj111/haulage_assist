@@ -1,0 +1,37 @@
+
+
+{% extends "entry_template.html" %}
+
+
+{% block entry_title %}+ PAYSLIP{% endblock %}
+
+    {% block entry_form_title %}Add a payslip:{% endblock %}
+        {% block entry_form_questions %}
+            <form method="post" action="{{ url_for('add_'+type, item_id=0, tab='entry') }}">
+                {{ macros[type]('add', payslip, f) }}
+            </form>
+        {% endblock %}
+
+    {% block entry_history_title %}Fuel entry history:{% endblock %}
+        {% block collapsible_header %}{{ item }}{% endblock %}
+
+        {% block collapsible_body %}
+            <p>
+                Date: {{ item.date }}<br>
+                Driver: {{ item.driver.full_name }}<br>
+                Total wage: {{ item.total_wage }}<br>
+                Total cost to empoyer: {{ item.total_cost_to_employer }}
+            </p>
+        {% endblock %}
+    
+        {% block entry_history_questions scoped %}
+            <form  method="POST" class="modal-trigger" action="{{ url_for('edit_'+type, item_id=item.id, tab='history') }}">                                        
+                {{ macros[type]('edit', item, f) }}                                        
+            </form>
+        {% endblock %}
+
+
+            
+ 
+    
+        

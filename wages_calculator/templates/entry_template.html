@@ -42,7 +42,7 @@
             <!-- form title -->
             <h4>{% block entry_form_title %}{% endblock %}</h4>
             <!-- form content -->
-            {% block entry_form_questions scoped%}
+            {% block entry_form_questions scoped %}
             {% endblock %}
         </div>
         
@@ -62,7 +62,8 @@
                             <div class="collapsible-body">
                                 {% block collapsible_body scoped %}{% endblock %}
                                 <!-- buttons -->
-                                <a href="#modal_edit_{{ item.id }}" class="btn green accent-4 modal-trigger">Edit</a>
+                                <a href="#modal_edit_{{ item.id }}" class="btn green accent-4 modal-trigger" 
+                                display="{{none if type=='job' else block}}">Edit</a>
                                 <a href="#modal_delete_{{ item.id }}" class="btn red modal-trigger">Delete</a>
                             </div>
                             

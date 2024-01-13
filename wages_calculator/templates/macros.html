@@ -14,7 +14,7 @@ from datetime import datetime
 
 <!----------------------------- question list macros -->
 
-{% macro driver(type, driver, f) %}
+{% macro driver(type, driver, trucks, f) %}
 
     <!-- first name -->
     <div class="row">
@@ -168,8 +168,60 @@ from datetime import datetime
 {% endmacro %}
 
 
+{% macro truck(type, truck, f) %}
 
-{% macro day_end(type, day, components, f) %}
+    <!-- reg -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="registration" name="registration" type="text" required
+            {% if truck.registration is defined %} 
+                value="{{ truck.registration }}" 
+            {% endif %}
+            >
+            <label for="registration">Registration:</label>
+        </div>
+    </div>
+
+    <!-- make -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="make" name="make" type="text" required
+                    {% if truck.make is defined %} 
+                        value="{{truck.make}}" 
+                    {% endif %}
+                    >
+            <label for="make">Make:</label>
+        </div>
+    </div>
+
+    <!-- model -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="model" name="model" type="text" required
+                    {% if truck.model is defined %} 
+                        value="{{truck.model}}" 
+                    {% endif %}
+                    >
+            <label for="model">Model:</label>
+        </div>
+    </div>
+
+    <!-- submit button -->
+    <div class="row">
+        <div class="col s12 center-align">
+            <button type="submit" class="btn-large submit">
+                {{ type }} Truck <i class="fas fa-edit right"></i>
+            </button>
+        </div>
+    </div>
+{% endmacro %}
+
+
+
+{% macro day(type, day, components, f) %}
 
     <!-- date -->
     <div class="row">
@@ -228,12 +280,14 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="additional_earned" name="additional_earned" type="number" step="0.01" required
-                {% if day is defined and type == 'edit' %} 
+                {% if day != {} and type == 'edit' %} 
                     value="{{'%0.2f' % f.currency_to_web(day.additional_earned) }}" 
-                {% elif day is defined %}
-                    value="{{ day.additional_earned}}"
+                {% elif day != {} %}
+                    value="{{ day.additional_earned }}"
+                {% else %}
+                    value="0"
                 {% endif %}
-            >    
+            >  
             <label for="additional_earned">Additional earned (£):</label>
         </div>
     </div>
@@ -243,10 +297,12 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="additional_wages" name="additional_wages" type="number" step="0.01" required
-                {% if day is defined and type == 'edit' %} 
+                {% if day != {} and type == 'edit' %} 
                     value="{{'%0.2f' % f.currency_to_web(day.additional_wages) }}" 
-                {% elif day is defined %}
+                {% elif day != {} %}
                     value="{{ day.additional_wages}}"
+                {% else %}
+                    value="0"
                 {% endif %}
             >    
             <label for="additional_wages">Additional wages (£):</label>
@@ -258,7 +314,7 @@ from datetime import datetime
         <div class="input-field col s12">
             <div class="switch">
                 <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-                {% if day is defined %}
+                {% if day != {} %}
                     <label for="overnight_{{ type }}_{{ day.id }}">
                         {% if day.overnight == True or day.overnight == "on" %}
                             <input id="overnight_{{ type }}_{{ day.id }}" name="overnight" type="checkbox" checked>
@@ -270,7 +326,7 @@ from datetime import datetime
                     </label>
                 {% else %}
                     <label for="overnight_{{ type }}">
-                        <input id="overnight_{{ type }}" name="overnight" type="checkbox">
+                        <input id="overnight_{{ type }}" name="overnight" type="checkbox" checked>
                         <span class="lever"></span>
                         Overnight
                     </label>                          
@@ -510,10 +566,13 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <select name="notes" id="notes" class="validate" required>
+            <select name="notes" id="notes" class="validate">
                 {% if job.notes is defined %} 
                     <option value="{{ job.notes }}" selected>{{ job.notes }}</option>
+                {% else %}
+                    <option value="" disabled selected>None</option>
                 {% endif %}
+
                 <option value="Multi-drop">Multi-drop</option>
                 <option value="Cancellation" >Cancellation</option>
                 <option value="Return" >Return</option>
@@ -543,7 +602,7 @@ from datetime import datetime
         <div class="row">
             <div class="input-field col s12 nwd">
                 <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
-                <input id="next_working_date" name="next_working_date"  type="text" class="datepicker" required
+                <input id="next_working_date" name="next_working_date"  type="text" class="datepicker"
                     {% if job is defined %}
                         value="{{ job.next_working_date}}"
                     {% endif %}
@@ -566,17 +625,17 @@ from datetime import datetime
     </div>
 {% endmacro %}
 
-{% macro fuel_entry(type, fuel_entry, trucks, f) %}
+{% macro fuel(type, fuel, trucks, f) %}
 
     <!-- date -->
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
             <input id="date" name="date"  type="text" class="datepicker" required
-                {% if fuel_entry is defined and type == 'edit' %} 
-                    value="{{ f.date_to_web(fuel_entry.date) }}" 
-                {% elif fuel_entry is defined %}
-                    value="{{ fuel_entry.date}}"
+                {% if fuel is defined and type == 'edit' %} 
+                    value="{{ f.date_to_web(fuel.date) }}" 
+                {% elif fuel is defined %}
+                    value="{{ fuel.date}}"
                 {% endif %}
                 >
             <label for="date">Date:</label>
@@ -588,9 +647,9 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
             <select name="truck_id" id="truck_id" class="validate" required>
-                {% if fuel_entry.truck_id is defined %}
+                {% if fuel.truck_id is defined %}
                     {% for truck in trucks %}
-                        {% if fuel_entry.truck == truck %}
+                        {% if fuel.truck == truck %}
                             <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
                         {% else %}
                             <option value="{{ truck.id }}">{{ truck.registration }}</option>
@@ -612,8 +671,8 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <select name="fuel_card_name" id="fuel_card_name" class="validate" required>
-                {% if fuel_entry.fuel_card_name is defined %} 
-                    <option value="{{ fuel_entry.fuel_card_name }}" selected>{{ fuel_entry.fuel_card_name }}</option>
+                {% if fuel.fuel_card_name is defined %} 
+                    <option value="{{ fuel.fuel_card_name }}" selected>{{ fuel.fuel_card_name }}</option>
                 {% endif %}
                 <option value="UK Fuels">UK Fuels</option>
                 <option value="Silvey" >Silvey</option>
@@ -629,9 +688,9 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="fuel_volume" name="fuel_volume" type="number" required
                     {% if driver.total_wage is defined and type == "edit" %} 
-                        value="{{'%0.2f' % f.currency_to_web(fuel_entry.fuel_volume) }}" 
+                        value="{{'%0.2f' % f.currency_to_web(fuel.fuel_volume) }}" 
                     {% elif driver.total_wage is defined %} 
-                        value="{{fuel_entry.fuel_volume}}" 
+                        value="{{fuel.fuel_volume}}" 
                     {% endif %}
                     >
             <label for="fuel_volume">Fuel volume (L):</label>
@@ -643,10 +702,10 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="fuel_cost" name="fuel_cost" type="number" required
-                    {% if fuel_entry.fuel_cost is defined and type == "edit" %} 
-                        value="{{'%0.2f' % f.currency_to_web(fuel_entry.fuel_cost) }}" 
-                    {% elif fuel_entry.fuel_cost is defined %} 
-                        value="{{fuel_entry.fuel_cost}}" 
+                    {% if fuel.fuel_cost is defined and type == "edit" %} 
+                        value="{{'%0.2f' % f.currency_to_web(fuel.fuel_cost) }}" 
+                    {% elif fuel.fuel_cost is defined %} 
+                        value="{{fuel.fuel_cost}}" 
                     {% endif %}
                     >
             <label for="fuel_cost">Fuel cost (£):</label>
@@ -658,57 +717,6 @@ from datetime import datetime
         <div class="col s12 center-align">
             <button type="submit" class="btn-large submit">
                 {{ type }} Fuel entry <i class="fas fa-edit right"></i>
-            </button>
-        </div>
-    </div>
-{% endmacro %}
-
-{% macro truck(type, truck, f) %}
-
-    <!-- reg -->
-    <div class="row">
-        <div class="input-field col s12">
-            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="registration" name="registration" type="text" required
-            {% if truck.registration is defined %} 
-                value="{{ truck.registration }}" 
-            {% endif %}
-            >
-            <label for="registration">Registration:</label>
-        </div>
-    </div>
-
-    <!-- make -->
-    <div class="row">
-        <div class="input-field col s12">
-            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="make" name="make" type="text" required
-                    {% if driver.total_wage is defined %} 
-                        value="{{truck.make}}" 
-                    {% endif %}
-                    >
-            <label for="make">Make:</label>
-        </div>
-    </div>
-
-    <!-- model -->
-    <div class="row">
-        <div class="input-field col s12">
-            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="model" name="model" type="text" required
-                    {% if driver.total_wage is defined %} 
-                        value="{{truck.model}}" 
-                    {% endif %}
-                    >
-            <label for="model">Model:</label>
-        </div>
-    </div>
-
-    <!-- submit button -->
-    <div class="row">
-        <div class="col s12 center-align">
-            <button type="submit" class="btn-large submit">
-                {{ type }} Truck <i class="fas fa-edit right"></i>
             </button>
         </div>
     </div>

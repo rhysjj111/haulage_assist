@@ -1,0 +1,34 @@
+
+
+{% extends "entry_template.html" %}
+
+
+{% block entry_title %}+ DAY{% endblock %}
+
+    {% block entry_form_title %}Add day end entry:{% endblock %}
+        {% block entry_form_questions %}
+            <form method="POST" action="{{ url_for('add_'+type, item_id=0, tab='entry') }}">
+                {{ macros[type]('add', day, components, f) }}
+            </form>
+        {% endblock %}
+
+    {% block entry_history_title %}Day entry history:{% endblock %}
+        {% block collapsible_header %}{{item.driver.full_name}} - {{f.date_to_web(item.date)}}{% endblock %}
+
+        {% block collapsible_body %}
+            <p>
+                
+            </p>
+        {% endblock %}
+
+        {% block entry_history_questions scoped %}
+            <form method="POST" action="{{ url_for('edit_'+type, item_id=item.id, tab='history')}}">
+                {{ macros[type]('edit', item, components, f) }}
+            </form>
+        {% endblock %}
+
+
+            
+ 
+    
+        
