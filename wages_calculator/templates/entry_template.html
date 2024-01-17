@@ -62,8 +62,7 @@
                             <div class="collapsible-body">
                                 {% block collapsible_body scoped %}{% endblock %}
                                 <!-- buttons -->
-                                <a href="#modal_edit_{{ item.id }}" class="btn green accent-4 modal-trigger" 
-                                display="{{none if type=='job' else block}}">Edit</a>
+                                <a href="#modal_edit_{{ item.id }}" class="btn green accent-4 modal-trigger {{'hide' if type=='job'}}">Edit</a>
                                 <a href="#modal_delete_{{ item.id }}" class="btn red modal-trigger">Delete</a>
                             </div>
                             
@@ -132,22 +131,11 @@
     </div>
 
     <!-- triggers edit-modal if invalid form submission -->
-    {% if item_id is defined and item_id > 0 %}
-        <div class="open-edit-modal">modal_edit_{{item_id}}</div>
-    {% endif %}    
-
-    <!-- triggers if invalid dates -->
-    {% if invalid_dates is defined %}
-        {% for date in invalid_dates %}
-            {% if dates[date] == 'current_date' %}
-                <div class="current_date">current</div>
-            {% elif dates[date] == 'next_working_date' %}
-                <div class="nwd">nwd</div>
-            {% endif %}
-        {% endfor %}
-    {% endif %}
-    
-        
+    {% block modal_triggers %}
+        {% if item_id is defined and item_id > 0 %}
+            <div class="open-edit-modal">modal_edit_{{item_id}}</div>
+        {% endif %}    
+    {% endblock %}   
 
 
 {% endblock %}

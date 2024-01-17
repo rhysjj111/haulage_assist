@@ -151,13 +151,13 @@ def add_day(item_id, tab):
             new_entry = Day(
                 date = request.form.get("date"),
                 driver_id = request.form.get("driver_id"),
-                status = request.form.get("status"),
-                additional_earned = request.form.get("additional_earned"),
-                additional_wages = request.form.get("additional_wages"),
-                overnight = request.form.get("overnight"),
                 truck_id = request.form.get("truck_id"),
+                status = request.form.get("status"),
+                overnight = request.form.get("overnight"),
                 start_mileage = request.form.get("start_mileage"),
-                end_mileage = request.form.get("end_mileage"),                
+                end_mileage = request.form.get("end_mileage"),
+                additional_earned = request.form.get("additional_earned"),
+                additional_wages = request.form.get("additional_wages")              
             )
             db.session.add(new_entry)
             db.session.commit()
@@ -171,6 +171,7 @@ def add_day(item_id, tab):
                             tab='entry', item_id=0))
     return render_template("add_day.html", components=components, list=day_entries, tab=tab, 
                            day=day, item_id=item_id, type='day')
+
 
 @app.route("/delete_day/<int:item_id>")
 def delete_day(item_id):
@@ -210,63 +211,160 @@ def edit_day(item_id):
 
 #################################################### JOB ROUTES
 
-@app.route("/add_job/<int:item_id>/<tab>/<invalid_dates>", methods=["GET", "POST"])
-def add_job(item_id, tab, invalid_dates):
+@app.route("/add_job/<int:item_id>/<tab>/<user_confirm>", methods=["GET", "POST"])
+def add_job(item_id, tab, user_confirm):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
+    trucks = list(Truck.query.order_by(Truck.registration).all())
     days = list(Day.query.order_by(Day.date).all())
     jobs = list(Job.query.all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     job = {}
-    if request.method == "POST":
-        current_date = form.get('date')
-        next_working_date = form.get('date')
-        dates = {'nwd':next_working_date,'cd':current_date}
-        driver_id = form.get('driver_id')
+    dates = {}
+    invalid_dates = {}
+    valid_dates = {}
+  
+    if request.method == "POST":        
+        current_date = request.form.get('date_cd')
+        next_working_date = request.form.get('date_nwd')
+        dates = {'cd':current_date, 'nwd':next_working_date}
+        driver_id = request.form.get('driver_id')
+        
         for date in dates:
-                if (date is not None) and (Day.query.filter(Day.date == dates[date], Day.driver_id == driver_id).first() is None):
-                    dates[date] = 'invalid'
-                elif date is None: 
-                    del dates[date]
-        try:
-            'invalid' not in dates
-        except:
-            flash("Invalid dates selected", "error-msg")
-            job = request.form
-        else: 
-            try:  
-                for date in dates:
-                    day = Day.query.filter(Day.date == dates[date], Day.driver_id == driver_id).first()
-                    earned = form.get('earned')
-                    if len(dates)>1:
-                        earned /= 2 
+            try:
+                f.date_to_db(dates[date])
+                Day.query.filter(Day.date == f.date_to_db(dates[date]), Day.driver_id == driver_id).one()
+            except:
+                if dates[date] == '' or dates[date] == None:
+                    break
+                elif user_confirm == 'yes':
+                    try:
+                        new_entry = Day(
+                            date = dates[date],
+                            driver_id = request.form.get("driver_id"),
+                            overnight = request.form.get("overnight_" + date),
+                            truck_id = request.form.get("truck_id_" + date)            
+                        )
+                        db.session.add(new_entry)
+                        db.session.commit()
+                    except ValueError as e:
+                        flash(dates[date], "error-msg")
+                        return redirect(url_for("add_job", tab='entry', item_id=0, user_confirm='no'))
+                    else:
+                        valid_dates[date] = dates[date]
+                else:
+                    invalid_dates[date] = dates[date]
+                    job = request.form
+                    if date == 'cd':
+                        continue                
+            else:
+                valid_dates[date] = dates[date]
+
+        if invalid_dates == {}:
+            for date in valid_dates:
+                try:
+                    day = Day.query.filter(Day.date == f.date_to_db(dates[date]), Day.driver_id == driver_id).first()
+                    earned = float(request.form.get('earned'))
+                    if len(valid_dates) > 1:
+                        earned /= 2
+                        round(earned, 2)
                     new_entry = Job(
                         day_id = day.id,
                         earned = earned,
-                        collection = form.get('collection'),
-                        delivery = form.get('delivery'),
-                        notes = form.get('notes'),
-                        split = form.get('split')
+                        collection = request.form.get('collection'),
+                        delivery = request.form.get('delivery'),
+                        notes = request.form.get('notes')
                     )
                     db.session.add(new_entry)
-                db.session.commit()
-            except ValueError as e:
-                flash(str(e), 'error-msg')
-                #retrieve previous answers
-                job = request.form
-            else:
-                flash("Success", "success-msg")
-                return redirect(url_for("add_job", tab='entry', item_id=0, invalid_dates=''))
-    return render_template("add_job.html", drivers=drivers, list=jobs, tab=tab, 
-                           job=job, item_id=item_id, type='job', dates=invalid_dates)
+                    db.session.commit()
+                except ValueError as e:
+                    flash(str(e), 'error-msg')
+                    #retrieve previous answers
+                    job = request.form
+                else:
+                    if date == 'cd':
+                        continue
+                    else:
+                        flash(valid_dates, "success-msg")
+                        return redirect(url_for("add_job", tab='entry', item_id=0, user_confirm=False))
+    return render_template("add_job.html", drivers=drivers, trucks=trucks, list=jobs, tab=tab, 
+                           job=job, item_id=item_id, type='job', invalid_dates=invalid_dates)
+
+        # for date in dates:
+        #     try:
+        #         dates[date] = f.date_to_db(dates[date])
+        #     except:
+        #         dates[date] = 'no_date'
+                
+        #     else:
+        #         if Day.query.filter(Day.date == dates[date], Day.driver_id == driver_id).first() is None:
+        #             invalid_dates[date] = dates[date]
+        #remove dates with no dates
+        # dates = {key:val for key, val in dates.items() if val != 'no_date'}
+        # if user_confirm == 'yes':
+        #             flash(dates, "success-msg")
+        #             return redirect(url_for("add_job", tab='entry', item_id=0, user_confirm='no'))
+        # try:
+        #     for date in dates:
+        #         new_entry = Day(
+        #             date = f.date_to_web(invalid_dates[date]),
+        #             driver_id = request.form.get("driver_id"),
+        #             overnight = request.form.get("overnight_" + date),
+        #             truck_id = request.form.get("truck_id_" + date)            
+        #         )
+        #         db.session.add(new_entry)
+        #         db.session.commit()
+        # except ValueError as e:
+        #     flash(str(e), 'error-msg')
+        #     #retrieve previous answers
+        #     return redirect(url_for("add_job", tab='entry', item_id=0, user_confirm='no'))
+        # else:
+        #     flash('nothing', "success-msg")
+        #     return redirect(url_for("add_job", tab='entry', item_id=0, user_confirm='no'))
+
+    #     if invalid_dates == {}:
+    #         try:  
+    #             for date in dates:
+    #                 day = Day.query.filter(Day.date == dates[date], Day.driver_id == driver_id).first()
+    #                 earned = request.form.get('earned')
+    #                 if len(dates) > 1:
+    #                     earned /= 2 
+    #                 new_entry = Job(
+    #                     day_id = day.id,
+    #                     earned = earned,
+    #                     collection = request.form.get('collection'),
+    #                     delivery = request.form.get('delivery'),
+    #                     notes = request.form.get('notes'),
+    #                     split = request.form.get('split')
+    #                 )
+    #                 db.session.add(new_entry)
+    #             db.session.commit()
+    #         except ValueError as e:
+    #             flash(str(e), 'error-msg')
+    #             #retrieve previous answers
+    #             job = request.form
+    #         else:
+    #             flash(current_date, "success-msg")
+    #             return redirect(url_for("add_job", tab='entry', item_id=0, user_confirm=False))
+    #     else:
+
+    #         job = request.form
+    # return render_template("add_job.html", drivers=drivers, trucks=trucks, list=jobs, tab=tab, 
+    #                        job=job, item_id=item_id, type='job', invalid_dates=invalid_dates)
 
 @app.route("/delete_job/<int:item_id>")
 def delete_job(item_id):
-    entry = Job.query.get_or_404(item_id)
-    db.session.delete(entry)
-    db.session.commit()
-    flash("Entry deleted", "success-msg")
-    return redirect(url_for("add_job", item_id=0, tab='history'))
+    if item_id == 0:
+        all = db.session.query(Job)
+        all.delete()
+        db.session.commit()
+        flash("All entries deleted", "success-msg")
+    else:
+        entry = Job.query.get_or_404(item_id)
+        db.session.delete(entry)
+        db.session.commit()
+        flash("Entry deleted", "success-msg")
+    return redirect(url_for("add_job", item_id=0, tab='history', invalid_dates='abc'))
 
 
 #################################################### FUEL ROUTES

@@ -2,11 +2,11 @@
 {% extends "entry_template.html" %}
 
 
-{% block entry_title %}+ JOB{% endblock %}
+{% block entry_title %}+ JOB{{job.driver_id}}{% endblock %}
 
     {% block entry_form_title %}Add a job:{% endblock %}
         {% block entry_form_questions %}
-            <form method="post" action="{{ url_for('add_'+type, item_id=0, tab='entry', invalid_dates='') }}">
+            <form method="post" action="{{ url_for('add_job', item_id=0, tab='entry', user_confirm='no') }}">
                 {{ macros[type]('add', job, drivers, f) }}
             </form>
         {% endblock %}
@@ -25,7 +25,80 @@
         {% endblock %}
     
         {% block entry_history_questions scoped %}
-            <form  method="POST" class="modal-trigger" action="{{ url_for('edit_'+type, item_id=item.id, tab='history', invalid_dates='') }}">                                        
-                {{ macros[type]('edit', item, drivers, f) }}                                        
-            </form>
+
         {% endblock %}
+
+
+        <!-- invalid dates -->
+    {% block modal_triggers %}        
+         <!-- triggers if invalid dates -->
+        {% if invalid_dates != {} %}
+            
+            <!-- modal trigger -->
+            <div class="open-edit-modal">modal_invalid_dates</div>
+
+            <!-- modal -->
+            <div id="modal_invalid_dates" class="modal">
+                <form method="post" action="{{ url_for('add_job', item_id=0, tab='entry', user_confirm='yes') }}">
+                    <div class="modal-content"> 
+                        
+                        <h3 class="center-align">No 'Day' entry for the following date(s)</h3><br>
+                                <input type = "hidden" name = "driver_id" value = "{{job.driver_id}}" />
+                                <input type = "hidden" name = "earned" value = "{{job.earned}}" />
+                                <input type = "hidden" name = "collection" value = "{{job.collection}}" />
+                                <input type = "hidden" name = "delivery" value = "{{job.delivery}}" />
+                                <input type = "hidden" name = "notes" value = "{{job.notes}}" />
+                                <input type = "hidden" name = "split" value = "{{job.split}}" />
+                        {% for date in invalid_dates %}
+                            <div class="confirm_date_container">
+                                <h5 class="center-align">{{invalid_dates[date]}}</h5>
+
+                                <!-- date and driver information to be passed -->
+                                <input type = "hidden" name = "date_{{date}}" value = "{{invalid_dates[date]}}" />
+
+
+                                <!-- overnight selection to be made by user -->
+                                <div class="row">
+                                    <div class="input-field col s12">
+                                        <div class="switch">
+                                            <label for="overnight_{{ date }}">
+                                                <input id="overnight_{{ date }}" name="overnight_{{ date }}" type="checkbox" checked>
+                                                <span class="lever"></span>
+                                                Overnight
+                                            </label>  
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- truck to be selected by user -->
+                                <div class="row">
+                                    <div class="input-field col s12">
+                                        <select name="truck_id_{{ date }}" id="truck_id_{{ date }}" class="validate" required>
+                                            {% for truck in trucks %}
+                                                {% for driver in drivers %}
+                                                    {% if driver.id == job.driver_id %}
+                                                        <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
+                                                    {% else %}
+                                                        <option value="{{ truck.id }}">{{ truck.registration }}</option>
+                                                    {% endif %}
+                                                {% endfor %}         
+                                            {% endfor %}
+                                        </select>
+                                        <label for="truck_id_{{date}}">Select Truck:</label>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        <p class ="right-align">Create entry for these dates? Please double check everything.</p>
+
+                        <div class="modal-footer">
+                            <button type="submit" class="btn green">Create dates</button>
+                            <a href="" class="modal-close btn grey">Cancel</a>
+                        </div>
+                    </div>
+                </form>    
+            </div>
+
+        {% endif %}
+    {% endblock %}

@@ -6,8 +6,6 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from flask import redirect, url_for, flash, request
 from datetime import datetime
 
-def preferred_truck(context):
-    return context.get_current_parameters()['driver.truck_id']
 
 class Driver(db.Model):
     __table_args__ = (db.UniqueConstraint('first_name', 'last_name', name='_full_name_uc'),)
@@ -109,13 +107,14 @@ class Day(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.Date, nullable=False)
     driver_id = db.Column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False)
+    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=False)  
     status = db.Column(db.String(15), nullable=False, default="Working")
+    overnight = db.Column(db.Boolean, nullable=False, default=True)
+    start_mileage = db.Column(db.Integer, nullable=False, default = 0)
+    end_mileage = db.Column(db.Integer, nullable=False, default = 0)
     additional_earned = db.Column(db.Integer, nullable=False, default=0)
     additional_wages = db.Column(db.Integer, nullable=False, default=0)
-    overnight = db.Column(db.Boolean, nullable=False, default=True)
-    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=False, default=preferred_truck)  
-    start_mileage = db.Column(db.Integer)
-    end_mileage = db.Column(db.Integer)
+    
     __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_uc'),)
     driver = db.relationship("Driver", back_populates="days", lazy=True)
     truck = db.relationship("Truck", back_populates="days")
@@ -138,7 +137,6 @@ class Day(db.Model):
             date = date_to_db(date)
         except:
             raise ValueError('Please enter date in format dd/mm/yyyy')
-        
         return date
     
     @validates('earned')
@@ -185,7 +183,7 @@ class Job(db.Model):
     collection = db.Column(db.String(20), nullable=False) 
     delivery = db.Column(db.String(20), nullable=False) 
     notes = db.Column(db.String(15)) 
-    split = db.Column(db.Boolean, nullable=False, default=False)
+    split = db.Column(db.Boolean)
 
     day = db.relationship("Day", back_populates="jobs")
 

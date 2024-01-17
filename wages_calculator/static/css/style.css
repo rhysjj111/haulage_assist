@@ -137,3 +137,14 @@ footer{
     background-color: rgb(57, 83, 134);
     color: white;
 }
+
+.hide{
+    display:none
+}
+
+.confirm_date_container{
+    max-width: 450px;
+    margin: 30px auto;
+    background-color: aliceblue;
+}
+

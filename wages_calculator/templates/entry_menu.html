@@ -4,6 +4,7 @@
 {% block standard_title %}DATA ENTRY{% endblock %}
 
     {% block standard_content %}
+    {{date_one}}
         <div class="data-entry-menu-container valign-wrapper">
             <div class="row center-align">
                 <div class="col s12 xl6 data-entry-button-container">
@@ -31,7 +32,7 @@
                     </a>
                 </div>
                 <div class="col s12 xl6 data-entry-button-container">
-                    <a href="{{ url_for('add_job', item_id=0, tab='entry', invalid_dates='adf') }}">
+                    <a href="{{ url_for('add_job', item_id=0, tab='entry', user_confirm=False) }}">
                         <div class="main-button btn">
                             <i class="large material-icons data-entry-icon">restore</i>
                             <h3 class="data-entry-title">Add Job</h3>
