@@ -8,26 +8,24 @@
     {% block entry_form_title %}Add fuel:{% endblock %}
         {% block entry_form_questions %}
             <form method="post" action="{{ url_for('add_'+type, item_id=0, tab='entry') }}">
-                {{ macros[type]('add', fuel, f) }}
+                {{ macros[type]('add', fuel, trucks, f) }}
             </form>
         {% endblock %}
 
     {% block entry_history_title %}Fuel entry history:{% endblock %}
-        {% block collapsible_header %}{{ item }}{% endblock %}
+        {% block collapsible_header %}{{item.truck.registration}} - {{f.date_to_web(item.date)}}{% endblock %}
 
         {% block collapsible_body %}
             <p>
-                Date: {{ item.date }}<br>
-                Truck: {{ item.truck.registration }}<br>
-                Volume: {{ item.fuel_volume }}<br>
                 Fuel card: {{ item.fuel_card_name }}<br>
-                Cost: {{ item.fuel_cost }}
+                Volume: {{ f.currency_to_web(item.fuel_volume) }} L<br>
+                Cost: {{ f.format_currency(f.currency_to_web(item.fuel_cost)) }}
             </p>
         {% endblock %}
     
         {% block entry_history_questions scoped %}
-            <form  method="POST" class="modal-trigger" action="{{ url_for('edit_'+type, item_id=item.id, tab='history') }}">                                        
-                {{ macros[type]('edit', item, f) }}                                        
+            <form  method="POST" class="modal-trigger" action="{{ url_for('edit_'+type, item_id=0, tab='entry') }}">                                        
+                {{ macros[type]('edit', item, trucks, f) }}                                        
             </form>
         {% endblock %}
 

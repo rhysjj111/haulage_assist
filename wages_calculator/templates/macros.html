@@ -3,9 +3,9 @@ from datetime import datetime
 
 {% macro nav_link(name, endpoint) %}
         {% if ((request.endpoint in varargs) or (request.endpoint == endpoint)) %}
-            <li class="tab active"><a href="{{ url_for(endpoint) }}">{{ name }}</a></li>
+            <li class="tab active"><a class="menu-tab-link" href="{{ url_for(endpoint) }}">{{ name }}</a></li>
         {% else %}
-            <li class ="tab"><a href="{{ url_for(endpoint) }}">{{ name }}</a></li>
+            <li class ="tab"><a class="menu-tab-link" href="{{ url_for(endpoint) }}">{{ name }}</a></li>
         {% endif %}
 {% endmacro %}
 
@@ -15,7 +15,6 @@ from datetime import datetime
 <!----------------------------- question list macros -->
 
 {% macro driver(type, driver, trucks, f) %}
-
     <!-- first name -->
     <div class="row">
         <div class="input-field col s12">
@@ -123,7 +122,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="overnight_value" name="overnight_value" type="number" required
                 {% if driver.overnight_value is defined and type == "edit" %} 
-                    value="{{'%0.2f' % f.percentage_to_web(driver.overnight_value) }}" 
+                    value="{{'%0.2f' % f.currency_to_web(driver.overnight_value) }}" 
                 {% elif driver is defined %}
                     value="{{driver.overnight_value}}"
                 {% endif %}
@@ -170,7 +169,6 @@ from datetime import datetime
 
 
 {% macro truck(type, truck, f) %}
-
     <!-- reg -->
     <div class="row">
         <div class="input-field col s12">
@@ -223,7 +221,6 @@ from datetime import datetime
 
 
 {% macro day(type, day, components, f) %}
-
     <!-- date -->
     <div class="row">
         <div class="input-field col s12">
@@ -407,7 +404,6 @@ from datetime import datetime
 
 
 {% macro job(type, job, drivers, f) %}
-
     <!-- date -->
     <div class="row">
         <div class="input-field col s12">
@@ -467,7 +463,7 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="collection" name="collection" type="text" required
-                    {% if driver.total_wage is defined %} 
+                    {% if job.collection is defined %} 
                         value="{{job.collection}}" 
                     {% endif %}
                     >
@@ -480,7 +476,7 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="delivery" name="delivery" type="text" required
-                    {% if driver.total_wage is defined %} 
+                    {% if job.delivery is defined %} 
                         value="{{job.delivery}}" 
                     {% endif %}
                     >
@@ -516,8 +512,13 @@ from datetime import datetime
                 <div class="switch">
                     <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
                     <label for="split">
-                        <input id="split" name="split" type="checkbox">
-                        <span class="lever"></span>
+                            {% if job.split is defined %}
+                                <input id="split" name="split" type="checkbox" checked>
+                            {% else %}
+                                <input id="split" name="split" type="checkbox">
+                            {% endif %}
+                        
+                        <span class="lever split-lever"></span>
                         Split
                     </label>                          
                 </div>
@@ -526,9 +527,9 @@ from datetime import datetime
 
         <!-- next working date -->
         <div class="row">
-            <div class="input-field col s12 nwd">
+            <div class="input-field col s12 nwd-container hide">
                 <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
-                <input id="date_nwd" name="date_nwd"  type="text" class="datepicker"
+                <input id="date_nwd" name="date_nwd"  type="text" class="datepicker" required
                     {% if job is defined %}
                         value="{{ job.date_nwd}}"
                     {% endif %}
@@ -551,7 +552,6 @@ from datetime import datetime
 
 
 {% macro payslip(type, payslip, drivers, f) %}
-
     <!-- driver -->
     <div class="row">
         <div class="input-field col s12">
@@ -634,7 +634,6 @@ from datetime import datetime
 
 
 {% macro fuel(type, fuel, trucks, f) %}
-
     <!-- date -->
     <div class="row">
         <div class="input-field col s12">
@@ -695,9 +694,9 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="fuel_volume" name="fuel_volume" type="number" required
-                    {% if driver.total_wage is defined and type == "edit" %} 
+                    {% if fuel.fuel_volume is defined and type == "edit" %} 
                         value="{{'%0.2f' % f.currency_to_web(fuel.fuel_volume) }}" 
-                    {% elif driver.total_wage is defined %} 
+                    {% elif fuel.fuel_volume is defined %} 
                         value="{{fuel.fuel_volume}}" 
                     {% endif %}
                     >
@@ -733,7 +732,6 @@ from datetime import datetime
 
 
 {% macro running_cost(type, running_cost, f) %}
-
     <!-- submit button -->
     <div class="row">
         <div class="col s12 center-align">

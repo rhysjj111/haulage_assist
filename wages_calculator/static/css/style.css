@@ -14,7 +14,7 @@ a{
     color: black;
 }
 
-footer{
+footer, nav{
     position:fixed;
     bottom:0;
     left:0;
@@ -22,6 +22,14 @@ footer{
     height: 58px;
     padding-top: 5px !important;
     z-index: 10;
+
+    
+
+
+    background-color:  #e8e8e8 !important;
+    background-color:  #f7f5e6 !important;
+    background-color:  #333a56 !important;
+
 }
 
 .content-container{
@@ -31,6 +39,12 @@ footer{
 
 .wages-container{
     margin-top: 10px;
+}
+
+.menu-tab-link{
+    font-size: 20px !important;
+    font-weight: 600;
+    color:  #333a56 !important;
 }
 
 @media (min-width: 992px){
@@ -50,7 +64,7 @@ footer{
 
 .data-entry-menu-container{
     margin-top: 0;
-    height: 70vh;
+    /* height: 70vh; */
     min-height: 425px;
 }
 
@@ -80,6 +94,9 @@ footer{
     min-width: 229px;
     max-width: 375px !important;
     width: 80vw;
+    background-color:  rgb(57, 83, 134) !important;
+    color:  #f7f5e6 !important;
+
 }
 
 @media (min-width: 1200px){
@@ -146,5 +163,7 @@ footer{
     max-width: 450px;
     margin: 30px auto;
     background-color: aliceblue;
+    padding: 15px;
+    border-radius: 10px;
 }
 

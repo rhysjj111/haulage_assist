@@ -2,7 +2,7 @@
 {% extends "entry_template.html" %}
 
 
-{% block entry_title %}+ JOB{{job.driver_id}}{% endblock %}
+{% block entry_title %}+ JOB{% endblock %}
 
     {% block entry_form_title %}Add a job:{% endblock %}
         {% block entry_form_questions %}
@@ -12,15 +12,13 @@
         {% endblock %}
 
     {% block entry_history_title %}Job entry history:{% endblock %}
-        {% block collapsible_header %}{{ item }}{% endblock %}
+        {% block collapsible_header %}{{ item.day.driver.full_name }} - {{ f.date_to_web(item.day.date) }} - {{f.format_currency(f.currency_to_web(item.earned))}}{% endblock %}
 
         {% block collapsible_body %}
             <p>
-                Date: {{ item.day.date }}<br>
-                Driver: {{ item.day.driver }}<br>
                 Collection: {{ item.collection }}<br>
                 Delivery: {{ item.delivery }}<br>
-                Split: {{'Yes' if True else 'No'}}
+                Split: {{'Yes' if item.split is true else 'No'}}
             </p>
         {% endblock %}
     
@@ -78,10 +76,9 @@
                                                 {% for driver in drivers %}
                                                     {% if driver.id == job.driver_id %}
                                                         <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
-                                                    {% else %}
-                                                        <option value="{{ truck.id }}">{{ truck.registration }}</option>
                                                     {% endif %}
-                                                {% endfor %}         
+                                                {% endfor %}
+                                                <option value="{{ truck.id }}">{{ truck.registration }}</option>         
                                             {% endfor %}
                                         </select>
                                         <label for="truck_id_{{date}}">Select Truck:</label>

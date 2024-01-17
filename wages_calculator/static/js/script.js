@@ -60,8 +60,22 @@ document.addEventListener('DOMContentLoaded', function () {
     //pass message container style property names
     function changePropertiesToZero(...properties){
         properties.forEach((value) => messageContainer.style[value] = '0');
-    }    
+    }
+
+    const splitInput = document.querySelector('#split');
+    const lever = document.querySelector('.lever');
+
+
+    const nwdContainer = document.querySelector('.nwd-container');
+    lever.addEventListener('click', () => {
+        nwdContainer.classList.toggle('hide');
+    })
     
+    function showNwd(){
+        if (splitInput.checked) {
+        nwdContainer.classList.remove('hide') 
+    }}
+    showNwd();
 })
 
 

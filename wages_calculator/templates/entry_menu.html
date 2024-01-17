@@ -4,7 +4,6 @@
 {% block standard_title %}DATA ENTRY{% endblock %}
 
     {% block standard_content %}
-    {{date_one}}
         <div class="data-entry-menu-container valign-wrapper">
             <div class="row center-align">
                 <div class="col s12 xl6 data-entry-button-container">
@@ -26,7 +25,7 @@
                 <div class="col s12 xl6 data-entry-button-container">
                     <a href="{{ url_for('add_truck', item_id=0, tab='entry') }}">
                         <div class="main-button btn">
-                            <i class="large material-icons data-entry-icon">restore</i>
+                            <i class="large material-icons data-entry-icon">local_shipping</i>
                             <h3 class="data-entry-title">Add Truck</h3>
                         </div>
                     </a>
@@ -34,7 +33,7 @@
                 <div class="col s12 xl6 data-entry-button-container">
                     <a href="{{ url_for('add_job', item_id=0, tab='entry', user_confirm=False) }}">
                         <div class="main-button btn">
-                            <i class="large material-icons data-entry-icon">restore</i>
+                            <i class="large material-icons data-entry-icon">playlist_add</i>
                             <h3 class="data-entry-title">Add Job</h3>
                         </div>
                     </a>
@@ -42,7 +41,7 @@
                 <div class="col s12 xl6 data-entry-button-container">
                     <a href="{{ url_for('add_payslip', item_id=0, tab='entry') }}">
                         <div class="main-button btn">
-                            <i class="large material-icons data-entry-icon">restore</i>
+                            <i class="large material-icons data-entry-icon">attach_money</i>
                             <h3 class="data-entry-title">Add Payslip</h3>
                         </div>
                     </a>
@@ -50,7 +49,7 @@
                 <div class="col s12 xl6 data-entry-button-container">
                     <a href="{{ url_for('add_fuel', item_id=0, tab='entry') }}">
                         <div class="main-button btn">
-                            <i class="large material-icons data-entry-icon">restore</i>
+                            <i class="large material-icons data-entry-icon">local_gas_station</i>
                             <h3 class="data-entry-title">Add Fuel</h3>
                         </div>
                     </a>
