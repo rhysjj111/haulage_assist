@@ -512,7 +512,7 @@ from datetime import datetime
                 <div class="switch">
                     <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
                     <label for="split">
-                            {% if job.split is defined %}
+                            {% if job.split == 'on' %}
                                 <input id="split" name="split" type="checkbox" checked>
                             {% else %}
                                 <input id="split" name="split" type="checkbox">
@@ -529,7 +529,7 @@ from datetime import datetime
         <div class="row">
             <div class="input-field col s12 nwd-container hide">
                 <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
-                <input id="date_nwd" name="date_nwd"  type="text" class="datepicker" required
+                <input id="date_nwd" name="date_nwd"  type="text" class="datepicker"
                     {% if job is defined %}
                         value="{{ job.date_nwd}}"
                     {% endif %}

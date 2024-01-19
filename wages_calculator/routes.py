@@ -278,7 +278,7 @@ def add_job(item_id, tab, user_confirm):
                         db.session.add(new_entry)
                         db.session.commit()
                     except ValueError as e:
-                        flash(str(e), 'error-msg')
+                        flash(type(request.form.get('split')), 'error-msg')
                         #retrieve previous answers
                         job = request.form
                     else:
@@ -288,7 +288,7 @@ def add_job(item_id, tab, user_confirm):
                             flash('Success', "success-msg")
                             return redirect(url_for("add_job", tab='entry', item_id=0, user_confirm=False))
     return render_template("add_job.html", drivers=drivers, trucks=trucks, list=jobs, tab=tab, 
-                           job=job, item_id=item_id, type='job', invalid_dates=invalid_dates)
+                           job=job, item_id=item_id, type='job', invalid_dates=invalid_dates, valid_dates=valid_dates)
 
 
 @app.route("/delete_job/<int:item_id>")

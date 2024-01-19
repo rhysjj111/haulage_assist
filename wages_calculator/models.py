@@ -196,16 +196,27 @@ class Day(db.Model):
             raise ValueError('Selection not available in database. Please select a truck')
         return truck_id
     
-    @validates('earned')
-    def validate_earned(self, key, earned):
+    @validates('additional_earned', 'additional_wages')
+    def validate_additional(self, key, field):
         try:
-            earned = currency_to_db(earned)
+            field = currency_to_db(field)
         except:
-            raise ValueError('Please enter a value earned between 1 and 2000')
+            raise ValueError('Please enter a value earned between £0 and £2000')
         else:
-            if not(100 < earned < 200000):
-                raise ValueError('Please enter a value earned between 1 and 2000')
-        return earned
+            if not(0 <= field < 200000):
+                raise ValueError('Please enter a value earned between £0 and £2000')
+        return field
+    
+    @validates('start_mileage', 'end_mileage')
+    def validate_mileage(self, key, field):
+        try:
+            field = currency_to_db(field)
+        except:
+            raise ValueError('Please enter a value earned between 0 and 1,000,000')
+        else:
+            if not(0 <= field < 100000000):
+                raise ValueError('Please enter a value earned between 0 and 1,000,000')
+        return field
 
     @validates('overnight')
     def validate_overnight(self, key, overnight):
@@ -274,7 +285,7 @@ class Job(db.Model):
     def validate_split(self, key, split):
         if split == 'on':
             split = True
-        elif split is None:
+        elif split is None or split == "":
             split = False
         else:
             raise ValueError('Please use the selector to indicate whether split is present')

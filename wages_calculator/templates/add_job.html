@@ -47,6 +47,9 @@
                                 <input type = "hidden" name = "delivery" value = "{{job.delivery}}" />
                                 <input type = "hidden" name = "notes" value = "{{job.notes}}" />
                                 <input type = "hidden" name = "split" value = "{{job.split}}" />
+                        {% for date in valid_dates %}
+                            <input type = "hidden" name = "date_{{date}}" value = "{{valid_dates[date]}}" />
+                        {% endfor %}
                         {% for date in invalid_dates %}
                             <div class="confirm_date_container">
                                 <h5 class="center-align">{{invalid_dates[date]}}</h5>

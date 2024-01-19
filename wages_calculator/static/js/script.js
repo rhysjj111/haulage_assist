@@ -62,20 +62,24 @@ document.addEventListener('DOMContentLoaded', function () {
         properties.forEach((value) => messageContainer.style[value] = '0');
     }
 
-    const splitInput = document.querySelector('#split');
-    const lever = document.querySelector('.lever');
 
-
-    const nwdContainer = document.querySelector('.nwd-container');
-    lever.addEventListener('click', () => {
-        nwdContainer.classList.toggle('hide');
-    })
-    
-    function showNwd(){
-        if (splitInput.checked) {
-        nwdContainer.classList.remove('hide') 
-    }}
-    showNwd();
 })
 
 
+    const splitInput = document.querySelector('#split');
+    const lever = document.querySelector('.lever');
+    const nwdInput = document.querySelector('#date_nwd')
+    const nwdContainer = document.querySelector('.nwd-container');
+    lever.addEventListener('click', () => {
+        
+        if (splitInput.checked) {
+            nwdContainer.classList.add('hide');
+            nwdInput.removeAttribute('required','');
+        } else {
+            nwdContainer.classList.remove('hide');
+            nwdInput.setAttribute('required','');
+            
+           
+        }
+    })
+    
