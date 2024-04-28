@@ -5,7 +5,7 @@
 
     {% block standard_content %}
         <div class="row wages-container">
-            <div class="col s12 m8 offset-m2 xl6 content-container" >
+            <div class="col s12 m6 offset-m2 xl4 content-container" >
                 <form action="" method="post">
 
                     <!-- date -->
@@ -14,7 +14,7 @@
                             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
                             <input id="wages_date" name="search_date"  type="text" class="datepicker validate" required
                                 {% if date is defined %}
-                                    value="{{f.date_to_web(date)}}"
+                                    value="{{f.display_date(date)}}"
                                 {% endif %}
                             >
                             <label for="wages_date">Start date:</label>
@@ -49,32 +49,37 @@
                     </div>
                 </form>
             </div>
-            <div class="col s12 m8 offset-m2 xl6 content-container" id="results">
-                {% if day_end_entries == [] %}
+            <div class="col s12 m10 offset-m2 xl8 content-container" id="results">
+                {% if day_entries == [] %}
                 <div class="">
                     <h4 class="center-align">No results for the date and driver selected.</h4>  
-                    <p class=""><a href="{{ url_for('add_day_end', day_id=0, tab='entry') }}">Click here to add history.</a></p> 
-                    <p class=""><a href="{{ url_for('add_day_end',day_id=0, tab='history') }}">Click here to check history.</a></p>  
+                    <p class=""><a href="{{ url_for('add_day', item_id=0, tab='entry') }}">Click here to add history.</a></p> 
+                    <p class=""><a href="{{ url_for('add_day',item_id=0, tab='history') }}">Click here to check history.</a></p>  
                 </div>
-                {% elif day_end_entries is defined %}
-                    <p class=""><a href="{{ url_for('add_day_end', day_id=0, tab='history') }}">Click here to edit/delete history.</a></p>
+                {% elif day_entries is defined %}
+                    <p class=""><a href="{{ url_for('add_day', item_id=0, tab='history') }}">Click here to edit/delete history.</a></p>
                     <table class="centered">
                         <thead>
                             <tr>
                                 <th>Date</th>
                                 <th>Earned</th>
-                                <th>Bonus Wage</th>
+                                <th>Daily bonus</th>
                                 <th>Overnight</th>
                             </tr>
                         </thead>
                 
                         <tbody>
-                            {% for day in day_end_entries %}    
+                            {% for day in day_entries %}    
                             <tr>
-                                <td>{{ f.date_to_web(day.date) }}</td>
-                                <td>{{ f.format_currency(f.currency_to_web(day.earned)) }}</td>
-                                <td>{{ f.format_currency(day.driver.bonus_percentage * f.currency_to_web(day.earned)) }}</td>
-                                <td>{{ "y" if day.overnight == True else "n" }}</td>
+                                <td>{{ f.display_date(day.date) }}</td>
+                                <td>{{ f.format_currency(f.display_currency(day.calculate_total_earned())) }}</td>
+                                <td>{{ f.format_currency(f.display_currency(day.calculate_daily_bonus(driver))) }}</td>
+                                <td>{% if day.overnight %}
+                                    <i class="material-icons green-text">check</i> 
+                                    {% else %}
+                                    <i class="material-icons">remove</i>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% endfor %}
                             <tr class="table-breaker">
@@ -82,9 +87,9 @@
                             </tr>
                             <tr class="totals-row">
                                 <td><em>Totals:</em></td>
-                                <td><em>{{ f.format_currency(f.currency_to_web(total_earned)) }}</em></td>
-                                <td><em>{{ f.format_currency(f.currency_to_web(total_bonus_wage)) }}</em></td>
-                                <td><em>{{ f.format_currency(f.currency_to_web(total_overnight)) }}</em></td>
+                                <td><em>{{ f.format_currency(f.display_currency(total_earned)) }}</em></td>
+                                <td><em>{{ f.format_currency(f.display_currency(total_bonus_wage)) }}</em></td>
+                                <td><em>{{ f.format_currency(f.display_currency(total_overnight)) }}</em></td>
                             </tr>
                         </tbody>
                     </table> 
@@ -95,12 +100,14 @@
                         <thead>
                             <tr>
                                 <th>Base wage</th>
+                                <th>Weekly bonus</th>
                                 <th>Wages total</th>
                             </tr>
                             <tbody>    
                                 <tr>
-                                    <td>{{ f.format_currency(f.currency_to_web(sel_driver.base_wage)) }}</td>
-                                    <td>{{ f.format_currency(f.currency_to_web(total_wages)) }}</td>
+                                    <td>{{ f.format_currency(f.display_currency(driver.basic_wage)) }}</td>
+                                    <td>{{ f.format_currency(f.display_currency(weekly_bonus)) }}</td>
+                                    <td>{{ f.format_currency(f.display_currency(total_wage)) }}</td>
                                 </tr>
                             </tbody>
                         </table> 

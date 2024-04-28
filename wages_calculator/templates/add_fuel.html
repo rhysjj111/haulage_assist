@@ -13,13 +13,13 @@
         {% endblock %}
 
     {% block entry_history_title %}Fuel entry history:{% endblock %}
-        {% block collapsible_header %}{{item.truck.registration}} - {{f.date_to_web(item.date)}}{% endblock %}
+        {% block collapsible_header %}{{item.truck.registration}} - {{f.display_date(item.date)}}{% endblock %}
 
         {% block collapsible_body %}
             <p>
                 Fuel card: {{ item.fuel_card_name }}<br>
-                Volume: {{ f.currency_to_web(item.fuel_volume) }} L<br>
-                Cost: {{ f.format_currency(f.currency_to_web(item.fuel_cost)) }}
+                Volume: {{ f.display_currency(item.fuel_volume) }} L<br>
+                Cost: {{ f.format_currency(f.display_currency(item.fuel_cost)) }}
             </p>
         {% endblock %}
     

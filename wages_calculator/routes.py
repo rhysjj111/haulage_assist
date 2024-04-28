@@ -3,6 +3,7 @@ from wages_calculator import app, db
 import wages_calculator.functions as f
 from wages_calculator.models import Driver, Day, Fuel, Payslip, Job, Truck, RunningCosts
 from datetime import datetime, timedelta
+from sqlalchemy import func
 
 
 ################### Routes 
@@ -420,7 +421,7 @@ def edit_payslip(item_id):
 
 
 
-################## Wages calculator
+################## WAGES CALCULATOR
 
 @app.route("/wages_calculator", methods=["GET", "POST"])
 def wages_calculator():
@@ -441,18 +442,23 @@ def wages_calculator():
         total_earned = 0
         total_overnight = 0
         total_bonus_wage = 0
-        total_wages = 0
+        total_wage = 0
+        weekly_bonus = 0
         for day in day_entries:
-            total_bonus_wage += day.earned * day.driver.bonus_percentage
-            total_earned += int(day.earned)
+            total_bonus_wage += day.calculate_daily_bonus(driver)
+            total_earned += day.calculate_total_earned()
             if day.overnight == True:
                 total_overnight += 3000
-        total_wages = total_bonus_wage + total_overnight + driver.basic_wage     
+        if total_earned > driver.weekly_bonus_threshold:
+            weekly_bonus = (total_earned - driver.weekly_bonus_threshold) * driver.weekly_bonus_percentage
+            total_bonus_wage += weekly_bonus
+        total_wage = total_bonus_wage + total_overnight + driver.basic_wage     
         
-        return render_template("wages_calculator.html", date=start_date, sel_driver=driver, 
+        return render_template("wages_calculator.html", date=start_date, driver=driver, 
                                drivers=drivers, day_entries=day_entries, 
                                total_earned=total_earned, total_overnight=total_overnight, 
-                               total_bonus_wage=total_bonus_wage, total_wages=total_wages)
+                               total_bonus_wage=total_bonus_wage, total_wage=total_wage, 
+                               weekly_bonus=weekly_bonus)
     return render_template("wages_calculator.html", drivers=drivers)
 
 #makes functions available globally

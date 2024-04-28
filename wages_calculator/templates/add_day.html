@@ -13,7 +13,7 @@
         {% endblock %}
 
     {% block entry_history_title %}Day entry history:{% endblock %}
-        {% block collapsible_header %}{{item.driver.full_name}} - {{f.date_to_web(item.date)}}{% endblock %}
+        {% block collapsible_header %}{{item.driver.full_name}} - {{f.display_date(item.date)}}{% endblock %}
 
         {% block collapsible_body %}
             <p>

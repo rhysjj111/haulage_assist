@@ -19,7 +19,7 @@ def percentage_to_db(value):
     return round(float(value), 2)/100
 
 #functions format to display on web
-def date_to_web(date):
+def display_date(date):
     """ Formats a date to a string for display to the user """
     return datetime.strftime(date, "%d/%m/%Y")
     
@@ -31,10 +31,10 @@ def format_percentage(percentage):
     """ Formats a number from 'xx.xx%' to 'x.xx' ready to display to user """
     return f"{percentage:.0f}%"
 
-def currency_to_web(amount):
+def display_currency(amount):
     """ Formats a number from 'x.xx' to '£x.xx' ready to display to user """
     return float(amount/100)
 
-def percentage_to_web(percentage):
+def display_percentage(percentage):
     """ To be used to convert decimals to percentages to store in the database """
     return float((percentage*100))

@@ -130,7 +130,7 @@ class Driver(db.Model):
 class Truck (db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.now)
-    registration = db.Column(db.String(8), nullable=False, unique=True)
+    registration = db.Column(db.String(8), nullable=False, unique=True, index=True)
     make = db.Column(db.String(15), nullable=False)
     model = db.Column(db.String(15), nullable=False)
 
@@ -155,9 +155,9 @@ class Truck (db.Model):
 
 class Day(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, nullable=False)
-    driver_id = db.Column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False)
-    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=False)  
+    date = db.Column(db.Date, nullable=False, index=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False, index=True)
+    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=False, index=True)  
     status = db.Column(db.String(15), nullable=False, default="Working")
     overnight = db.Column(db.Boolean, nullable=False, default=True)
     start_mileage = db.Column(db.Integer, nullable=False, default = 0)
@@ -172,7 +172,26 @@ class Day(db.Model):
 
     def __repr__(self):
         #represents itself in form of string
-        return f"Day entry: {self.driver.full_name} {date_to_web(self.date)}"
+        return f"Day entry: {self.driver.full_name} {display_date(self.date)}"
+
+    def calculate_total_earned(self):
+        """
+        Calculate the total earned for the day by summing the 'earned' column of each associated Job entry.
+        """
+        total_earned = 0
+        for job in self.jobs:
+            total_earned += job.earned
+        return total_earned
+
+    def calculate_daily_bonus(self, driver):
+        """
+        Calculate the daily bonus based on the driver's settings.
+        """
+        daily_total_earned = self.calculate_total_earned()
+        if daily_total_earned > driver.daily_bonus_threshold:
+            return (daily_total_earned - driver.daily_bonus_threshold) * driver.daily_bonus_percentage
+        else:
+            return 0
 
     ############ validation
     
@@ -246,7 +265,7 @@ class Day(db.Model):
 class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.now)
-    day_id = db.Column(db.Integer, db.ForeignKey("day.id", ondelete="CASCADE"), nullable=False)
+    day_id = db.Column(db.Integer, db.ForeignKey("day.id", ondelete="CASCADE"), nullable=False, index=True)
     earned = db.Column(db.Integer, nullable=False)
     collection = db.Column(db.String(20), nullable=False) 
     delivery = db.Column(db.String(20), nullable=False) 
@@ -257,7 +276,7 @@ class Job(db.Model):
 
     def __repr__(self): 
     #represents itself in form of string
-        return f"Job entry: {date_to_web(self.day.date)} {self.day.driver.full_name} - {format_currency(currency_to_web(self.earned))} "
+        return f"Job entry: {display_date(self.day.date)} {self.day.driver.full_name} - {format_currency(display_currency(self.earned))} "
 
 
     @validates('collection', 'delivery')
@@ -298,8 +317,8 @@ class Payslip(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.now)
 
-    date = db.Column(db.Date, nullable=False)
-    driver_id = db.Column(db.Integer, db.ForeignKey("driver.id"), nullable=False)
+    date = db.Column(db.Date, nullable=False, index=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey("driver.id"), nullable=False, index=True)
     total_wage = db.Column(db.Integer, nullable=False)
     total_cost_to_employer = db.Column(db.Integer, nullable=False)
 
@@ -334,9 +353,9 @@ class Payslip(db.Model):
 class Fuel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.now)
-    date = db.Column(db.Date, nullable=False)
-    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id"), nullable=False)
-    fuel_card_name = db.Column(db.String(20), nullable=False)    
+    date = db.Column(db.Date, nullable=False, index=True)
+    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id"), nullable=False, index=True)
+    fuel_card_name = db.Column(db.String(20), nullable=False, index=True)    
     fuel_volume = db.Column(db.Integer, nullable=False)
     fuel_cost = db.Column(db.Integer, nullable=False)
 

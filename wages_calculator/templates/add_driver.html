@@ -17,12 +17,12 @@
 
         {% block collapsible_body %}
             <p>
-                Basic wage: {{ f.format_currency(f.currency_to_web(item.basic_wage)) }}<br>
-                Daily bonus threshold: {{ f.format_currency(f.currency_to_web(item.daily_bonus_threshold)) }}<br>
-                Daily bonus percentage: {{ f.format_percentage(f.percentage_to_web(item.daily_bonus_percentage)) }}<br>
-                Weekly bonus threshold: {{ f.format_currency(f.currency_to_web(item.weekly_bonus_threshold)) }}<br>
-                Weekly bonus percentage: {{ f.format_percentage(f.percentage_to_web(item.weekly_bonus_percentage)) }}<br>
-                Overnight: {{ f.format_currency(f.currency_to_web(item.overnight_value)) }}<br>
+                Basic wage: {{ f.format_currency(f.display_currency(item.basic_wage)) }}<br>
+                Daily bonus threshold: {{ f.format_currency(f.display_currency(item.daily_bonus_threshold)) }}<br>
+                Daily bonus percentage: {{ f.format_percentage(f.display_percentage(item.daily_bonus_percentage)) }}<br>
+                Weekly bonus threshold: {{ f.format_currency(f.display_currency(item.weekly_bonus_threshold)) }}<br>
+                Weekly bonus percentage: {{ f.format_percentage(f.display_percentage(item.weekly_bonus_percentage)) }}<br>
+                Overnight: {{ f.format_currency(f.display_currency(item.overnight_value)) }}<br>
             </p>
         {% endblock %}
     

@@ -13,12 +13,12 @@
         {% endblock %}
 
     {% block entry_history_title %}Fuel entry history:{% endblock %}
-        {% block collapsible_header %}{{item.driver.full_name}} {{f.date_to_web(item.date)}}{% endblock %}
+        {% block collapsible_header %}{{item.driver.full_name}} {{f.display_date(item.date)}}{% endblock %}
 
         {% block collapsible_body %}
             <p>
-                Total wage: {{ f.format_currency(f.currency_to_web(item.total_wage)) }}<br>
-                Total cost to empoyer: {{ f.format_currency(f.currency_to_web(item.total_cost_to_employer)) }}
+                Total wage: {{ f.format_currency(f.display_currency(item.total_wage)) }}<br>
+                Total cost to empoyer: {{ f.format_currency(f.display_currency(item.total_cost_to_employer)) }}
             </p>
         {% endblock %}
     
