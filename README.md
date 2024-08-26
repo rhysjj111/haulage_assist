@@ -1,6 +1,6 @@
 # A wage calculator for the drivers of a haulage business.
 
-Live site: https://wages-calc-app-3e4a74ee3637.herokuapp.com/ <br>
+Live site: https://jjcalc-d6c8df6b66e9.herokuapp.com/ <br>
 Github: https://github.com/rhysjj111/PROJECT3_WAGE_CALCULATOR
 
 ## UX
