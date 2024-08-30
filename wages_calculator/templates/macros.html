@@ -60,7 +60,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="daily_bonus_threshold" name="daily_bonus_threshold" type="number" required
+            <input id="daily_bonus_threshold" name="daily_bonus_threshold" type="number" step="0.01" required
                     {% if driver.daily_bonus_threshold is defined and type == "edit" %} 
                         value="{{'%0.2f' % f.display_currency(driver.daily_bonus_threshold) }}" 
                     {% elif driver.daily_bonus_threshold is defined %} 
@@ -75,7 +75,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="daily_bonus_percentage" name="daily_bonus_percentage" type="number" required
+            <input id="daily_bonus_percentage" name="daily_bonus_percentage" type="number" step="0.01" required
                 {% if driver.daily_bonus_percentage is defined and type == "edit" %} 
                     value="{{'%0.2f' % f.display_percentage(driver.daily_bonus_percentage) }}" 
                 {% elif driver is defined %}
@@ -90,7 +90,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="weekly_bonus_threshold" name="weekly_bonus_threshold" type="number" required
+            <input id="weekly_bonus_threshold" name="weekly_bonus_threshold" type="number" step="0.01" required
                     {% if driver.weekly_bonus_threshold is defined and type == "edit" %} 
                         value="{{'%0.2f' % f.display_currency(driver.weekly_bonus_threshold) }}" 
                     {% elif driver.weekly_bonus_threshold is defined %} 
@@ -105,7 +105,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="weekly_bonus_percentage" name="weekly_bonus_percentage" type="number" required
+            <input id="weekly_bonus_percentage" name="weekly_bonus_percentage" type="number" step="0.01" required
                 {% if driver.weekly_bonus_percentage is defined and type == "edit" %} 
                     value="{{'%0.2f' % f.display_percentage(driver.weekly_bonus_percentage) }}" 
                 {% elif driver is defined %}
@@ -120,7 +120,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="overnight_value" name="overnight_value" type="number" required
+            <input id="overnight_value" name="overnight_value" type="number" step="0.01" required
                 {% if driver.overnight_value is defined and type == "edit" %} 
                     value="{{'%0.2f' % f.display_currency(driver.overnight_value) }}" 
                 {% elif driver is defined %}
@@ -361,7 +361,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="additional_earned" name="additional_earned" type="number" step="0.01" required
+            <input id="additional_earned" name="additional_earned" type="number" step="0.01" step="0.01" required
                 {% if day != {} and type == 'edit' %} 
                     value="{{'%0.2f' % f.display_currency(day.additional_earned) }}" 
                 {% elif day != {} %}
@@ -378,7 +378,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="additional_wages" name="additional_wages" type="number" step="0.01" required
+            <input id="additional_wages" name="additional_wages" type="number" step="0.01" step="0.01" required
                 {% if day != {} and type == 'edit' %} 
                     value="{{'%0.2f' % f.display_currency(day.additional_wages) }}" 
                 {% elif day != {} %}
@@ -447,7 +447,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="earned" name="earned" type="number" step="0.01" required
+            <input id="earned" name="earned" type="number" step="0.01" step="0.01" required
                 {% if job is defined and type == 'edit' %} 
                     value="{{'%0.2f' % f.display_currency(job.earned) }}" 
                 {% elif job is defined %}
@@ -595,7 +595,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="total_wage" name="total_wage" type="number" required
+            <input id="total_wage" name="total_wage" type="number" step="0.01" required
                     {% if payslip.total_wage is defined and type == "edit" %} 
                         value="{{'%0.2f' % f.display_currency(payslip.total_wage) }}" 
                     {% elif payslip.total_wage is defined %} 
@@ -693,7 +693,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="fuel_volume" name="fuel_volume" type="number" required
+            <input id="fuel_volume" name="fuel_volume" type="number" step="0.01" required
                     {% if fuel.fuel_volume is defined and type == "edit" %} 
                         value="{{'%0.2f' % f.display_currency(fuel.fuel_volume) }}" 
                     {% elif fuel.fuel_volume is defined %} 
@@ -708,7 +708,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="fuel_cost" name="fuel_cost" type="number" required
+            <input id="fuel_cost" name="fuel_cost" type="number" step="0.01" required
                     {% if fuel.fuel_cost is defined and type == "edit" %} 
                         value="{{'%0.2f' % f.display_currency(fuel.fuel_cost) }}" 
                     {% elif fuel.fuel_cost is defined %} 
