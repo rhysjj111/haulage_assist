@@ -31,7 +31,8 @@ def add_driver(item_id, tab):
                 daily_bonus_percentage = request.form.get("daily_bonus_percentage"),
                 weekly_bonus_threshold = request.form.get("weekly_bonus_threshold"),
                 weekly_bonus_percentage = request.form.get("weekly_bonus_percentage"),
-                overnight_value = request.form.get("overnight_value")
+                overnight_value = request.form.get("overnight_value"),
+                truck_id = request.form.get("truck_id")
                 )    
             db.session.add(new_entry)
             db.session.commit()
@@ -72,6 +73,7 @@ def edit_driver(item_id):
         entry.weekly_bonus_threshold = request.form.get("weekly_bonus_threshold")
         entry.weekly_bonus_percentage = request.form.get("weekly_bonus_percentage")
         entry.overnight_value = request.form.get("overnight_value")
+        entry.truck_id = request.form.get("truck_id")
     except ValueError as e:
         flash(str(e), 'error-msg-modal')
         return redirect(url_for("add_driver", item_id=item_id, tab='history'))
