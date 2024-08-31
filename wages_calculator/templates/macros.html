@@ -24,7 +24,7 @@ from datetime import datetime
                 value="{{ driver.first_name }}" 
             {% endif %}
             >
-            <label for="first_name">First name:</label>
+            <label for="first_name">First name: {{driver.truck_id}}</label>
         </div>
     </div>
     
@@ -138,7 +138,7 @@ from datetime import datetime
             <select name="truck_id" id="truck_id" class="validate" required>
                 {% if driver.truck_id is defined %}
                     {% for truck in trucks %}
-                        {% if driver.truck == truck %}
+                        {% if driver.truck_id == truck.id %}
                             <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
                         {% else %}
                             <option value="{{ truck.id }}">{{ truck.registration }}</option>
@@ -207,7 +207,7 @@ from datetime import datetime
             <label for="model">Model:</label>
         </div>
     </div>
-
+    
     <!-- submit button -->
     <div class="row">
         <div class="col s12 center-align">
