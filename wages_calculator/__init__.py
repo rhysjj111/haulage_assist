@@ -2,12 +2,15 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from wages_calculator.api import api_blueprint
 
 if os.path.exists("env.py"):
     import env
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+
+app.register_blueprint(api_blueprint)
 
 
 if os.environ.get("DEVELOPMENT") == "True":
