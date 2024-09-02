@@ -149,6 +149,11 @@ In future, I'd like to:
 
 
 ### Deployment
+#### Deploy on Gitpot
+- To create database run following commands:
+- from wages_calc import db, app
+- with app.app_context():<br>
+    db.create_all()
 #### Deploy locally
 ##### Fork the repository (creating a copy)
 - Create a Github account & login.
