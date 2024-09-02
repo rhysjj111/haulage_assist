@@ -420,9 +420,6 @@ def edit_payslip(item_id):
         return redirect(url_for("add_payslip", item_id=0, tab='edit'))
 
 
-
-
-
 ################## WAGES CALCULATOR
 
 @app.route("/wages_calculator", methods=["GET", "POST"])
