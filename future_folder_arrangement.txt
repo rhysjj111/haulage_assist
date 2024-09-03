@@ -1,46 +1,51 @@
 haulage_assist/
-    wages_calculator/
-        __init__.py  # Main application initialization
-        config.py    # Optional: For configuration settings
-        models.py    # Database models (using SQLAlchemy)
-        functions.py # Utility functions
-        wages_service.py # Logic for wages calculations
+    haulage_app/
+        __init__.py 
+        config.py   
+        models.py   
+        functions.py 
 
         # --- Feature Modules ---
         drivers/
-            __init__.py  # Blueprint registration for drivers
-            routes.py     # Routes related to drivers
+            __init__.py  
+            routes.py    
         trucks/
-            __init__.py  # Blueprint registration for trucks
-            routes.py     # Routes related to trucks
+            __init__.py  
+            routes.py     
         days/
-            __init__.py  # Blueprint registration for days
-            routes.py     # Routes related to days
+            __init__.py  
+            routes.py     
         jobs/
-            __init__.py  # Blueprint registration for jobs
-            routes.py     # Routes related to jobs
+            __init__.py  
+            routes.py    
         fuel/
-            __init__.py  # Blueprint registration for fuel
-            routes.py     # Routes related to fuel
+            __init__.py  
+            routes.py     
         payslips/
-            __init__.py  # Blueprint registration for payslips
-            routes.py     # Routes related to payslips
+            __init__.py  
+            routes.py     
 
         # --- Wages Calculator Module ---
         wages_calculator/
-            __init__.py  # Blueprint registration for wages calculator
-            routes.py     # Routes related to wages calculator
+            __init__.py  
+            routes.py     
+            wages_service.py 
+
+        # --- Centralized API Module ---
+        api/
+            __init__.py
+            drivers.py    # API endpoints for driver-related actions
+            trucks.py     # API endpoints for truck-related actions
+            days.py       # API endpoints for day-related actions
+            jobs.py       # API endpoints for job-related actions
+            fuel.py       # API endpoints for fuel-related actions
+            payslips.py    # API endpoints for payslip-related actions
+            wages.py      # API endpoints for wages calculation 
 
         templates/
-            base.html      # Optional: Base template for inheritance
-            index.html     # Template for your home page
-            # ... (Templates for drivers, trucks, days, etc.)
-            add_driver.html # Example template
-            wages_calculator.html # Example template
-            # ... (Other templates as needed)
+            # ... (Your templates)
 
     # --- Other Top-Level Files (Optional) ---
-    run.py         # Script to run your Flask app
-    requirements.txt  # List of project dependencies
-    .gitignore      # Files and directories to ignore for Git
-
+    run.py         
+    requirements.txt 
+    .gitignore      

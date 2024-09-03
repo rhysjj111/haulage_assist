@@ -1,6 +1,6 @@
 import re
-from wages_calculator import db
-from wages_calculator.functions import *
+from haulage_app import db
+from haulage_app.functions import *
 from sqlalchemy.orm import validates 
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask import redirect, url_for, flash, request

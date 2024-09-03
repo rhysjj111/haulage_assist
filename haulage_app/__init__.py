@@ -24,7 +24,19 @@ else:
     app.config["SQLALCHEMY_DATABASE_URI"] = uri
 
 db = SQLAlchemy(app)
-from wages_calculator.api import api_bp
-app.register_blueprint(api_bp)
+from haulage_app.api import api_bp
+from haulage_app.drivers import drivers_bp
+from haulage_app.days import days_bp
+from haulage_app.trucks import trucks_bp
+from haulage_app.jobs import jobs_bp
+from haulage_app.fuel import fuel_bp
+from haulage_app.payslips import payslips_bp
+from haulage_app.wages_calculator import wages_calculator_bp
 
-from wages_calculator import routes 
+blueprints = [api_bp, drivers_bp, days_bp, trucks_bp, jobs_bp, fuel_bp, payslips_bp, wages_calculator_bp]
+
+for blueprint in blueprints:
+    app.register_blueprint(blueprint)
+
+
+from haulage_app import routes 

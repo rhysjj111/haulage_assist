@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
-from wages_calculator import app, db
-import wages_calculator.functions as f
-from wages_calculator.models import Driver, Day, Fuel, Payslip, Job, Truck, RunningCosts
+from haulage_app import app, db
+import haulage_app.functions as f
+from haulage_app.models import Driver, Day, Fuel, Payslip, Job, Truck, RunningCosts
 from datetime import datetime, timedelta
 from sqlalchemy import func
 

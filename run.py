@@ -1,5 +1,5 @@
 import os
-from wages_calculator import app
+from haulage_app import app
 
 # print(wages_calculator.routes)
 
