@@ -1,0 +1,46 @@
+haulage_assist/
+    wages_calculator/
+        __init__.py  # Main application initialization
+        config.py    # Optional: For configuration settings
+        models.py    # Database models (using SQLAlchemy)
+        functions.py # Utility functions
+        wages_service.py # Logic for wages calculations
+
+        # --- Feature Modules ---
+        drivers/
+            __init__.py  # Blueprint registration for drivers
+            routes.py     # Routes related to drivers
+        trucks/
+            __init__.py  # Blueprint registration for trucks
+            routes.py     # Routes related to trucks
+        days/
+            __init__.py  # Blueprint registration for days
+            routes.py     # Routes related to days
+        jobs/
+            __init__.py  # Blueprint registration for jobs
+            routes.py     # Routes related to jobs
+        fuel/
+            __init__.py  # Blueprint registration for fuel
+            routes.py     # Routes related to fuel
+        payslips/
+            __init__.py  # Blueprint registration for payslips
+            routes.py     # Routes related to payslips
+
+        # --- Wages Calculator Module ---
+        wages_calculator/
+            __init__.py  # Blueprint registration for wages calculator
+            routes.py     # Routes related to wages calculator
+
+        templates/
+            base.html      # Optional: Base template for inheritance
+            index.html     # Template for your home page
+            # ... (Templates for drivers, trucks, days, etc.)
+            add_driver.html # Example template
+            wages_calculator.html # Example template
+            # ... (Other templates as needed)
+
+    # --- Other Top-Level Files (Optional) ---
+    run.py         # Script to run your Flask app
+    requirements.txt  # List of project dependencies
+    .gitignore      # Files and directories to ignore for Git
+
