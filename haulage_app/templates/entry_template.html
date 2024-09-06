@@ -74,7 +74,7 @@
                                     <p>{{ item }} will be deleted permanently.</p>
                                 </div>
                                 <div class="modal-footer">
-                                    <a href="{{ url_for('delete_'+type, item_id=item.id)}}" class="btn red">Delete</a>
+                                    <a href="{{ url_for(type+'.delete_'+type, item_id=item.id)}}" class="btn red">Delete</a>
                                     <a href="" class="modal-close btn grey">Cancel</a>
                                 </div>
                             </div>
@@ -122,7 +122,7 @@
                             <p>ALL {{type}} entries will be deleted permanently.</p>
                         </div>
                         <div class="modal-footer">
-                            <a href="{{ url_for('delete_'+type, item_id=0) }}" class="btn red">Delete All</a>
+                            <a href="{{ url_for(type+'.delete_'+type, item_id=0) }}" class="btn red">Delete All</a>
                             <a href="" class="modal-close btn grey">Cancel</a>
                         </div>
                     </div>

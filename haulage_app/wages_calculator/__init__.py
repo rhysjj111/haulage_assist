@@ -1,5 +1,5 @@
 from flask import Blueprint
 
-wages_calculator_bp = Blueprint('api', __name__, url_prefix='/wages_calculator')
+wages_calculator_bp = Blueprint('wages_calculator', __name__, url_prefix='/wages_calculator')
 
 from . import routes

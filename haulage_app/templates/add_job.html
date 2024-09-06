@@ -6,7 +6,7 @@
 
     {% block entry_form_title %}Add a job:{% endblock %}
         {% block entry_form_questions %}
-            <form method="post" action="{{ url_for('add_job', item_id=0, tab='entry', user_confirm='no') }}">
+            <form method="post" action="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='no') }}">
                 {{ macros[type]('add', job, drivers, f) }}
             </form>
         {% endblock %}
@@ -37,7 +37,7 @@
 
             <!-- modal -->
             <div id="modal_invalid_dates" class="modal">
-                <form method="post" action="{{ url_for('add_job', item_id=0, tab='entry', user_confirm='yes') }}">
+                <form method="post" action="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='yes') }}">
                     <div class="modal-content"> 
                         
                         <h3 class="center-align">No 'Day' entry for the following date(s)</h3><br>

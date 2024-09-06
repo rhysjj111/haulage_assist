@@ -1,17 +1,14 @@
 
 import os
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
-# from flask_migrate import Migrate
-
-
-
+from haulage_app import functions as f
+from flask_migrate import Migrate
 
 if os.path.exists("env.py"):
     import env
 
 app = Flask(__name__)
-
 
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 
@@ -23,20 +20,33 @@ else:
         uri = uri.replace("postgres://", "postgresql://", 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = uri
 
+
 db = SQLAlchemy(app)
+
+migrate = Migrate(app, db)
+
 from haulage_app.api import api_bp
-from haulage_app.drivers import drivers_bp
-from haulage_app.days import days_bp
-from haulage_app.trucks import trucks_bp
-from haulage_app.jobs import jobs_bp
+from haulage_app.driver import driver_bp
+from haulage_app.day import day_bp
+from haulage_app.truck import truck_bp
+from haulage_app.job import job_bp
 from haulage_app.fuel import fuel_bp
-from haulage_app.payslips import payslips_bp
+from haulage_app.payslip import payslip_bp
 from haulage_app.wages_calculator import wages_calculator_bp
 
-blueprints = [api_bp, drivers_bp, days_bp, trucks_bp, jobs_bp, fuel_bp, payslips_bp, wages_calculator_bp]
+blueprints = [api_bp, driver_bp, day_bp, truck_bp, job_bp, fuel_bp, payslip_bp, wages_calculator_bp]
 
 for blueprint in blueprints:
     app.register_blueprint(blueprint)
+
+@app.route("/")
+def home():
+    return render_template("entry_menu.html")
+
+#makes functions available globally
+@app.context_processor
+def context_processor():
+    return dict(f=f)
 
 
 from haulage_app import routes 
