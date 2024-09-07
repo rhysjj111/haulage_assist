@@ -1,6 +1,7 @@
 body{
     margin-bottom: 53px;
-    font-family: "Mulish", sans-serif
+    font-family: "Mulish", sans-serif;
+    background-color: #F9FAFA;
 }
 
 h1, h2, h3, h4, h5, h6{
@@ -200,5 +201,10 @@ footer, nav{
     background-color: aliceblue;
     padding: 15px;
     border-radius: 10px;
+}
+
+/* wages calculator */
+.wc-card-link{
+    margin-left: 15px;
 }
 

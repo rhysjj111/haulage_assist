@@ -1,141 +1,146 @@
 {% extends "base.html" %}
 
 {% block header %}
-    <div class="col s2 offset-m2 m2">
-        <a href="{{ url_for('home') }}" class="back-link">      
-            <i class="small material-icons">arrow_back</i>   
-        </a>
-    </div>
-    <div class="col s10 pull-s1 m8 pull-m2">
-        <h1>{% block entry_title %}{% endblock %}</h1>
-    </div>
+<div class="col s2 m2">
+    <a href="{{ url_for('home') }}">
+        <i class="small material-icons">arrow_back</i>
+    </a>
+</div>
+<div class="col s10 pull-s1 m8 pull-m2">
+    <h1>{% block entry_title %}{% endblock %}</h1>
+</div>
 {% endblock %}
 
 {% block main %}
 
-    <!-- error messages -->
-    {% set err_msg = get_flashed_messages(category_filter=["error-msg"]) %}
-    {% set scc_msg = get_flashed_messages(category_filter=["success-msg"]) %}
-    {% with messages = err_msg if err_msg else scc_msg %}
-        {% if messages %}
-            <div class="messages-container {{'err-msg' if (err_msg) else 'scc-msg'}}">
-                {% for message in messages %}                    
-                    <ul>
-                        <li> {{ message }}</li>
-                    </ul>
-                {% endfor %}
-            </div>    
-        {% endif %}
-    {% endwith %}
+<!-- error messages -->
+{% set err_msg = get_flashed_messages(category_filter=["error-msg"]) %}
+{% set scc_msg = get_flashed_messages(category_filter=["success-msg"]) %}
+{% with messages = err_msg if err_msg else scc_msg %}
+{% if messages %}
+<div class="messages-container {{'err-msg' if (err_msg) else 'scc-msg'}}">
+    {% for message in messages %}
+    <ul>
+        <li> {{ message }}</li>
+    </ul>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
 
-    <!-- tabs menu for smaller screens -->
-    <div class="row">
-        <div class="col s12 m8 offset-m2 l6 offset-l3 hide-on-large-only content-container">
-            <ul class="tabs z-depth-1 hide-tabs" id="sub-menu-tabs">
-                <li class="tab col s2 "><a class="{{ 'active' if (tab == 'entry') else '' }}" href="#entry_form">Entry</a></li>
-                <li class="tab col s2 "><a class="{{ 'active' if (tab == 'history') else '' }}" href="#entry_history">History</a></li>
-            </ul>
-        </div>
+<!-- tabs menu for smaller screens -->
+<!-- <div class="row"> -->
+<div class="col s12 m8 offset-m2 l6 offset-l3 hide-on-large-only content-container">
+    <ul class="tabs z-depth-1 hide-tabs" id="sub-menu-tabs">
+        <li class="tab col s2 "><a class="{{ 'active' if (tab == 'entry') else '' }}" href="#entry_form">Entry</a></li>
+        <li class="tab col s2 "><a class="{{ 'active' if (tab == 'history') else '' }}"
+                href="#entry_history">History
+            </a>
+        </li>
+    </ul>
+</div>
 
-        <!-- form column -->
-        <div class="col s12 l6 entry-form content-container {{ 'active' if (tab == 'entry') else '' }}" id="entry_form">
-            <!-- form title -->
-            <h4>{% block entry_form_title %}{% endblock %}</h4>
-            <!-- form content -->
-            {% block entry_form_questions scoped %}
-            {% endblock %}
-        </div>
-        
-        <!-- history column -->
-        <div class="col s12 l6 entry-history content-container {{ 'active' if (tab == 'history') else '' }}" id="entry_history">
-            <!-- history title -->
-            <h4>{% block entry_history_title %}Test history{% endblock %}</h4>
-            <!-- history content -->
-                <ul class="collapsible">
-                    {% for item in list %}
-                        <li>
-                            <!-- collapsible header -->
-                            <div class="collapsible-header"><i class="material-icons">filter_drama</i>
-                            <strong>{% block collapsible_header scoped %}{% endblock %}</strong>
-                            </div>
-                            <!-- collapsible-body -->
-                            <div class="collapsible-body">
-                                {% block collapsible_body scoped %}{% endblock %}
-                                <!-- buttons -->
-                                <a href="#modal_edit_{{ item.id }}" class="btn green accent-4 modal-trigger {{'hide' if type=='job'}}">Edit</a>
-                                <a href="#modal_delete_{{ item.id }}" class="btn red modal-trigger">Delete</a>
-                            </div>
-                            
+<!-- form column -->
+<div class="col s12 l6 entry-form content-container {{ 'active' if (tab == 'entry') else '' }}" id="entry_form">
+    <!-- form title -->
+    <h4>{% block entry_form_title %}{% endblock %}</h4>
+    <!-- form content -->
+    {% block entry_form_questions scoped %}
+    {% endblock %}
+</div>
 
-                            <!-- Delete entry modal -->
-                            <div id="modal_delete_{{ item.id }}" class="modal">
-                                <div class="modal-content">
-                                    <h4>Delete {{type|replace("_"," ")|capitalize()}} entries?</h4>
-                                    <p>{{ item }} will be deleted permanently.</p>
-                                </div>
-                                <div class="modal-footer">
-                                    <a href="{{ url_for(type+'.delete_'+type, item_id=item.id)}}" class="btn red">Delete</a>
-                                    <a href="" class="modal-close btn grey">Cancel</a>
-                                </div>
-                            </div>
+<!-- history column -->
+<div class="col s12 l6 entry-history content-container {{ 'active' if (tab == 'history') else '' }}" id="entry_history">
+    <!-- history title -->
+    <h4>{% block entry_history_title %}Test history{% endblock %}</h4>
+    <!-- history content -->
+    <ul class="collapsible">
+        {% for item in list %}
+        <li>
+            <!-- collapsible header -->
+            <div class="collapsible-header"><i class="material-icons">filter_drama</i>
+                <strong>{% block collapsible_header scoped %}{% endblock %}</strong>
+            </div>
+            <!-- collapsible-body -->
+            <div class="collapsible-body">
+                {% block collapsible_body scoped %}{% endblock %}
+                <!-- buttons -->
+                <a href="#modal_edit_{{ item.id }}"
+                    class="btn green accent-4 modal-trigger {{'hide' if type=='job'}}">Edit</a>
+                <a href="#modal_delete_{{ item.id }}" class="btn red modal-trigger">Delete</a>
+            </div>
 
-                            <!-- Edit modal -->
-                            <div id="modal_edit_{{ item.id }}" class="modal">
-                                <div class="modal-content">
-                                <h3 class="center-align">Edit {{type|replace("_"," ")|capitalize()}}</h3>
 
-                                <!-- error messages -->
-                                {% with messages = get_flashed_messages(category_filter=["error-msg-modal"]) %}
-                                    {% if messages %}
-                                        <div class="messages-container err-msg">
-                                            {% for message in messages %}                    
-                                                <ul>
-                                                    <li> {{ message }}</li>
-                                                </ul>
-                                            {% endfor %}
-                                        </div>    
-                                    {% endif %}
-                                {% endwith %}
-                                                
-                                <div class="row">
-                                    {% block entry_history_questions scoped %}
-                                    {% endblock %}
-                                </div>
-                            </div>
-                        </li>
-                    {% endfor %}
-                    <!-- delete all collapsible  -->
-                    <li>
-                        <div class="collapsible-header delete-all-collapsible"><i class="material-icons">filter_drama</i>
-                            <strong>Delete all?</strong>
-                        </div>
-                        
-                        <div class="collapsible-body">
-                            <a href="#modal_delete_all" class="btn red modal-trigger">Delete All {{type|replace("_"," ")|capitalize()}} entries</a>
-                        </div>
-                    </li>
-                        
-                    <!-- Delete all modal -->
-                    <div id="modal_delete_all" class="modal">
-                        <div class="modal-content">
-                            <h4>Delete ALL {{type}} entries?</h4>
-                            <p>ALL {{type}} entries will be deleted permanently.</p>
-                        </div>
-                        <div class="modal-footer">
-                            <a href="{{ url_for(type+'.delete_'+type, item_id=0) }}" class="btn red">Delete All</a>
-                            <a href="" class="modal-close btn grey">Cancel</a>
-                        </div>
+            <!-- Delete entry modal -->
+            <div id="modal_delete_{{ item.id }}" class="modal">
+                <div class="modal-content">
+                    <h4>Delete {{type|replace("_"," ")|capitalize()}} entries?</h4>
+                    <p>{{ item }} will be deleted permanently.</p>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ url_for(type+'.delete_'+type, item_id=item.id)}}" class="btn red">Delete</a>
+                    <a href="" class="modal-close btn grey">Cancel</a>
+                </div>
+            </div>
+
+            <!-- Edit modal -->
+            <div id="modal_edit_{{ item.id }}" class="modal">
+                <div class="modal-content">
+                    <h3 class="center-align">Edit {{type|replace("_"," ")|capitalize()}}</h3>
+
+                    <!-- error messages -->
+                    {% with messages = get_flashed_messages(category_filter=["error-msg-modal"]) %}
+                    {% if messages %}
+                    <div class="messages-container err-msg">
+                        {% for message in messages %}
+                        <ul>
+                            <li> {{ message }}</li>
+                        </ul>
+                        {% endfor %}
                     </div>
-                </ul>
-        </div>
-    </div>
+                    {% endif %}
+                    {% endwith %}
 
-    <!-- triggers edit-modal if invalid form submission -->
-    {% block modal_triggers %}
-        {% if item_id is defined and item_id > 0 %}
-            <div class="open-edit-modal">modal_edit_{{item_id}}</div>
-        {% endif %}    
-    {% endblock %}   
+                    <div class="row">
+                        {% block entry_history_questions scoped %}
+                        {% endblock %}
+                    </div>
+                </div>
+            </div>
+        </li>
+        {% endfor %}
+        <!-- delete all collapsible  -->
+        <li>
+            <div class="collapsible-header delete-all-collapsible"><i class="material-icons">filter_drama</i>
+                <strong>Delete all?</strong>
+            </div>
+
+            <div class="collapsible-body">
+                <a href="#modal_delete_all" class="btn red modal-trigger">Delete All
+                    {{type|replace("_"," ")|capitalize()}} entries</a>
+            </div>
+        </li>
+
+        <!-- Delete all modal -->
+        <div id="modal_delete_all" class="modal">
+            <div class="modal-content">
+                <h4>Delete ALL {{type}} entries?</h4>
+                <p>ALL {{type}} entries will be deleted permanently.</p>
+            </div>
+            <div class="modal-footer">
+                <a href="{{ url_for(type+'.delete_'+type, item_id=0) }}" class="btn red">Delete All</a>
+                <a href="" class="modal-close btn grey">Cancel</a>
+            </div>
+        </div>
+    </ul>
+</div>
+
+<!-- triggers edit-modal if invalid form submission -->
+{% block modal_triggers %}
+{% if item_id is defined and item_id > 0 %}
+<div class="open-edit-modal">modal_edit_{{item_id}}</div>
+{% endif %}
+{% endblock %}
 
 
 {% endblock %}
