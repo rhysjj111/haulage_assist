@@ -7,7 +7,6 @@
         <div class="row wages-container">
             <div class="col s12 m6 offset-m2 xl4 content-container" >
                 <form action="" method="post">
-
                     <!-- date -->
                     <div class="row">
                         <div class="input-field col s12">
@@ -44,7 +43,7 @@
                     <div class="row">
                         <div class="input-field col s12 center-align">
                             <button type="submit" class="btn green accent-4 submit">Search </button>
-                            <button href="{{ url_for('wages_calculator')}}" class="btn grey" formnovalidate>Reset</button>
+                            <button href="{{ url_for('wages_calculator.wages_calculator')}}" class="btn grey" formnovalidate>Reset</button>
                         </div>   
                     </div>
                 </form>
@@ -57,7 +56,7 @@
                     <p class=""><a href="{{ url_for('add_day',item_id=0, tab='history') }}">Click here to check history.</a></p>  
                 </div>
                 {% elif day_entries is defined %}
-                    <p class=""><a href="{{ url_for('add_day', item_id=0, tab='history') }}">Click here to edit/delete history.</a></p>
+                    <p class=""><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}">Click here to edit/delete history.</a></p>
                     <table class="centered">
                         <thead>
                             <tr>
