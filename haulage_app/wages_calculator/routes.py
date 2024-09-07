@@ -43,40 +43,40 @@ def wages_calculator():
                                weekly_bonus=weekly_bonus)
     return render_template("wages_calculator.html", drivers=drivers)
 
-@wages_calculator_new_bp.route("/wages_calculator_new", methods=["GET"])
-def wages_calculator():
+@wages_calculator_bp.route("/wages_calculator/new", methods=["GET"])
+def wages_calculator_new():
     drivers = list(Driver.query.order_by(Driver.first_name).all())
-    if request.method == "POST":
-        # generate start and end date, from user submited date
-        date = request.form.get("search_date")
-        start_date = f.date_to_db(date)
-        end_date = start_date + timedelta(days=6)
-        # query day table based on user inputs of driver and date
-        driver_id = request.form.get("search_driver_id")
-        driver = Driver.query.get(driver_id)
-        day_entries = Day.query.filter(
-            Day.driver_id == driver_id, 
-            Day.date >= start_date, 
-            Day.date <= end_date).all()
-        # wages calculations
-        total_earned = 0
-        total_overnight = 0
-        total_bonus_wage = 0
-        total_wage = 0
-        weekly_bonus = 0
-        for day in day_entries:
-            total_bonus_wage += day.calculate_daily_bonus(driver)
-            total_earned += day.calculate_total_earned()
-            if day.overnight == True:
-                total_overnight += 3000
-        if total_earned > driver.weekly_bonus_threshold:
-            weekly_bonus = (total_earned - driver.weekly_bonus_threshold) * driver.weekly_bonus_percentage
-            total_bonus_wage += weekly_bonus
-        total_wage = total_bonus_wage + total_overnight + driver.basic_wage     
+    # if request.method == "POST":
+    #     # generate start and end date, from user submited date
+    #     date = request.form.get("search_date")
+    #     start_date = f.date_to_db(date)
+    #     end_date = start_date + timedelta(days=6)
+    #     # query day table based on user inputs of driver and date
+    #     driver_id = request.form.get("search_driver_id")
+    #     driver = Driver.query.get(driver_id)
+    #     day_entries = Day.query.filter(
+    #         Day.driver_id == driver_id, 
+    #         Day.date >= start_date, 
+    #         Day.date <= end_date).all()
+    #     # wages calculations
+    #     total_earned = 0
+    #     total_overnight = 0
+    #     total_bonus_wage = 0
+    #     total_wage = 0
+    #     weekly_bonus = 0
+    #     for day in day_entries:
+    #         total_bonus_wage += day.calculate_daily_bonus(driver)
+    #         total_earned += day.calculate_total_earned()
+    #         if day.overnight == True:
+    #             total_overnight += 3000
+    #     if total_earned > driver.weekly_bonus_threshold:
+    #         weekly_bonus = (total_earned - driver.weekly_bonus_threshold) * driver.weekly_bonus_percentage
+    #         total_bonus_wage += weekly_bonus
+    #     total_wage = total_bonus_wage + total_overnight + driver.basic_wage     
         
-        return render_template("wages_calculator.html", date=start_date, driver=driver, 
-                               drivers=drivers, day_entries=day_entries, 
-                               total_earned=total_earned, total_overnight=total_overnight, 
-                               total_bonus_wage=total_bonus_wage, total_wage=total_wage, 
-                               weekly_bonus=weekly_bonus)
-    return render_template("wages_calculator.html", drivers=drivers)
+    #     return render_template("wages_calculator.html", date=start_date, driver=driver, 
+    #                            drivers=drivers, day_entries=day_entries, 
+    #                            total_earned=total_earned, total_overnight=total_overnight, 
+    #                            total_bonus_wage=total_bonus_wage, total_wage=total_wage, 
+    #                            weekly_bonus=weekly_bonus)
+    return render_template("wages_calculator_new.html", drivers=drivers)
