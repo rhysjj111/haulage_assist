@@ -1,17 +1,22 @@
 body{
     margin-bottom: 53px;
+    font-family: "Mulish", sans-serif
 }
 
-header{
+h1, h2, h3, h4, h5, h6{
+    font-family: "Roboto Slab", sans-serif;
+    font-weight: 300;
+}
+
+h1{
+    font-weight: 400;
+}
+
+.header-row{
     height: 5.7rem;
-    background-color: chocolate;
 }
 
-.header-container{
-    height: 100%;
-}
-
-.header-container *{
+.header-row *{
     margin-top: 0;
     margin-bottom: 0;
 }
