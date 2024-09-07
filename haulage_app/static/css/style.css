@@ -10,13 +10,15 @@ h1, h2, h3, h4, h5, h6{
 
 h1{
     font-weight: 400;
+    font-size: 2.4rem;
+    text-align: center;
 }
 
 .header-row{
-    height: 5.7rem;
+    height: 6.5rem;
 }
 
-.header-row *{
+.header-row *, .header-row{
     margin-top: 0;
     margin-bottom: 0;
 }
@@ -25,17 +27,12 @@ main {
     display: flex;
     flex-direction: column; /* Arrange items vertically */
     justify-content: center; /* Center vertically */
-    min-height: 100vh;       /* Ensure main takes up full viewport height */
-}
-  
-h1{
-    font-size: 2.4rem;
-    text-align: center;
+    min-height: calc(100vh - 6.5rem - 58px);       /* Ensure main takes up full viewport height */
 }
 
-/* .back-arrow{
-    margin-top: 3.2rem;
-} */
+.back-link{
+    display:block;
+}
 
 a{
     color: black;
@@ -59,14 +56,14 @@ footer, nav{
 
 }
 
-.content-container{
+/* .content-container{
     padding: 10px 30px !important;
     margin: 15px 0 15px 0;
-}
+} */
 
-.wages-container{
+/* .wages-container{
     margin-top: 10px;
-}
+} */
 
 .menu-tab-link{
     font-size: 20px !important;
@@ -74,7 +71,7 @@ footer, nav{
     color:  #333a56 !important;
 }
 
-@media (min-width: 992px){
+/* @media (min-width: 992px){
     .content-container{
         padding: 10px 30px !important;
         margin-top: 30px;
@@ -82,18 +79,18 @@ footer, nav{
     .wages-container{
         margin-top: 100px;
     }
-}
+} */
 
-.data-entry-button-container{
+/* .data-entry-button-container{
     padding: 0px !important;
     margin-top: 35px;
-}
+} */
 
-.data-entry-menu-container{
+/* .data-entry-menu-container{
     margin-top: 0;
-    /* height: 70vh; */
+    height: 70vh;
     min-height: 425px;
-}
+} */
 
 /* .header-container > .row{
     margin:0;
@@ -137,7 +134,7 @@ footer, nav{
     color: rgba(209, 155, 164, 0.966) !important; 
 } */
 
-@media (min-width: 1200px){
+/* @media (min-width: 1200px){
     .main-button{
         margin: 0 30px 0 30px;
     }
@@ -147,7 +144,7 @@ footer, nav{
     .main-button{
         margin-top: 100px;
     }
-}
+} */
 
 .data-entry-icon{
     font-size: 50px !important;
