@@ -1,21 +1,36 @@
+body{
+    margin-bottom: 53px;
+}
+
+header{
+    height: 5.7rem;
+    background-color: chocolate;
+}
+
+.header-container{
+    height: 100%;
+}
+
+.header-container *{
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
 main {
     display: flex;
     flex-direction: column; /* Arrange items vertically */
     justify-content: center; /* Center vertically */
     min-height: 100vh;       /* Ensure main takes up full viewport height */
-  }
-
-body{
-    margin-bottom: 53px;
 }
-
+  
 h1{
-    font-size: 35px;
+    font-size: 2.4rem;
     text-align: center;
 }
-.back-arrow{
+
+/* .back-arrow{
     margin-top: 3.2rem;
-}
+} */
 
 a{
     color: black;
@@ -75,9 +90,9 @@ footer, nav{
     min-height: 425px;
 }
 
-.header-container > .row{
+/* .header-container > .row{
     margin:0;
-}
+} */
 
 .collapsible-body > p{
     margin-top:0px;

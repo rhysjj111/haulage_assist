@@ -2,11 +2,11 @@
 
 {% block header %}
     <a href="{{ url_for('home') }}">
-        <div class="col s1 offset-m2 right-align">
+        <div class="col s1 offset-m2">
             <i class="small material-icons back-arrow">arrow_back</i>
         </div>
     </a>
-    <div class="col s10 m6 heading-container">
+    <div class="col s10 m6">
         <h1>{% block entry_title %}{% endblock %}</h1>
     </div>
 {% endblock %}
