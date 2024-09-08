@@ -42,12 +42,10 @@ def add_day(item_id, tab):
 @day_bp.route("/delete_day/<int:item_id>")
 def delete_day(item_id):
     if item_id == 0:
-        start_date = f.week_start(f.today())
-        end_date = start_date + timedelta(days=6)
-        all = db.session.query(Day).filter(Day.date >= start_date, Day.date <= end_date)
+        all = db.session.query(Day)
         all.delete()
         db.session.commit()
-        flash("Week deleted", "success-msg")
+        flash("All entries deleted", "success-msg")
     else:
         entry = Day.query.get_or_404(item_id)
         db.session.delete(entry)
