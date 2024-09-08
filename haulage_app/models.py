@@ -189,7 +189,7 @@ class Day(db.Model):
         """
         daily_total_earned = self.calculate_total_earned()
         if daily_total_earned > driver.daily_bonus_threshold:
-            return (daily_total_earned - driver.daily_bonus_threshold) * driver.daily_bonus_percentage
+            return int((daily_total_earned - driver.daily_bonus_threshold) * driver.daily_bonus_percentage)
         else:
             return 0
 

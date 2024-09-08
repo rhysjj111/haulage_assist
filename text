@@ -1,0 +1,37 @@
+        <!-- <div class="col s12 m4">
+            <div class="card hoverable">
+                <div class="card-content">
+                    <span class="card-title"><h4>{{ day.day_entries }}</h4></span>
+                    <p>EXTRAS: £1,234</p>
+                </div>
+                <div class="card-action">
+                    <a href="#" class="valign-wrapper">
+                        See Days <i class="material-icons wc-card-link">open_in_new</i>
+                    </a>
+                </div>
+            </div>
+        </div> -->
+
+            <!-- loop through the drivers and create a summary for each -->
+    <!-- each time 3 columns fill a row, a new row is started in desktop view -->
+    {% for driver_id, data in driver_data.items() %}
+    <p> Driver: {{ data.driver.full_name }}</p>
+
+    <p>---------------------------------------------------------</p>
+    {% for entry in data.day_entries %} 
+        {% for job in entry.jobs %}
+            <p>Day :</p>
+            <p>Date: {{ job.day.date }}</p>
+            <p>Overnight: {{ job.day.overnight }}</p>
+            <p>Status: {{ job.day.status }}</p>
+            <p>Jobs:</p>    
+            <p>Job ID: {{ job.id }}</p>
+            <p>Job Collection: {{ job.collection }}</p>
+            <p>Job Delivery: {{ job.delivery }}</p>
+            <p>Job Earned: {{ job.earned }}</p> 
+            <p>Daily Bonus: {{job.day.daily_bonus}}</p>
+            <p>Split: {{ job.split }}</p>
+        {% endfor %}
+        <p>---------------------------------------------------------</p>
+    {% endfor %}
+    <p>---------------------------------------------------------</p>
