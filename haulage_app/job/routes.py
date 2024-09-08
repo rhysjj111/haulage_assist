@@ -9,13 +9,14 @@ def add_job(item_id, tab, user_confirm):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())
     days = list(Day.query.order_by(Day.date).all())
-    jobs = list(Job.query.all())
+    jobs = list(Job.query.order_by(Job.id.desc()).all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     job = {}
     dates = {}
     invalid_dates = {}
     valid_dates = {}
+    preferred_truck_id = None
   
     if request.method == "POST":        
         current_date = request.form.get('date_cd')
@@ -23,10 +24,14 @@ def add_job(item_id, tab, user_confirm):
         dates = {'cd':current_date, 'nwd':next_working_date}
         driver_id = request.form.get('driver_id')
 
-        if(current_date == next_working_date):
-            flash('"Date" and "Next working date" must not be the same', "error-msg")
+        if next_working_date and (current_date >= next_working_date):
+            flash('"Next working date" must be in the future', "error-msg")
             job = request.form
-        else:        
+        else:
+            current_driver = Driver.query.filter(Driver.id == driver_id).first()
+            if current_driver:
+                preferred_truck_id = current_driver.truck_id
+
             for date in dates:
                 try:
                     f.date_to_db(dates[date])
@@ -85,8 +90,18 @@ def add_job(item_id, tab, user_confirm):
                         else:
                             flash('Success', "success-msg")
                             return redirect(url_for("job.add_job", tab='entry', item_id=0, user_confirm=False))
-    return render_template("add_job.html", drivers=drivers, trucks=trucks, list=jobs, tab=tab, 
-                           job=job, item_id=item_id, type='job', invalid_dates=invalid_dates, valid_dates=valid_dates)
+    return render_template(
+        "add_job.html",
+        drivers=drivers,
+        trucks=trucks,
+        list=jobs,
+        tab=tab,
+        job=job,
+        item_id=item_id,
+        type='job',
+        invalid_dates=invalid_dates,
+        valid_dates=valid_dates,
+        preferred_truck=preferred_truck_id)
 
 
 @job_bp.route("/delete_job/<int:item_id>")

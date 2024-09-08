@@ -76,11 +76,9 @@
                                     <div class="input-field col s12">
                                         <select name="truck_id_{{ date }}" id="truck_id_{{ date }}" class="validate" required>
                                             {% for truck in trucks %}
-                                                {% for driver in drivers %}
-                                                    {% if driver.id == job.driver_id %}
-                                                        <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
-                                                    {% endif %}
-                                                {% endfor %}
+                                                {% if preferred_truck == truck.id %}
+                                                    <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
+                                                {% endif %}
                                                 <option value="{{ truck.id }}">{{ truck.registration }}</option>         
                                             {% endfor %}
                                         </select>

@@ -9,7 +9,7 @@ def add_day(item_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())
     components = {'drivers':drivers, 'trucks':trucks}
-    day_entries = list(Day.query.order_by(Day.date).all())
+    day_entries = list(Day.query.order_by(Day.id.desc()).all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     day = {}
