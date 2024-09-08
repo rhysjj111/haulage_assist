@@ -204,7 +204,9 @@ footer, nav{
 }
 
 /* wages calculator */
-.wc-card-link{
-    margin-left: 15px;
+.wages-calc-card-text{
+    font-size: 18px;
 }
+
+
 

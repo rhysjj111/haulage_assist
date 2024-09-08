@@ -7,7 +7,7 @@ from haulage_app.wages_calculator import wages_calculator_bp
 
 @wages_calculator_bp.route("/wages_calculator/reduncd", methods=["GET", "POST"])
 def wages_calculator():
-#     drivers = list(Driver.query.order_by(Driver.first_name).all())
+    drivers = list(Driver.query.order_by(Driver.first_name).all())
 #     if request.method == "POST":
 #         # generate start and end date, from user submited date
 #         date = request.form.get("search_date")
@@ -61,30 +61,33 @@ def wages_calculator_new():
 
         # Calculate wages for each driver
         weekly_total_earned = 0
-        total_overnight = 0
-        total_bonus_wage = 0
-        total_wage = 0
+        weekly_total_overnight = 0
+        weekly_total_bonus_wage = 0
+        weekly_total_wage = 0
         weekly_bonus = 0
         for day in day_entries:
             day.daily_bonus = day.calculate_daily_bonus(driver)
-            total_bonus_wage += day.daily_bonus
+            weekly_total_bonus_wage += day.daily_bonus
             weekly_total_earned += day.calculate_total_earned()
             if day.overnight == True:
-                total_overnight += 3000
+                weekly_total_overnight += 3000
         if weekly_total_earned > driver.weekly_bonus_threshold:
-            weekly_bonus = (total_earned - driver.weekly_bonus_threshold) * driver.weekly_bonus_percentage
-            total_bonus_wage += weekly_bonus
-        total_wage = total_bonus_wage + total_overnight + driver.basic_wage
-        extras = total_bonus_wage 
+            weekly_bonus = (weekly_total_earned - driver.weekly_bonus_threshold) * driver.weekly_bonus_percentage
+            weekly_total_bonus_wage += weekly_bonus
+        weekly_extras = weekly_total_bonus_wage - (15000 - weekly_total_overnight)
+        weekly_total_wage = weekly_extras + driver.basic_wage
 
         driver_data[driver.id]={
             'driver': driver,
             'day_entries': day_entries,
-            'total_earned': total_earned,
-            'total_overnight': total_overnight,
-            'total_bonus_wage': total_bonus_wage,
-            'total_wage': total_wage,
-            'weekly_bonus': weekly_bonus
+            'weekly_total_earned': weekly_total_earned,
+            'weekly_total_overnight': weekly_total_overnight,
+            'weekly_total_bonus_wage': weekly_total_bonus_wage,
+            'weekly_total_wage': weekly_total_wage,
+            'weekly_bonus': weekly_bonus,
+            'weekly_extras': weekly_extras,
+            'start_date': start_date,
+            'end_date': end_date
         }
 
 
@@ -121,4 +124,4 @@ def wages_calculator_new():
     #                            total_earned=total_earned, total_overnight=total_overnight, 
     #                            total_bonus_wage=total_bonus_wage, total_wage=total_wage, 
     #                            weekly_bonus=weekly_bonus)
-    return render_template("wages_calculator_new.html", driver_data=driver_data, drivers=drivers)
+    return render_template("wages_calculator_new.html", driver_data=driver_data, drivers=drivers, start_date=start_date, end_date=end_date)

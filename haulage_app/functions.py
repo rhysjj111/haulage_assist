@@ -32,9 +32,16 @@ def format_percentage(percentage):
     return f"{percentage:.0f}%"
 
 def display_currency(amount):
-    """ Formats a number from 'x.xx' to '£x.xx' ready to display to user """
+    """ Converts a number from pence to pounds ready to display to user """
     return float(amount/100)
 
 def display_percentage(percentage):
     """ To be used to convert decimals to percentages to store in the database """
     return float((percentage*100))
+
+def df_currency(amount):
+    return format_currency(display_currency(amount))
+
+def df_percentage(percentage):
+    return format_percentage(display_percentage(percentage))
+
