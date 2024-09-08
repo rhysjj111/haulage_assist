@@ -17,7 +17,7 @@
             {% if data.day_entries|length >= 5 %}
             <p class="wages-calc-card-text">Extras: {{ f.df_currency(data.weekly_extras) }}</p>
             {% else %}
-            <p class="wages-calc-card-text red-text">Some days are missing.</p>
+            <p class="wages-calc-card-text red-text">There are only {{data.day|length}} days recorded for this week.</p>
             <p><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}" class="">Add day entries</a></p>
             <p><a href="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='False') }}" class="">Add job entries</a></p>
 
