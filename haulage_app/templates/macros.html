@@ -359,7 +359,7 @@ from datetime import datetime
                     {% elif day.start_mileage is defined %} 
                         value="{{day.start_mileage}}" 
                     {% else %}
-                        value="0"
+                        value=""
                     {% endif %}
                     >
             <label for="start_mileage">Start mileage:</label>
@@ -376,7 +376,7 @@ from datetime import datetime
                     {% elif day.end_mileage is defined %} 
                         value="{{day.end_mileage}}" 
                     {% else %}
-                        value="0"
+                        value=""
                     {% endif %}
                     >
             <label for="end_mileage">End mileage:</label>
@@ -393,7 +393,7 @@ from datetime import datetime
                 {% elif day != {} %}
                     value="{{ day.additional_earned }}"
                 {% else %}
-                    value="0"
+                    value=""
                 {% endif %}
             >  
             <label for="additional_earned">Additional earned (£):</label>
@@ -410,7 +410,7 @@ from datetime import datetime
                 {% elif day != {} %}
                     value="{{ day.additional_wages}}"
                 {% else %}
-                    value="0"
+                    value=""
                 {% endif %}
             >    
             <label for="additional_wages">Additional wages (£):</label>
