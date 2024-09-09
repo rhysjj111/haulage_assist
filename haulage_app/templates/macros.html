@@ -323,6 +323,32 @@ from datetime import datetime
         </div>
     </div>
 
+    <!-- fuel -->
+    <div class="row">
+        <div class="input-field col s12">
+            <div class="switch">
+                <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+                {% if day != {} %}
+                    <label for="fuel_{{ type }}_{{ day.id }}">
+                        {% if day.fuel == True or day.fuel == "on" %}
+                            <input id="fuel_{{ type }}_{{ day.id }}" name="fuel" type="checkbox" checked>
+                        {% else %}
+                            <input id="fuel_{{ type }}_{{ day.id }}" name="fuel" type="checkbox">
+                        {% endif %}
+                        <span class="lever"></span>
+                        fuel
+                    </label>
+                {% else %}
+                    <label for="fuel_{{ type }}">
+                        <input id="fuel_{{ type }}" name="fuel" type="checkbox">
+                        <span class="lever"></span>
+                        fuel
+                    </label>                          
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
     <!-- start mileage -->
     <div class="row">
         <div class="input-field col s12">

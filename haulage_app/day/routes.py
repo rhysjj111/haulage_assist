@@ -21,6 +21,7 @@ def add_day(item_id, tab):
                 truck_id = request.form.get("truck_id"),
                 status = request.form.get("status"),
                 overnight = request.form.get("overnight"),
+                fuel = request.form.get("fuel"),
                 start_mileage = request.form.get("start_mileage"),
                 end_mileage = request.form.get("end_mileage"),
                 additional_earned = request.form.get("additional_earned"),
@@ -56,10 +57,17 @@ def delete_day(item_id):
 @day_bp.route("/edit_day/<int:item_id>", methods=["POST"])
 def edit_day(item_id):
     entry = Day.query.get_or_404(item_id)
+    print('############', request.form.get("fuel"))
     try:
         entry.date = request.form.get("date")
         entry.driver_id = request.form.get("driver_id")
         entry.overnight = request.form.get("overnight")
+        entry.fuel = request.form.get("fuel")
+        
+        entry.start_mileage = request.form.get("start_mileage")
+        entry.end_mileage = request.form.get("end_mileage")
+        entry.additional_earned = request.form.get("additional_earned")
+        entry.additional_wages = request.form.get("additional_wages")
         entry.truck_id = request.form.get("truck_id")
         db.session.commit()
     except ValueError as e:

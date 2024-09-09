@@ -159,7 +159,8 @@ class Day(db.Model):
     driver_id = db.Column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False, index=True)
     truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=False, index=True)  
     status = db.Column(db.String(50), nullable=False, default="Working")
-    overnight = db.Column(db.Boolean, nullable=False, default=True)
+    overnight = db.Column(db.Boolean, nullable=False)
+    fuel = db.Column(db.Boolean, default=False)
     start_mileage = db.Column(db.Integer, nullable=False, default = 0)
     end_mileage = db.Column(db.Integer, nullable=False, default = 0)
     additional_earned = db.Column(db.Integer, nullable=False, default=0)
@@ -237,15 +238,15 @@ class Day(db.Model):
                 raise ValueError('Please enter a value earned between 0 and 1,000,000')
         return field
 
-    @validates('overnight')
-    def validate_overnight(self, key, overnight):
-        if overnight == 'on':
-            overnight = True
-        elif overnight is None:
-            overnight = False
+    @validates('overnight', 'fuel')
+    def validate_boolean_field(self, key, value):
+        if value == 'on':
+            return True
+        elif value is None:
+            return False
         else:
-            raise ValueError('Please use the selector to indicate whether overnight is present')
-        return overnight
+            raise ValueError(f'Invalid value for {key}. Please use the selector.')
+
 
     @db.event.listens_for(db.session, 'before_flush')
     def validate_day_check_for_duplicate(session, flush_context, instances):
@@ -301,14 +302,22 @@ class Job(db.Model):
         return earned
 
     @validates('split')
-    def validate_split(self, key, split):
-        if split == 'on':
-            split = True
-        elif split is None or split == "":
-            split = False
+    def validate_boolean_field(self, key, value):
+        if value == 'on':
+            return True
+        elif value is None:
+            return False
         else:
-            raise ValueError('Please use the selector to indicate whether split is present')
-        return split
+            raise ValueError(f'Invalid value for {key}. Please use the selector.')
+    # @validates('split')
+    # def validate_split(self, key, split):
+    #     if split == 'on':
+    #         split = True
+    #     elif split is None or split == "":
+    #         split = False
+    #     else:
+    #         raise ValueError('Please use the selector to indicate whether split is present')
+    #     return split
     
 
 
