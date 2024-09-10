@@ -162,8 +162,8 @@ class Day(db.Model):
     overnight = db.Column(db.Boolean, nullable=False)
     fuel = db.Column(db.Boolean, default=True)
     test= db.Column(db.Boolean)
-    start_mileage = db.Column(db.Integer, nullable=False, default = 0)
-    end_mileage = db.Column(db.Integer, nullable=False, default = 0)
+    start_mileage = db.Column(db.Integer, nullable=False, default=0)
+    end_mileage = db.Column(db.Integer, nullable=False, default=0)
     additional_earned = db.Column(db.Integer, nullable=False, default=0)
     additional_wages = db.Column(db.Integer, nullable=False, default=0)
     
@@ -219,6 +219,8 @@ class Day(db.Model):
     
     @validates('additional_earned', 'additional_wages')
     def validate_additional(self, key, field):
+        if field is None or field == "":  # Check for None or empty string
+            return 0 
         try:
             field = currency_to_db(field)
         except:
@@ -230,13 +232,15 @@ class Day(db.Model):
     
     @validates('start_mileage', 'end_mileage')
     def validate_mileage(self, key, field):
+        if field is None or field == "":  # Check for None or empty string
+            return 0 
         try:
             field = currency_to_db(field)
         except:
-            raise ValueError('Please enter a value earned between 0 and 1,000,000')
+            raise ValueError('1')
         else:
             if not(0 <= field < 100000000):
-                raise ValueError('Please enter a value earned between 0 and 1,000,000')
+                raise ValueError('2')
         return field
 
     @validates('overnight', 'fuel')

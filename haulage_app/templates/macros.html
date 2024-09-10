@@ -353,15 +353,19 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="start_mileage" name="start_mileage" type="number" required
-                    {% if day.start_mileage is defined and type == "edit" %} 
-                        value="{{'%0.2f' % f.display_currency(day.start_mileage) }}" 
-                    {% elif day.start_mileage is defined %} 
-                        value="{{day.start_mileage}}" 
+            <input id="start_mileage" name="start_mileage" type="number" step="0.01"
+                {% if day.start_mileage is defined %}
+                    {% if type == "edit" and day.start_mileage == 0 %}
+                        value="{{ none }}"
+                    {% elif type == "edit" %}
+                        value="{{ '%0.2f' % f.display_currency(day.start_mileage) }}" 
                     {% else %}
-                        value=""
+                        value="{{ day.start_mileage }}" 
                     {% endif %}
-                    >
+                {% else %}
+                    value="{{ none }}"
+                {% endif %}
+                >
             <label for="start_mileage">Start mileage:</label>
         </div>
     </div>
@@ -370,15 +374,19 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="end_mileage" name="end_mileage" type="number" required
-                    {% if day.end_mileage is defined and type == "edit" %} 
-                        value="{{'%0.2f' % f.display_currency(day.end_mileage) }}" 
-                    {% elif day.end_mileage is defined %} 
-                        value="{{day.end_mileage}}" 
+            <input id="end_mileage" name="end_mileage" type="number" step="0.01"
+                {% if day.end_mileage is defined %}
+                    {% if type == "edit" and day.end_mileage == 0 %}
+                        value="{{ none }}"
+                    {% elif type == "edit" %}
+                        value="{{ '%0.2f' % f.display_currency(day.end_mileage) }}" 
                     {% else %}
-                        value=""
+                        value="{{ day.end_mileage }}" 
                     {% endif %}
-                    >
+                {% else %}
+                    value="{{ none }}"
+                {% endif %}
+                >
             <label for="end_mileage">End mileage:</label>
         </div>
     </div>
@@ -387,15 +395,19 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="additional_earned" name="additional_earned" type="number" step="0.01" step="0.01" required
-                {% if day != {} and type == 'edit' %} 
-                    value="{{'%0.2f' % f.display_currency(day.additional_earned) }}" 
-                {% elif day != {} %}
-                    value="{{ day.additional_earned }}"
+            <input id="additional_earned" name="additional_earned" type="number" step="0.01"
+                {% if day.additional_earned is defined %}
+                    {% if type == "edit" and day.additional_earned == 0 %}
+                        value="{{ none }}"
+                    {% elif type == "edit" %}
+                        value="{{ '%0.2f' % f.display_currency(day.additional_earned) }}" 
+                    {% else %}
+                        value="{{ day.additional_earned }}" 
+                    {% endif %}
                 {% else %}
-                    value=""
+                    value="{{ none }}"
                 {% endif %}
-            >  
+                >
             <label for="additional_earned">Additional earned (£):</label>
         </div>
     </div>
@@ -404,15 +416,19 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="additional_wages" name="additional_wages" type="number" step="0.01" step="0.01" required
-                {% if day != {} and type == 'edit' %} 
-                    value="{{'%0.2f' % f.display_currency(day.additional_wages) }}" 
-                {% elif day != {} %}
-                    value="{{ day.additional_wages}}"
+            <input id="additional_wages" name="additional_wages" type="number" step="0.01"
+                {% if day.additional_wages is defined %}
+                    {% if type == "edit" and day.additional_wages == 0 %}
+                        {# No value here #}
+                    {% elif type == "edit" %}
+                        value="{{ '%0.2f' % f.display_currency(day.additional_wages) }}" 
+                    {% else %}
+                        value="{{ day.additional_wages }}" 
+                    {% endif %}
                 {% else %}
-                    value=""
+                    {# No value here #}
                 {% endif %}
-            >    
+                > 
             <label for="additional_wages">Additional wages (£):</label>
         </div>
     </div>
