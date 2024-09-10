@@ -9,7 +9,21 @@ def add_day(item_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())
     components = {'drivers':drivers, 'trucks':trucks}
-    day_entries = list(Day.query.order_by(Day.id.desc()).all())
+    day_entries = list(
+        Day.query
+        .order_by(
+            db.case(
+                *(
+                    (Day.start_mileage == 0, 0),
+                    (Day.end_mileage == 0, 0),
+                ),
+                else_=1
+            ).asc(),
+            Day.date.desc(),
+            Day.driver_id
+        )
+        .all()
+    )
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     day = {}
@@ -57,7 +71,6 @@ def delete_day(item_id):
 @day_bp.route("/edit_day/<int:item_id>", methods=["POST"])
 def edit_day(item_id):
     entry = Day.query.get_or_404(item_id)
-    print('############', request.form.get("fuel"))
     try:
         entry.date = request.form.get("date")
         entry.driver_id = request.form.get("driver_id")
