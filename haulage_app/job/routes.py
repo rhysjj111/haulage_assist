@@ -50,7 +50,7 @@ def add_job(item_id, tab, user_confirm):
                             db.session.add(new_entry)
                             db.session.commit()
                         except ValueError as e:
-                            flash(dates[date], "error-msg")
+                            flash(str(e), "error-msg")
                             return redirect(url_for("job.add_job", tab='entry', item_id=0, user_confirm='no'))
                         else:
                             valid_dates[date] = dates[date]
@@ -61,6 +61,8 @@ def add_job(item_id, tab, user_confirm):
                             continue                
                 else:
                     valid_dates[date] = dates[date]
+                
+            print(invalid_dates)
 
             if invalid_dates == {}:
                 for date in valid_dates:
@@ -81,7 +83,7 @@ def add_job(item_id, tab, user_confirm):
                         db.session.add(new_entry)
                         db.session.commit()
                     except ValueError as e:
-                        flash(type(request.form.get('split')), 'error-msg')
+                        flash(str(e), 'error-msg')
                         #retrieve previous answers
                         job = request.form
                     else:
