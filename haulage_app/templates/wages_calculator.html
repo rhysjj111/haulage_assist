@@ -12,19 +12,22 @@
     <div class="col s12 m4">
     <div class="card hoverable wages-card small">
         <div class="card-content">
-            <span class="card-title activator"><h5>{{ data.driver.full_name }}</h5><i class="material-icons right">more_vert</i></span>
+            <span class="card-title activator"><h5>{{ data.driver.full_name }}</h5>
+                <!-- <i class="material-icons right">more_vert</i> -->
+            </span>
             <br>
-            {% if data.day_entries|length >= 5 %}
+            {# if data.day_entries|length >= 5 #}
             <p class="wages-calc-card-text">Extras: {{ f.df_currency(data.weekly_extras) }}</p>
-            {% else %}
-            <p class="wages-calc-card-text red-text">There are {{data.day|length}} days recorded for this week.</p>
-            <p><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}" class="">Add day entries</a></p>
-            <p><a href="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='False') }}" class="">Add job entries</a></p>
+            {# else #}
+            <!-- <p class="wages-calc-card-text red-text">There are {{data.day|length}} days recorded for this week.</p> -->
+            <!-- <p><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}" class="">Add day entries</a></p>
+            <p><a href="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='False') }}" class="">Add job entries</a></p> -->
 
-            {% endif %}
+            {# endif #}
         </div>
         <div class="card-action">
             <a href="#modal_{{ driver_id }}" class="waves-effect waves-orange black-text btn-flat modal-trigger"><i class="material-icons tiny right">open_in_new</i>BREAKDOWN</a>
+            <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-white orange lighten-4 black-text btn-flat modal-trigger"><i class="material-icons tiny right">open_in_new</i>TIMETABLE</a>
         </div>
         <div class="card-reveal">
             <span class="card-title grey-text text-darken-4">Card Title<i class="material-icons right">close</i></span>
@@ -40,6 +43,7 @@
 <!-- WEEK BREAKDOWN MODAL -->
 <div id="modal_{{ driver_id }}" class="modal">
     <div class="modal-content">
+        <h4>{{ data.driver.full_name }}'s breakdown</h4>
         <p class=""><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}">Click here to edit/delete history.</a></p>
         <table class="centered">
             <thead>
@@ -73,6 +77,49 @@
                     <td><em>{{ f.df_currency(data.weekly_total_bonus_wage) }}</em></td>
                     <td><em>{{ f.df_currency(data.weekly_total_overnight) }}</em></td>
                 </tr>
+            </tbody>
+        </table> 
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+    </div>
+</div>
+
+<!-- WEEK TIMETABLE MODAL -->
+<div id="modal_timetable_{{ driver_id }}" class="modal">
+
+    <div class="modal-content">
+        <h4>{{ data.driver.full_name }}'s timetable</h4>
+        <p class=""><a href="{{ url_for('job.add_job', item_id=0, tab='history', user_confirm='False') }}">Click here to edit/delete history.</a></p>
+        <table class="centered">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Collection</th>
+                    <th>Delivery</th>
+                    <th>Earned</th>
+                    <th>Split?</th>
+                </tr>
+            </thead>
+    
+            <tbody>
+                {% for job in data.job_entries %}    
+                <tr>
+                    <td>{{ f.display_date(job.day.date) }}</td>
+                    <td>{{ job.collection | capitalize }}</td>
+                    <td>{{ job.delivery | capitalize }}</td>
+                    <td>{{ f.df_currency(job.earned) }}</td>
+                    <td>{% if job.split %}
+                        <i class="material-icons green-text">check</i> 
+                        {% else %}
+                        <i class="material-icons">remove</i>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr class="table-breaker">
+                </tr>
+
             </tbody>
         </table> 
     </div>

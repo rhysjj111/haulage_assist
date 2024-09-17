@@ -1,6 +1,6 @@
 from flask import render_template, request
 from haulage_app import db, f
-from haulage_app.models import Driver, Day
+from haulage_app.models import Driver, Day, Job
 from datetime import timedelta, date, datetime
 from haulage_app.wages_calculator import wages_calculator_bp
 
@@ -18,6 +18,11 @@ def wages_calculator():
         day_entries = Day.query.filter(
             Day.driver_id == driver.id, 
             Day.date >= start_date, 
+            Day.date <= end_date).all()
+        
+        job_entries = Job.query.join(Day).filter(
+            Day.driver_id == driver.id,
+            Day.date >= start_date,
             Day.date <= end_date).all()
 
         # Calculate wages for each driver
@@ -48,7 +53,8 @@ def wages_calculator():
             'weekly_bonus': weekly_bonus,
             'weekly_extras': weekly_extras,
             'start_date': start_date,
-            'end_date': end_date
+            'end_date': end_date,
+            'job_entries': job_entries
         }
 
     return render_template("wages_calculator.html", driver_data=driver_data, drivers=drivers, start_date=start_date, end_date=end_date)
