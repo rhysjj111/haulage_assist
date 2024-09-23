@@ -5,14 +5,14 @@
 
 {% block entry_title %}+ DAY{% endblock %}
 
-    {% block entry_form_title %}Add day end entry:{% endblock %}
+    {% block entry_form_title %}Add Day Entry:{% endblock %}
         {% block entry_form_questions %}
             <form method="POST" action="{{ url_for(type+'.add_'+type, item_id=0, tab='entry') }}">
                 {{ macros[type]('add', day, components, f) }}
             </form>
         {% endblock %}
 
-    {% block entry_history_title %}Day entry history:{% endblock %}
+    {% block entry_history_title %}Day Entry History:{% endblock %}
         {% block collapsible_header %}{{item.driver.full_name}} - {{f.display_date(item.date)}}{% endblock %}
 
         {% block collapsible_body %}

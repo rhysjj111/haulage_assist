@@ -160,7 +160,7 @@ from datetime import datetime
     <div class="row">
         <div class="col s12 center-align">
             <button type="submit" class="btn-large submit">
-                {{ type }} Driver <i class="fas fa-edit right"></i>
+                Submit <i class="fas fa-edit right"></i>
             </button>
         </div>
     </div>
@@ -212,7 +212,7 @@ from datetime import datetime
     <div class="row">
         <div class="col s12 center-align">
             <button type="submit" class="btn-large submit">
-                {{ type }} Truck <i class="fas fa-edit right"></i>
+                Submit <i class="fas fa-edit right"></i>
             </button>
         </div>
     </div>
@@ -437,7 +437,7 @@ from datetime import datetime
     <div class="row">
         <div class="col s12 center-align">
             <button type="submit" class="btn-large submit">
-                {{ type }} Day end entry <i class="fas fa-edit right"></i>
+                Submit <i class="fas fa-edit right"></i>
             </button>
         </div>
     </div>
@@ -585,7 +585,7 @@ from datetime import datetime
     <div class="row">
         <div class="col s12 center-align">
             <button type="submit" class="btn-large submit">
-                {{ type }} Job <i class="fas fa-edit right"></i>
+                Submit <i class="fas fa-edit right"></i>
             </button>
         </div>
     </div>
@@ -652,7 +652,7 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
-            <input id="total_cost_to_employer" name="total_cost_to_employer" type="number" required
+            <input id="total_cost_to_employer" name="total_cost_to_employer" type="number" step="0.01" required
                     {% if payslip.total_cost_to_employer is defined and type == "edit" %} 
                         value="{{'%0.2f' % f.display_currency(payslip.total_cost_to_employer) }}" 
                     {% elif payslip.total_cost_to_employer is defined %} 
@@ -667,7 +667,7 @@ from datetime import datetime
     <div class="row">
         <div class="col s12 center-align">
             <button type="submit" class="btn-large submit">
-                {{ type }} Payslip <i class="fas fa-edit right"></i>
+                Submit<i class="fas fa-edit right"></i>
             </button>
         </div>
     </div>
@@ -765,7 +765,7 @@ from datetime import datetime
     <div class="row">
         <div class="col s12 center-align">
             <button type="submit" class="btn-large submit">
-                {{ type }} Fuel entry <i class="fas fa-edit right"></i>
+                Submit <i class="fas fa-edit right"></i>
             </button>
         </div>
     </div>
@@ -778,7 +778,7 @@ from datetime import datetime
     <div class="row">
         <div class="col s12 center-align">
             <button type="submit" class="btn-large submit">
-                {{ type }} Truck <i class="fas fa-edit right"></i>
+                Submit <i class="fas fa-edit right"></i>
             </button>
         </div>
     </div>

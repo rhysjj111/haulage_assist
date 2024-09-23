@@ -4,14 +4,14 @@
 
 {% block entry_title %}+ JOB{% endblock %}
 
-    {% block entry_form_title %}Add a job:{% endblock %}
+    {% block entry_form_title %}Add a Job:{% endblock %}
         {% block entry_form_questions %}
             <form method="post" action="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='no') }}">
                 {{ macros[type]('add', job, drivers, f) }}
             </form>
         {% endblock %}
 
-    {% block entry_history_title %}Job entry history:{% endblock %}
+    {% block entry_history_title %}Job Entry History:{% endblock %}
         {% block collapsible_header %}{{ item.day.driver.full_name }} - {{ f.display_date(item.day.date) }} - {{f.format_currency(f.display_currency(item.earned))}}{% endblock %}
 
         {% block collapsible_body %}
