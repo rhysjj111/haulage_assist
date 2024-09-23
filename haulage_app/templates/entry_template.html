@@ -18,12 +18,13 @@
 {% set scc_msg = get_flashed_messages(category_filter=["success-msg"]) %}
 {% with messages = err_msg if err_msg else scc_msg %}
 {% if messages %}
-<div class="messages-container {{'err-msg' if (err_msg) else 'scc-msg'}}">
+<div class="messages-container {{'err-msg' if (err_msg) else 'scc-msg'}} valign-wrapper">
     {% for message in messages %}
     <ul>
         <li> {{ message }}</li>
     </ul>
     {% endfor %}
+    <span class="right white-text"><a href="#" class="close-banner" aria-label="Close Messages"><i class="material-icons">close</i></a></span>
 </div>
 {% endif %}
 {% endwith %}

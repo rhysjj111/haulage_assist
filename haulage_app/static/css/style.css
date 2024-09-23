@@ -160,23 +160,27 @@ footer, nav{
 .messages-container{
     width: 100%;
     text-align: center;
-    font-size: 18px;
     border: 2px solid;
     border-radius: 5px;
-    padding: 3px;
-    height: 35px;
+    padding: 0.5rem 0.5rem ;
+    margin-bottom: 0.5rem;
     transition: opacity 1.5s, height 1s 1.5s, margin 1s 1.5s, padding 1s 1.5s, border 1s 1.5s allow-discrete;
+}
+.close-banner{
+    color: black;
 }
 .messages-container > ul{
     margin: 0px;
 }
 .err-msg{
     border-color:rgb(227 22 22 / 66%);
-    background-color: rgb(227 22 22 / 26%);
+    background-color: rgb(227, 22, 22);
+    color: white;
 }
 .scc-msg{
     border-color: rgb(0 193 18 / 66%);
-    background-color: rgb(0 193 18 / 26%);
+    background-color: rgb(4, 165, 20);
+    color: white;
 }
 .modal{
     top: 5% !important;

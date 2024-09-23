@@ -53,14 +53,21 @@ document.addEventListener('DOMContentLoaded', function () {
     removeTabs();
     
     //flash feedback timeout and remove container after a time interval
-    const messageContainer = document.querySelector(".scc-msg");
-    if (messageContainer){
-        setTimeout(changePropertiesToZero, 1000, 'opacity', 'height', 'margin', 'padding', 'border');
-    }
-    //pass message container style property names
-    function changePropertiesToZero(...properties){
-        properties.forEach((value) => messageContainer.style[value] = '0');
-    }
+    // const messageContainer = document.querySelector(".scc-msg");
+    // if (messageContainer){
+    //     setTimeout(changePropertiesToZero, 1000, 'opacity', 'height', 'margin', 'padding', 'border');
+    // }
+    // //pass message container style property names
+    // function changePropertiesToZero(...properties){
+    //     properties.forEach((value) => messageContainer.style[value] = '0');
+    // }
+
+    const closeBanner = document.querySelectorAll('.close-banner');
+    closeBanner.forEach(button => {
+    button.addEventListener('click', () => {
+        button.closest('.messages-container').style.display = 'none';
+    });
+});
 
 
 })
@@ -71,15 +78,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const nwdInput = document.querySelector('#date_nwd')
     const nwdContainer = document.querySelector('.nwd-container');
     lever.addEventListener('click', () => {
-        
         if (splitInput.checked) {
             nwdContainer.classList.add('hide');
             nwdInput.removeAttribute('required','');
         } else {
             nwdContainer.classList.remove('hide');
             nwdInput.setAttribute('required','');
-            
-           
         }
     })
     
