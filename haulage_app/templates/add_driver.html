@@ -23,6 +23,13 @@
                 Weekly bonus threshold: {{ f.format_currency(f.display_currency(item.weekly_bonus_threshold)) }}<br>
                 Weekly bonus percentage: {{ f.format_percentage(f.display_percentage(item.weekly_bonus_percentage)) }}<br>
                 Overnight: {{ f.format_currency(f.display_currency(item.overnight_value)) }}<br>
+                {% for truck in trucks %}
+                    {% if truck.id == item.truck_id %}
+                        Preferred truck: {{ truck.registration }}
+                    {% else %}
+                        Preferred truck: none
+                    {% endif %}
+                {% endfor %}
             </p>
         {% endblock %}
     

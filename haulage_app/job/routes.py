@@ -90,6 +90,7 @@ def add_job(item_id, tab, user_confirm):
                         else:
                             flash(f"Entry Success: {new_entry.day.driver.full_name} - {f.display_date(new_entry.day.date)}", "success-msg")
                             return redirect(url_for("job.add_job", tab='entry', item_id=0, user_confirm=False))
+                            
     return render_template(
         "add_job.html",
         drivers=drivers,
