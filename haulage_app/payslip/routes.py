@@ -1,5 +1,5 @@
 from flask import render_template, request, redirect, url_for, flash
-from haulage_app import db
+from haulage_app import db, f
 from haulage_app.models import Driver, Payslip 
 from haulage_app.payslip import payslip_bp
 
@@ -26,7 +26,7 @@ def add_payslip(item_id, tab):
             #retrieve previous answers
             payslip = request.form
         else:
-            flash("Success", "success-msg")
+            flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
             return redirect(url_for("payslip.add_payslip", drivers=drivers, payslips=payslips, 
                             tab='entry', item_id=0))
     return render_template("add_payslip.html", drivers=drivers, list=payslips, tab=tab, 

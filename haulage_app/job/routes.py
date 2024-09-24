@@ -61,8 +61,6 @@ def add_job(item_id, tab, user_confirm):
                             continue                
                 else:
                     valid_dates[date] = dates[date]
-                
-            print(invalid_dates)
 
             if invalid_dates == {}:
                 for date in valid_dates:
@@ -90,7 +88,7 @@ def add_job(item_id, tab, user_confirm):
                         if date == 'cd' and 'nwd' in valid_dates:
                             continue
                         else:
-                            flash('Success', "success-msg")
+                            flash(f"Entry Success: {new_entry.day.driver.full_name} - {f.display_date(new_entry.day.date)}", "success-msg")
                             return redirect(url_for("job.add_job", tab='entry', item_id=0, user_confirm=False))
     return render_template(
         "add_job.html",

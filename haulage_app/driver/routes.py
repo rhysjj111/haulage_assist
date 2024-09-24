@@ -30,7 +30,7 @@ def add_driver(item_id, tab):
             #retrieve previous answers
             driver = request.form
         else:
-            flash("Success", "success-msg")
+            flash(f"Entry Success: {new_entry.full_name}", "success-msg")
             return redirect(url_for("driver.add_driver", trucks=trucks, drivers=drivers, 
                             tab='entry', item_id=0))     
     return render_template("add_driver.html", trucks=trucks, list=drivers, tab=tab, driver=driver, 

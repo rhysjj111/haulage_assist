@@ -48,7 +48,7 @@ def add_day(item_id, tab):
             #retrieve previous answers
             day = request.form
         else:
-            flash(f"ENTRY ADDED - Driver: {new_entry.driver.first_name} - Date: {new_entry.date}", "success-msg")
+            flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
             return redirect(url_for("day.add_day", drivers=drivers, day_entries=day_entries, 
                             tab='entry', item_id=0))
     return render_template("add_day.html", components=components, list=day_entries, tab=tab, 

@@ -1,5 +1,5 @@
 from flask import render_template, request, redirect, url_for, flash
-from haulage_app import db
+from haulage_app import db, f
 from haulage_app.models import Truck, Fuel
 from haulage_app.fuel import fuel_bp
 
@@ -27,7 +27,7 @@ def add_fuel(item_id, tab):
             #retrieve previous answers
             fuel = request.form
         else:
-            flash("Success", "success-msg")
+            flash(f"Entry Success: {new_entry.truck.registration} - {f.display_date(new_entry.date)}", "success-msg")
             return redirect(url_for("fuel.add_fuel", trucks=trucks, fuel_entries=fuel_entries, 
                             tab='entry', item_id=0))
     return render_template("add_fuel.html", trucks=trucks, list=fuel_entries, tab=tab, fuel=fuel, item_id=item_id, type='fuel')
