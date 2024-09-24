@@ -159,15 +159,21 @@ footer, nav{
 
 .messages-container{
     width: 100%;
-    text-align: center;
     border: 2px solid;
     border-radius: 5px;
     padding: 0.5rem 0.5rem ;
     margin-bottom: 0.5rem;
+    padding: 1rem 30px 1rem 1rem;
+    position: relative;
     transition: opacity 1.5s, height 1s 1.5s, margin 1s 1.5s, padding 1s 1.5s, border 1s 1.5s allow-discrete;
 }
-.close-banner{
+.close-messages{
     color: black;
+    position: absolute;
+    /* margin: 5px; */
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
 }
 .messages-container > ul{
     margin: 0px;

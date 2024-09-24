@@ -62,8 +62,8 @@ document.addEventListener('DOMContentLoaded', function () {
     //     properties.forEach((value) => messageContainer.style[value] = '0');
     // }
 
-    const closeBanner = document.querySelectorAll('.close-banner');
-    closeBanner.forEach(button => {
+    const closeMessages = document.querySelectorAll('.close-messages');
+    closeMessages.forEach(button => {
     button.addEventListener('click', () => {
         button.closest('.messages-container').style.display = 'none';
     });
