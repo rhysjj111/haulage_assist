@@ -38,10 +38,10 @@ def add_driver(item_id, tab):
 
 @driver_bp.route("/delete_driver/<int:item_id>")
 def delete_driver(item_id):
-    entry = db.get_or_404(Driver, item_id)
-    db.session.delete(entry)
-    db.session.commit()
-    flash("Entry deleted", "success-msg")
+    # entry = db.get_or_404(Driver, item_id)
+    # db.session.delete(entry)
+    # db.session.commit()
+    flash("Unable to delete driver, please contact administrator", "error-msg")
     return redirect(url_for("driver.add_driver", item_id=0, tab='history'))
 
 @driver_bp.route("/edit_driver/<int:item_id>", methods=["POST"])

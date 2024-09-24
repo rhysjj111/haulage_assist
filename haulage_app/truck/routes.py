@@ -30,10 +30,10 @@ def add_truck(item_id, tab):
 
 @truck_bp.route("/delete_truck/<int:item_id>")
 def delete_truck(item_id):
-    entry = db.get_or_404(Truck, item_id)
-    db.session.delete(entry)
-    db.session.commit()
-    flash("Entry deleted", "success-msg")
+    # entry = db.get_or_404(Truck, item_id)
+    # db.session.delete(entry)
+    # db.session.commit()
+    flash("Unable to delete truck, please contact administrator", "error-msg")
     return redirect(url_for("truck.add_truck", item_id=0, tab='history'))
 
 @truck_bp.route("/edit_truck/<int:item_id>", methods=["POST"])
