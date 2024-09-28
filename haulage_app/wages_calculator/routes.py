@@ -18,12 +18,14 @@ def wages_calculator():
         day_entries = Day.query.filter(
             Day.driver_id == driver.id, 
             Day.date >= start_date, 
-            Day.date <= end_date).all()
+            Day.date <= end_date
+            ).order_by(Day.date).all()
         
         job_entries = Job.query.join(Day).filter(
             Day.driver_id == driver.id,
             Day.date >= start_date,
-            Day.date <= end_date).all()
+            Day.date <= end_date
+            ).order_by(Day.date, Job.collection).all()
 
         # Calculate wages for each driver
         weekly_total_earned = 0
