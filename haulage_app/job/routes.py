@@ -2,10 +2,12 @@ from flask import render_template, request, redirect, url_for, flash
 from haulage_app import db, f
 from haulage_app.models import Driver, Day, Job, Truck
 from haulage_app.job import job_bp
+from datetime import datetime, timedelta
+from pprint import pprint
 
 
-@job_bp.route("/add_job/<int:item_id>/<tab>/<user_confirm>", methods=["GET", "POST"])
-def add_job(item_id, tab, user_confirm):
+@job_bp.route("/add_job/<int:item_id>/<tab>", methods=["GET", "POST"])
+def add_job(item_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())
     days = list(Day.query.order_by(Day.date).all())
@@ -14,82 +16,98 @@ def add_job(item_id, tab, user_confirm):
     #are any issues with data submitted
     job = {}
     dates = {}
-    invalid_dates = {}
-    valid_dates = {}
+    day_not_present = {}
+    day_present = {}
     preferred_truck_id = None
   
     if request.method == "POST":        
-        current_date = request.form.get('date_cd')
-        next_working_date = request.form.get('date_nwd')
-        dates = {'cd':current_date, 'nwd':next_working_date}
+        current_date_str = request.form.get('date_cd')
+        # next_working_date = request.form.get('date_nwd')
+        # dates = {'cd':current_date, 'nwd':next_working_date}
         driver_id = request.form.get('driver_id')
+        split_job = request.form.get('split') == 'on'
+        add_day = request.form.get('add_day')
 
-        if next_working_date and (current_date >= next_working_date):
-            flash('"Next working date" must be in the future', "error-msg")
+
+        current_driver = Driver.query.filter(Driver.id == driver_id).first()
+        if current_driver:
+            preferred_truck_id = current_driver.truck_id
+        # if next_working_date and (current_date >= next_working_date):
+        #     flash('"Next working date" must be in the future', "error-msg")
+        #     job = request.form
+        # else:
+        try:
+            current_date = f.date_to_db(current_date_str)
+            if split_job:
+                next_working_date_str = f.display_date(current_date + timedelta(days=1))
+                dates = {'cd':current_date_str, 'nwd':next_working_date_str}
+            else:
+                dates = {'cd':current_date_str}
+        except ValueError as e:
+            flash(f"Invalid date format: {e}", "error-msg")
             job = request.form
-        else:
-            current_driver = Driver.query.filter(Driver.id == driver_id).first()
-            if current_driver:
-                preferred_truck_id = current_driver.truck_id
 
-            for date in dates:
-                try:
-                    f.date_to_db(dates[date])
-                    Day.query.filter(Day.date == f.date_to_db(dates[date]), Day.driver_id == driver_id).one()
-                except:
-                    if dates[date] == '' or dates[date] == None:
-                        break
-                    elif user_confirm == 'yes':
-                        try:
-                            new_entry = Day(
-                                date = dates[date],
-                                driver_id = request.form.get("driver_id"),
-                                overnight = request.form.get("overnight_" + date),
-                                truck_id = request.form.get("truck_id_" + date)            
-                            )
-                            db.session.add(new_entry)
-                            db.session.commit()
-                        except ValueError as e:
-                            flash(str(e), "error-msg")
-                            return redirect(url_for("job.add_job", tab='entry', item_id=0, user_confirm='no'))
-                        else:
-                            valid_dates[date] = dates[date]
-                    else:
-                        invalid_dates[date] = dates[date]
-                        job = request.form
-                        if date == 'cd':
-                            continue                
-                else:
-                    valid_dates[date] = dates[date]
 
-            if invalid_dates == {}:
-                for date in valid_dates:
+        for date in dates:
+            # Create new day entry, or add date to valid date dictionary
+            try:
+                Day.query.filter(Day.date == f.date_to_db(dates[date]), Day.driver_id == driver_id).one()
+            except:
+                if dates[date] == '' or dates[date] == None:
+                    break
+                elif add_day == 'True':
                     try:
-                        day = Day.query.filter(Day.date == f.date_to_db(dates[date]), Day.driver_id == driver_id).first()
-                        earned = float(request.form.get('earned'))
-                        if len(valid_dates) > 1:
-                            earned /= 2
-                            round(earned, 2)
-                        new_entry = Job(
-                            day_id = day.id,
-                            earned = earned,
-                            collection = request.form.get('collection'),
-                            delivery = request.form.get('delivery'),
-                            notes = request.form.get('notes'),
-                            split = request.form.get('split')
+                        new_entry = Day(
+                            date = dates[date],
+                            driver_id = request.form.get("driver_id"),
+                            overnight = request.form.get("overnight_" + date),
+                            truck_id = request.form.get("truck_id_" + date)            
                         )
                         db.session.add(new_entry)
                         db.session.commit()
                     except ValueError as e:
-                        flash(str(e), 'error-msg')
-                        #retrieve previous answers
+                        flash(str(e), "error-msg")
                         job = request.form
                     else:
-                        if date == 'cd' and 'nwd' in valid_dates:
-                            continue
-                        else:
-                            flash(f"Entry Success: {new_entry.day.driver.full_name} - {f.display_date(new_entry.day.date)}", "success-msg")
-                            return redirect(url_for("job.add_job", tab='entry', item_id=0, user_confirm=False))
+                        day_present[date] = dates[date]
+                else:
+                    day_not_present[date] = dates[date]
+                    #retrieve previous answers
+                    job = request.form
+                    if date == 'cd':
+                        continue                
+            else:
+                day_present[date] = dates[date]
+
+        if day_not_present == {}:
+            # If no invalid dates, create job entries
+            for date in day_present:
+                try:
+                    day = Day.query.filter(Day.date == f.date_to_db(dates[date]), Day.driver_id == driver_id).first()
+                    earned = float(request.form.get('earned'))
+                    if len(day_present) > 1:
+                        earned /= 2
+                        round(earned, 2)
+                    new_entry = Job(
+                        day_id = day.id,
+                        earned = earned,
+                        collection = request.form.get('collection'),
+                        delivery = request.form.get('delivery'),
+                        notes = request.form.get('notes'),
+                        split = request.form.get('split')
+                    )
+                    db.session.add(new_entry)
+                    db.session.commit()
+                except ValueError as e:
+                    flash(str(e), 'error-msg')
+                    #retrieve previous answers
+                    job = request.form
+                else:
+                    if date == 'cd' and 'nwd' in day_present:
+                        continue
+                    else:
+                        flash(f"Entry Success: {new_entry.day.driver.full_name} - {f.display_date(new_entry.day.date)}", "success-msg")
+                        return redirect(url_for("job.add_job", tab='entry', item_id=0))
                             
     return render_template(
         "add_job.html",
@@ -100,8 +118,8 @@ def add_job(item_id, tab, user_confirm):
         job=job,
         item_id=item_id,
         type='job',
-        invalid_dates=invalid_dates,
-        valid_dates=valid_dates,
+        day_not_present=day_not_present,
+        day_present=day_present,
         preferred_truck=preferred_truck_id)
 
 

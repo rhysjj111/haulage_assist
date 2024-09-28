@@ -243,7 +243,7 @@ from datetime import datetime
             <select name="driver_id" id="driver_id" class="validate" required>
                 {% if day.driver_id is defined %}
                     {% for driver in components.drivers %}
-                        {% if day.driver == driver %}
+                        {% if day.driver_id|int == driver.id|int %}
                             <option value="{{ driver.id }}" selected>{{ driver.full_name }}</option>
                         {% else %}
                             <option value="{{ driver.id }}">{{ driver.full_name }}</option>
@@ -336,13 +336,13 @@ from datetime import datetime
                             <input id="fuel_{{ type }}_{{ day.id }}" name="fuel" type="checkbox">
                         {% endif %}
                         <span class="lever"></span>
-                        fuel
+                        Fuel
                     </label>
                 {% else %}
                     <label for="fuel_{{ type }}">
                         <input id="fuel_{{ type }}" name="fuel" type="checkbox">
                         <span class="lever"></span>
-                        fuel
+                        Fuel
                     </label>                          
                 {% endif %}
             </div>
@@ -468,7 +468,7 @@ from datetime import datetime
             <select name="driver_id" id="driver_id" class="validate" required>
                 {% if job.driver_id is defined %}
                     {% for driver in drivers %}
-                        {% if job.driver == driver %}
+                        {% if job.driver_id|int == driver.id|int %}
                             <option value="{{ driver.id }}" selected>{{ driver.full_name }}</option>
                         {% else %}
                             <option value="{{ driver.id }}">{{ driver.full_name }}</option>
@@ -493,7 +493,7 @@ from datetime import datetime
                 {% if job is defined and type == 'edit' %} 
                     value="{{'%0.2f' % f.display_currency(job.earned) }}" 
                 {% elif job is defined %}
-                    value="{{ job.earned}}"
+                    value="{{ job.earned }}"
                 {% endif %}
             >    
             <label for="earned">Earned (£):</label>
@@ -506,7 +506,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="collection" name="collection" type="text" required
                     {% if job.collection is defined %} 
-                        value="{{job.collection}}" 
+                        value="{{ job.collection }}" 
                     {% endif %}
                     >
             <label for="collection">Collection:</label>
@@ -519,7 +519,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="delivery" name="delivery" type="text" required
                     {% if job.delivery is defined %} 
-                        value="{{job.delivery}}" 
+                        value="{{ job.delivery }}" 
                     {% endif %}
                     >
             <label for="delivery">Delivery:</label>
@@ -568,17 +568,17 @@ from datetime import datetime
         </div>
 
         <!-- next working date -->
-        <div class="row">
-            <div class="input-field col s12 nwd-container hide">
+        <!-- <div class="row"> -->
+            <!-- <div class="input-field col s12 nwd-container hide"> -->
                 <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
-                <input id="date_nwd" name="date_nwd"  type="text" class="datepicker"
+                <!-- <input id="date_nwd" name="date_nwd"  type="text" class="datepicker"
                     {% if job is defined %}
                         value="{{ job.date_nwd}}"
                     {% endif %}
                     >
                 <label for="date_nwd">Next working date:</label>
             </div>
-        </div>
+        </div> -->
     {% endif %}
 
     <!-- submit button -->
@@ -601,7 +601,7 @@ from datetime import datetime
             <select name="driver_id" id="driver_id" class="validate" required>
                 {% if payslip.driver_id is defined %}
                     {% for driver in drivers %}
-                        {% if payslip.driver == driver %}
+                        {% if payslip.driver_id|int == driver.id|int %}
                             <option value="{{ driver.id }}" selected>{{ driver.full_name }}</option>
                         {% else %}
                             <option value="{{ driver.id }}">{{ driver.full_name }}</option>

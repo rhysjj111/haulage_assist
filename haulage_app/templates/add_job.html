@@ -6,7 +6,7 @@
 
     {% block entry_form_title %}Add a Job:{% endblock %}
         {% block entry_form_questions %}
-            <form method="post" action="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='no') }}">
+            <form method="post" action="{{ url_for('job.add_job', item_id=0, tab='entry') }}">
                 {{ macros[type]('add', job, drivers, f) }}
             </form>
         {% endblock %}
@@ -30,14 +30,14 @@
         <!-- invalid dates -->
     {% block modal_triggers %}        
          <!-- triggers if invalid dates -->
-        {% if invalid_dates != {} %}
+        {% if day_not_present != {} %}
             
             <!-- modal trigger -->
-            <div class="open-edit-modal">modal_invalid_dates</div>
+            <div class="open-edit-modal">modal_day_not_present</div>
 
             <!-- modal -->
-            <div id="modal_invalid_dates" class="modal">
-                <form method="post" action="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='yes') }}">
+            <div id="modal_day_not_present" class="modal">
+                <form method="post" action="{{ url_for('job.add_job', item_id=0, tab='entry') }}">
                     <div class="modal-content"> 
                         
                         <h3 class="center-align">No 'Day' entry for the following date(s)</h3><br>
@@ -47,15 +47,16 @@
                                 <input type = "hidden" name = "delivery" value = "{{job.delivery}}" />
                                 <input type = "hidden" name = "notes" value = "{{job.notes}}" />
                                 <input type = "hidden" name = "split" value = "{{job.split}}" />
-                        {% for date in valid_dates %}
-                            <input type = "hidden" name = "date_{{date}}" value = "{{valid_dates[date]}}" />
+                                <input type = "hidden" name = "add_day" value = "True" />
+                        {% for date in day_present %}
+                            <input type = "hidden" name = "date_{{date}}" value = "{{day_present[date]}}" />
                         {% endfor %}
-                        {% for date in invalid_dates %}
+                        {% for date in day_not_present %}
                             <div class="confirm_date_container">
-                                <h5 class="center-align">{{invalid_dates[date]}}</h5>
+                                <h5 class="center-align">{{day_not_present[date]}}</h5>
 
                                 <!-- date and driver information to be passed -->
-                                <input type = "hidden" name = "date_{{date}}" value = "{{invalid_dates[date]}}" />
+                                <input type = "hidden" name = "date_{{date}}" value = "{{day_not_present[date]}}" />
 
 
                                 <!-- overnight selection to be made by user -->
@@ -78,8 +79,9 @@
                                             {% for truck in trucks %}
                                                 {% if preferred_truck == truck.id %}
                                                     <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
+                                                {% else %}
+                                                    <option value="{{ truck.id }}">{{ truck.registration }}</option>         
                                                 {% endif %}
-                                                <option value="{{ truck.id }}">{{ truck.registration }}</option>         
                                             {% endfor %}
                                         </select>
                                         <label for="truck_id_{{date}}">Select Truck:</label>
