@@ -14,9 +14,11 @@
         <div class="card-content">
             <span class="card-title activator"><h5>{{ data.driver.full_name }}</h5>
                 <!-- <i class="material-icons right">more_vert</i> -->
+                <div class="divider"></div>
             </span>
             <br>
             {# if data.day_entries|length >= 5 #}
+            <p class="wages-calc-card-text">Total earned: {{ f.df_currency(data.weekly_total_earned) }}</p>
             <p class="wages-calc-card-text">Extras: {{ f.df_currency(data.weekly_extras) }}</p>
             {# else #}
             <!-- <p class="wages-calc-card-text red-text">There are {{data.day|length}} days recorded for this week.</p> -->
@@ -26,8 +28,8 @@
             {# endif #}
         </div>
         <div class="card-action">
-            <a href="#modal_{{ driver_id }}" class="waves-effect waves-orange black-text btn-flat modal-trigger"><i class="material-icons tiny right">open_in_new</i>BREAKDOWN</a>
-            <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-white orange lighten-4 black-text btn-flat modal-trigger"><i class="material-icons tiny right">open_in_new</i>TIMETABLE</a>
+            <a href="#modal_{{ driver_id }}" class="waves-effect waves-white blue darken-2 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
+            <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-white blue darken-2 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">list</i>Jobs</a>
         </div>
         <div class="card-reveal">
             <span class="card-title grey-text text-darken-4">Card Title<i class="material-icons right">close</i></span>
