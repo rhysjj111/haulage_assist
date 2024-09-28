@@ -19,7 +19,7 @@
             <br>
             {# if data.day_entries|length >= 5 #}
             <p class="wages-calc-card-text">Total earned: {{ f.df_currency(data.weekly_total_earned) }}</p>
-            <p class="wages-calc-card-text">Extras: {{ f.df_currency(data.weekly_extras) }}</p>
+            <p class="wages-calc-card-text"><strong>Extras: {{ f.df_currency(data.weekly_extras) }}</strong></p>
             {# else #}
             <!-- <p class="wages-calc-card-text red-text">There are {{data.day|length}} days recorded for this week.</p> -->
             <!-- <p><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}" class="">Add day entries</a></p>
@@ -30,10 +30,6 @@
         <div class="card-action">
             <a href="#modal_{{ driver_id }}" class="waves-effect waves-white blue darken-2 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
             <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-white blue darken-2 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">list</i>Jobs</a>
-        </div>
-        <div class="card-reveal">
-            <span class="card-title grey-text text-darken-4">Card Title<i class="material-icons right">close</i></span>
-            <p>Here is some more information about this product that is only revealed once clicked on.</p>
         </div>
     </div>
 </div>
