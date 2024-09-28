@@ -11,7 +11,10 @@ def add_job(item_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())
     days = list(Day.query.order_by(Day.date).all())
-    jobs = list(Job.query.order_by(Job.id.desc()).all())
+    jobs = list(Job.query.join(Day).join(Driver).order_by(
+        Day.date.desc(),
+        Driver.first_name,
+        Driver.last_name).all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     job = {}

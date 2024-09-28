@@ -10,7 +10,7 @@ def add_day(item_id, tab):
     trucks = list(Truck.query.order_by(Truck.registration).all())
     components = {'drivers':drivers, 'trucks':trucks}
     day_entries = list(
-        Day.query
+        Day.query.join(Driver)
         .order_by(
             db.case(
                 *(
@@ -19,8 +19,10 @@ def add_day(item_id, tab):
                 ),
                 else_=1
             ).asc(),
-            Day.date.desc(),
-            Day.driver_id
+            Day.driver_id,
+            Driver.first_name,
+            Driver.last_name,
+            Day.date.desc()
         )
         .all()
     )

@@ -12,7 +12,7 @@
         {% endblock %}
 
     {% block entry_history_title %}Job Entry History:{% endblock %}
-        {% block collapsible_header %}{{ item.day.driver.full_name }} - {{ f.display_date(item.day.date) }} - {{f.format_currency(f.display_currency(item.earned))}}{% endblock %}
+        {% block collapsible_header %}{{ f.display_date(item.day.date) }} - {{ item.day.driver.full_name }} - {{f.format_currency(f.display_currency(item.earned))}}{% endblock %}
 
         {% block collapsible_body %}
             <p>
