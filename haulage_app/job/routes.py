@@ -3,7 +3,6 @@ from haulage_app import db, f
 from haulage_app.models import Driver, Day, Job, Truck
 from haulage_app.job import job_bp
 from datetime import datetime, timedelta
-from pprint import pprint
 
 
 @job_bp.route("/add_job/<int:item_id>/<tab>", methods=["GET", "POST"])
@@ -12,11 +11,13 @@ def add_job(item_id, tab):
     trucks = list(Truck.query.order_by(Truck.registration).all())
     days = list(Day.query.order_by(Day.date).all())
     jobs = list(Job.query.join(Day).join(Driver).order_by(
+        Job.id,
         Day.date.desc(),
         Driver.first_name,
         Driver.last_name).all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
+    components = {'drivers': drivers, 'days': days, 'jobs': jobs}
     job = {}
     dates = {}
     day_not_present = {}
@@ -93,7 +94,7 @@ def add_job(item_id, tab):
                         round(earned, 2)
                     new_entry = Job(
                         day_id = day.id,
-                        earned = earned,
+                        earned = f.date_to_db(dates[date]),
                         collection = request.form.get('collection'),
                         delivery = request.form.get('delivery'),
                         notes = request.form.get('notes'),
@@ -117,6 +118,7 @@ def add_job(item_id, tab):
         drivers=drivers,
         trucks=trucks,
         list=jobs,
+        components=components,
         tab=tab,
         job=job,
         item_id=item_id,
@@ -124,6 +126,24 @@ def add_job(item_id, tab):
         day_not_present=day_not_present,
         day_present=day_present,
         preferred_truck=preferred_truck_id)
+
+@job_bp.route("/edit_job/<int:item_id>", methods=["POST"])
+def edit_job(item_id):
+    entry = Job.query.get_or_404(item_id)
+    try:
+        entry.day_id = request.form.get("day_id")
+        entry.earned = request.form.get("earned")
+        entry.collection = request.form.get("collection")
+        entry.delivery = request.form.get("delivery")
+        entry.notes = request.form.get("notes")
+        entry.split = request.form.get("split")
+        db.session.commit()
+    except ValueError as e:
+        flash(str(e), 'error-msg-modal')
+        return redirect(url_for("job.add_job", item_id=item_id, tab='edit'))
+    else:
+        flash(f"Entry Updated: {entry.day.driver.full_name} - {f.display_date(entry.day.date)}", "success-msg")
+        return redirect(url_for("job.add_job", item_id=0, tab='edit'))
 
 
 @job_bp.route("/delete_job/<int:item_id>")

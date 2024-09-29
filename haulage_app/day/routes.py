@@ -23,8 +23,7 @@ def add_day(item_id, tab):
             Driver.first_name,
             Driver.last_name,
             Day.date.desc()
-        )
-        .all()
+        ).all()
     )
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
@@ -89,6 +88,6 @@ def edit_day(item_id):
         flash(str(e), 'error-msg-modal')
         return redirect(url_for("day.add_day", item_id=item_id, tab='edit'))
     else:
-        flash("Success", "success-msg")
+        flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg")
         return redirect(url_for("day.add_day", item_id=0, tab='edit'))
 

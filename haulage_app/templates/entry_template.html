@@ -71,7 +71,7 @@
                 {% block collapsible_body scoped %}{% endblock %}
                 <!-- buttons -->
                 <a href="#modal_edit_{{ item.id }}"
-                    class="btn green accent-4 modal-trigger {{'hide' if type=='job'}}">Edit</a>
+                    class="btn green accent-4 modal-trigger {{'hide' if item.split is true}}">Edit</a>
                 <a href="#modal_delete_{{ item.id }}" class="btn red modal-trigger">Delete</a>
             </div>
 

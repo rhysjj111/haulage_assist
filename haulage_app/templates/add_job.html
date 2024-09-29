@@ -7,7 +7,7 @@
     {% block entry_form_title %}Add a Job:{% endblock %}
         {% block entry_form_questions %}
             <form method="post" action="{{ url_for('job.add_job', item_id=0, tab='entry') }}">
-                {{ macros[type]('add', job, drivers, f) }}
+                {{ macros[type]('add', job, components, f) }}
             </form>
         {% endblock %}
 
@@ -23,7 +23,9 @@
         {% endblock %}
     
         {% block entry_history_questions scoped %}
-
+        <form method="POST" action="{{ url_for(type+'.edit_'+type, item_id=item.id, tab='history')}}">
+            {{ macros[type]('edit', item, components, f) }}
+        </form>
         {% endblock %}
 
 
