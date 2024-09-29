@@ -265,9 +265,12 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
             <select name="truck_id" id="truck_id" >
-                {% if day.truck_id is defined %}
+                {% if day != {} %}
+                    
                     {% for truck in components.trucks %}
                         {% if day.truck == truck %}
+                            <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
+                        {% elif day.truck_id|int == truck.id|int %}
                             <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
                         {% else %}
                             <option value="{{ truck.id }}">{{ truck.registration }}</option>
@@ -452,7 +455,11 @@ from datetime import datetime
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
             <input id="date_cd" name="date_cd"  type="text" class="datepicker" required
                 {% if job is defined and type == 'edit' %} 
-                    value="{{ job.date_cd }}" 
+                    {% for day in components.days %}
+                        {% if job.day_id == day.id %}
+                            value="{{ f.display_date(day.date) }}"
+                        {% endif %}
+                    {% endfor %}
                 {% elif job is defined %}
                     value="{{ job.date_cd}}"
                 {% endif %}
@@ -466,14 +473,18 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
             <select name="driver_id" id="driver_id" class="validate" required>
+                <!-- Check if job object exists (will only exist for edit and if form has an error) -->
                 {% if job != {} %}
                     {% for driver in components.drivers %}
+                        <!-- Check if form has been repopulated due to an error -->
                         {% if job.driver_id is defined %}
                             {% if job.driver_id|string == driver.id|string %}
                                 <option value="{{ driver.id }}" selected>{{ driver.full_name }}</option>
                             {% else %}
                                 <option value="{{ driver.id }}">{{ driver.full_name }}</option>
                             {% endif %}
+                        <!-- Else, we are populating an edit form (job.driver_id is not available in this
+                         case and we must loop through the list of day entries.) -->
                         {% else %}
                             {% for day in components.days %}
                                 {% if job.day_id == day.id %}

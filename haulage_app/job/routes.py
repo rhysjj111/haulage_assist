@@ -11,7 +11,7 @@ def add_job(item_id, tab):
     trucks = list(Truck.query.order_by(Truck.registration).all())
     days = list(Day.query.order_by(Day.date).all())
     jobs = list(Job.query.join(Day).join(Driver).order_by(
-        Job.id,
+        Job.id.desc(),
         Day.date.desc(),
         Driver.first_name,
         Driver.last_name).all())
@@ -94,7 +94,7 @@ def add_job(item_id, tab):
                         round(earned, 2)
                     new_entry = Job(
                         day_id = day.id,
-                        earned = f.date_to_db(dates[date]),
+                        earned = earned,
                         collection = request.form.get('collection'),
                         delivery = request.form.get('delivery'),
                         notes = request.form.get('notes'),
