@@ -3,6 +3,7 @@ from haulage_app import db, f
 from haulage_app.models import Driver, Day, Job
 from datetime import timedelta, date, datetime
 from haulage_app.wages_calculator import wages_calculator_bp
+from pprint import pprint
 
 @wages_calculator_bp.route("/wages_calculator", methods=["GET"])
 def wages_calculator():
@@ -58,5 +59,7 @@ def wages_calculator():
             'end_date': end_date,
             'job_entries': job_entries
         }
+
+    pprint(driver_data)
 
     return render_template("wages_calculator.html", driver_data=driver_data, drivers=drivers, start_date=start_date, end_date=end_date)
