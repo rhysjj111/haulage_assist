@@ -32,7 +32,7 @@ from haulage_app.job import job_bp
 from haulage_app.fuel import fuel_bp
 from haulage_app.payslip import payslip_bp
 from haulage_app.wages_calculator import wages_calculator_bp
-from haulage_app.analysis.routes import analysis_bp
+from haulage_app.analysis import analysis_bp
 
 blueprints = [api_bp, driver_bp, day_bp, truck_bp, job_bp, fuel_bp, payslip_bp, wages_calculator_bp, analysis_bp]
 

@@ -1,1 +1,51 @@
-right one   
+{% extends "std_template.html" %}
+
+
+{% block standard_title %}WEEKLY ANALYSIS{% endblock %}
+
+{% block standard_content %} 
+
+<h6>For week commencing: {{f.display_date(start_date)}} </h6>
+
+<form method="GET"> 
+    <label for="week_select">Select Week:</label>
+    <select name="week_select" id="week_select">
+        {% for year, week in available_weeks %}
+            <option value="{{ year }}-{{ week }}">Week {{ week }}, {{ year }}</option>
+        {% endfor %}
+    </select>
+    <input type="submit" value="Submit">
+</form> 
+<br>
+<div class="row">
+    {% for driver_id, data in driver_data.items() %}
+
+    {{ macros.driver_card(driver_id, data, f) }}
+
+    {% if loop.index % 3 == 0 %}
+</div>
+<div class="row">
+    {% endif %}
+
+    {% endfor %}
+
+    
+</div>
+
+<div class="row">
+    {% for truck_id, data in truck_data.items() %}
+
+    {{ truck_id }} {{ data.total_mileage }}
+
+    {% if loop.index % 3 == 0 %}
+</div>
+<div class="row">
+    {% endif %}
+
+    {% endfor %}
+
+    
+</div>
+
+
+{% endblock %}

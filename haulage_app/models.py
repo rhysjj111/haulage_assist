@@ -236,10 +236,10 @@ class Day(db.Model):
         try:
             field = currency_to_db(field)
         except:
-            raise ValueError('1')
+            raise ValueError('Please enter a number')
         else:
-            if not(0 <= field < 100000000):
-                raise ValueError('2')
+            if not(0 <= field < 1000000000):
+                raise ValueError('Please enter a number between 0 and 10000000')
         return field
 
     @validates('overnight', 'fuel')
