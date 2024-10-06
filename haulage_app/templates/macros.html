@@ -809,6 +809,24 @@ from datetime import datetime
     </div>
 {% endmacro %}
 
+{% macro truck_card(truck_id, data, f) %}
+    <div class="col s12 m4">
+        <div class="card hoverable wages-card small">
+            <div class="card-content">
+                <span class="card-title activator"><h5>{{ data.truck.registration }}</h5>
+                    <!-- <i class="material-icons right">more_vert</i> -->
+                    <div class="divider"></div>
+                </span>
+                <br>
+                <p class="wages-calc-card-text">Total volume of fuel: {{ data.total_fuel_volume }} L</p>
+                <p class="wages-calc-card-text">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}</p>
+                <p class="wages-calc-card-text">Mileage: {{ data.total_mileage | int }} miles</p><br>
+                <p class="wages-calc-card-text"><strong><em>Fuel Economy: {{ f.format_currency(data.fuel_economy) }}</em></strong></p>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
 {% macro driver_card(driver_id, data, f) %}
     <div class="col s12 m4">
         <div class="card hoverable wages-card small">

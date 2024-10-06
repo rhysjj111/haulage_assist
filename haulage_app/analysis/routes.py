@@ -98,14 +98,17 @@ def weekly_analysis():
                 Fuel.date <= end_date
                 ).order_by(Fuel.date).all()
 
-            total_fuel = sum(f.display_currency(fuel.fuel_volume) for fuel in fuel_entries)  
-            print(total_fuel)         
+            total_fuel_volume = sum(f.display_currency(fuel.fuel_volume) for fuel in fuel_entries)  
+            total_fuel_cost = sum(f.display_currency(fuel.fuel_cost) for fuel in fuel_entries)         
             total_mileage = sum((f.display_currency(day.end_mileage)-f.display_currency(day.start_mileage)) for day in day_entries)
-            print(total_mileage)
-            
+            fuel_economy = (total_mileage / total_fuel_volume) if total_fuel_volume else 0
+
             truck_data[truck.id]={
                 'truck': truck,
                 'total_mileage': total_mileage,
+                'total_fuel_volume': total_fuel_volume,
+                'total_fuel_cost': total_fuel_cost,
+                'fuel_economy': fuel_economy,
                 'start_date': start_date,
                 'end_date': end_date,
             }
