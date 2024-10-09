@@ -22,7 +22,7 @@ def add_day(item_id, tab):
             Day.driver_id,
             Driver.first_name,
             Driver.last_name,
-            Day.date.desc()
+            Day.date.asc()
         ).all()
     )
     #empty dictionary to be filled with users previous answers if there
