@@ -446,6 +446,81 @@ from datetime import datetime
     </div>
 {% endmacro %}
 
+{% macro weekly(day, components, f) %}
+    <!-- hidden fields -->
+    <div class="row">
+        <div class="input-field col s12">
+            <h5>Date: <strong>{{f.display_date(day.date)}} ({{ day.date.strftime("%A") }})</strong></h5>
+            <h5>Driver: <strong>{{ day.driver.full_name }}</strong></h5>
+
+            <input id="date" name="date"  type="hidden" value="{{ f.display_date(day.date) }}">
+            <input id="driver_id" name="driver_id"  type="hidden" value="{{day.driver_id}}">
+            <input id="truck_id" name="truck_id"  type="hidden" value="{{day.truck_id}}">
+            <input id="status" name="status"  type="hidden" value="{{day.status}}">
+            <input id="overnight" name="overnight"  type="hidden" value="{{'on' if day.overnight}}">
+            <input id="additional_earned" name="additional_earned"  type="hidden" value="{{day.additional_earned}}">
+            <input id="additional_wages" name="additional_wages"  type="hidden" value="{{day.additional_wages}}">
+        </div>
+    </div>
+
+    <!-- start mileage -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="start_mileage" name="start_mileage" type="number" step="0.01"
+                {% if day.start_mileage == 0 %}
+                    value="{{ none }}"
+                {% else %}
+                    value="{{ f.display_currency(day.start_mileage) }}" 
+                {% endif %}
+                >
+            <label for="start_mileage">Start mileage:</label>
+        </div>
+    </div>
+
+    <!-- end mileage -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="end_mileage" name="end_mileage" type="number" step="0.01"
+                {% if day.end_mileage == 0 %}
+                    value="{{ none }}"
+                {% else %}
+                    value="{{ f.display_currency(day.end_mileage) }}" 
+                {% endif %}
+                >
+            <label for="end_mileage">End mileage:</label>
+        </div>
+    </div>
+
+    <!-- fuel -->
+    <div class="row">
+        <div class="input-field col s12">
+            <div class="switch">
+                <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+                <label for="fuel_first_{{ day.id }}">
+                    {% if day.fuel == True or day.fuel == "on" %}
+                        <input id="fuel_first_{{ day.id }}" name="fuel" type="checkbox" checked>
+                    {% else %}
+                        <input id="fuel_first_{{ day.id }}" name="fuel" type="checkbox">
+                    {% endif %}
+                    <span class="lever"></span>
+                    Fuel
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- submit button -->
+    <div class="row">
+        <div class="col s12 center-align">
+            <button type="submit" class="btn-large submit">
+                Submit <i class="fas fa-edit right"></i>
+            </button>
+        </div>
+    </div>
+{% endmacro %}
+
 
 
 {% macro job(type, job, components, f) %}
@@ -749,8 +824,8 @@ from datetime import datetime
                     <option value="{{ fuel.fuel_card_name }}" selected>{{ fuel.fuel_card_name }}</option>
                 {% endif %}
                 <option value="Silvey">Silvey</option>
-                <option value="UK Fuels">UK Fuels</option>
                 <option value="Fuel Card Services" >Fuel Card Services</option>
+                <option value="UK Fuels">UK Fuels</option>
                 <option value="The Fuel Card Company" >The Fuel Card Company</option>
             </select>
             <label for="fuel_card_name">Fuel card:</label>
