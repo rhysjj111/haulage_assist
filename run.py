@@ -1,8 +1,6 @@
 import os
 from haulage_app import app
 
-# print(wages_calculator.routes)
-
 if __name__ == "__main__":
     app.run(
         host=os.environ.get("IP"),
