@@ -5,7 +5,6 @@ from sqlalchemy.orm import validates
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask import redirect, url_for, flash, request
 from datetime import datetime
-import enum
 
 
 class Driver(db.Model):
@@ -412,88 +411,12 @@ class Fuel(db.Model):
 
 
 
-# class Expenses (db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     timestamp = db.Column(db.DateTime, default=datetime.now)
-    
-#     year = db.Column(db.Date, nullable=False)
-#     office_staff = db.Column(db.Integer, nullable=False)
-#     truck_finance =  db.Column(db.Integer, nullable=False)
-#     goods_in_transit =  db.Column(db.Integer, nullable=False)
-#     truck_maintenance =  db.Column(db.Integer, nullable=False)
 
 #     def __repr__(self): 
 #     #represents itself in form of string
 #         return f"Running costs for year: {self.year}"
 
-# class ExpenseType(enum.Enum):
-#     ONE = "One-off"
-#     TERM = "Fixed-term"
-#     RECURRING = "Recurring"
 
-# class EstimationMethod(enum.Enum):
-#     ESTIMATED = 'Estimated'
-#     ACTUAL = 'Actual'
-
-# class PaymentFrequency(enum.Enum):
-#     WEEKLY = 'Weekly'
-#     MONTHLY = 'Monthly'
-#     YEARLY = 'Yearly'
-#     ONE = 'One-off'
-
-# class ReminderFrequency(enum.Enum):
-#     NEVER = 'Never'
-#     MONTHLY = 'Monthly'
-#     QUARTERLY = 'Quarterly'
-#     BIANNUALLY = 'Biannually'
-#     YEARLY = 'Yearly'
-
-# class Expense(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(255), nullable=False)
-#     truck_id = db.Column(db.Integer, db.ForeignKey('truck.id', ondelete='CASCADE'))
-#     expense_type = db.Column(db.Enum(ExpenseType), nullable=False)
-#     estimation_method = db.Column(db.Enum(EstimationMethod), nullable=False)
-#     start_date = db.Column(db.Date, nullable=False)
-#     end_date = db.Column(db.Date)
-#     cost = db.Column(db.DECIMAL(10, 2), nullable=False)
-#     payment_frequency = db.Column(db.Enum(PaymentFrequency))
-#     reminder_frequency = db.Column(db.Enum('Never', 'Monthly', 'Quarterly', 'Biannually', 'Yearly'))
-
-#     # Relationship with Truck model
-#     truck = db.relationship('Truck', backref='expenses')
-
-#     @validates('start_date', 'end_date')
-#     def validate_dates(self, key, date):
-#         if date and date > datetime.date.today():
-#             raise ValueError(f"{key} cannot be in the future.")
-#         if key == 'end_date' and self.start_date and date < self.start_date:
-#             raise ValueError("End date cannot be before start date.")
-#         return date
-
-#     @validates('cost')
-#     def validate_cost(self, key, cost):
-#         if cost is not None and cost <= 0:
-#             raise ValueError("Cost must be a positive value.")
-#         return cost
-
-#     def __init__(self, **kwargs):
-#         super(Expense, self).__init__(**kwargs)
-#         self.validate_overlapping_dates()  # Call validation on instantiation
-
-#     def validate_overlapping_dates(self):
-#         if self.expense_type == 'Recurring':
-#             existing_expenses = Expense.query.filter_by(truck_id=self.truck_id, expense_name=self.expense_name) \
-#                                            .filter(Expense.expense_id != self.expense_id) \
-#                                            .all()
-#             for expense in existing_expenses:
-#                 if (self.start_date < expense.end_date and self.end_date > expense.start_date) or \
-#                    (self.start_date == expense.start_date):
-#                     raise ValueError("Overlapping dates for recurring expenses with the same name are not allowed.")
-
-
-
-        
 
 
 

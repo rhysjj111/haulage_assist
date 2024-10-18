@@ -25,8 +25,6 @@ def add_day(item_id, tab):
             Day.date.asc()
         ).all()
     )
-    first_day_entry = day_entries[0]
-    weekly_modal_trigger = request.args.get('weekly')
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     day = {}
@@ -52,17 +50,10 @@ def add_day(item_id, tab):
             day = request.form
         else:
             flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
-            return redirect(url_for("day.add_day", tab='entry', item_id=0))
-    return render_template(
-        "add_day.html",
-        components=components,
-        list=day_entries,
-        first_entry=first_day_entry,
-        tab=tab,
-        day=day,
-        item_id=item_id,
-        type='day',
-        weekly_modal_trigger=weekly_modal_trigger)
+            return redirect(url_for("day.add_day", drivers=drivers, day_entries=day_entries, 
+                            tab='entry', item_id=0))
+    return render_template("add_day.html", components=components, list=day_entries, tab=tab, 
+                           day=day, item_id=item_id, type='day')
 
 @day_bp.route("/delete_day/<int:item_id>")
 def delete_day(item_id):
@@ -84,8 +75,6 @@ def edit_day(item_id):
     try:
         entry.date = request.form.get("date")
         entry.driver_id = request.form.get("driver_id")
-
-        print(request.form.get("overnight"))
         entry.overnight = request.form.get("overnight")
         entry.fuel = request.form.get("fuel")
         
@@ -96,17 +85,9 @@ def edit_day(item_id):
         entry.truck_id = request.form.get("truck_id")
         db.session.commit()
     except ValueError as e:
-        if request.args.get('weekly'):
-            flash(str(e), 'error-msg-modal')
-            return redirect(url_for("day.add_day", item_id=item_id, tab='edit', weekly=True))
-        else:
-            flash(str(e), 'error-msg-modal')
-            return redirect(url_for("day.add_day", item_id=item_id, tab='edit'))
+        flash(str(e), 'error-msg-modal')
+        return redirect(url_for("day.add_day", item_id=item_id, tab='edit'))
     else:
-        if request.args.get('weekly'):
-            flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg-modal")
-            return redirect(url_for("day.add_day", item_id=0, tab='edit', weekly=True))
-        else:
-            flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg")
-            return redirect(url_for("day.add_day", item_id=0, tab='edit'))
+        flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg")
+        return redirect(url_for("day.add_day", item_id=0, tab='edit'))
 

@@ -3,7 +3,7 @@
 {% extends "entry_template.html" %}
 
 
-{% block entry_title %}+ DAY {{weekly}}{% endblock %}
+{% block entry_title %}+ DAY{% endblock %}
 
     {% block entry_form_title %}Add Day Entry:{% endblock %}
         {% block entry_form_questions %}
@@ -13,7 +13,6 @@
         {% endblock %}
 
     {% block entry_history_title %}Day Entry History:{% endblock %}
-
         {% block collapsible_header %}{{item.driver.full_name}} - {{f.display_date(item.date)}}{% endblock %}
 
         {% block collapsible_body %}
@@ -24,36 +23,6 @@
             <form method="POST" action="{{ url_for(type+'.edit_'+type, item_id=item.id, tab='history')}}">
                 {{ macros[type]('edit', item, components, f) }}
             </form>
-        {% endblock %}
-
-        {% block additional_content %}
-        <!-- modal for weekly entries -->
-        <div id="modal_first" class="modal">
-            <div class="modal-content">
-                <h3 class="center-align">Weekly Entries</h3>
-
-                <!-- error messages -->
-                {% set err_msg = get_flashed_messages(category_filter=["error-msg-modal"]) %}
-                {% set scc_msg = get_flashed_messages(category_filter=["success-msg-modal"]) %}
-                {% with messages = err_msg if err_msg else scc_msg %}
-                {% if messages %}
-                <div class="messages-container s12 {{'err-msg' if err_msg else 'scc-msg'}}">
-                    {% for message in messages %}
-                    <ul>
-                        <li> {{ message }}</li>
-                    </ul>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {% endwith %}
-
-                <div class="row">
-                   <form method="POST" action="{{ url_for(type+'.edit_'+type, item_id=first_entry.id, tab='history', weekly=True) }}">
-                    {{ macros['weekly'](first_entry, components, f) }}
-                   </form>
-                </div>
-            </div>
-        </div>
         {% endblock %}
 
 
