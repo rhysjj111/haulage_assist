@@ -149,7 +149,8 @@ In future, I'd like to:
 
 
 ### Deployment
-#### Deploy on Gitpot
+#### Creating tables in Gitpod
+#### Creating db tables on Gitpod
 - To create database run following commands:
 - from wages_calc import db, app
 - with app.app_context():<br>

@@ -96,12 +96,13 @@ def add_job(item_id, tab):
             for date_type in valid_dates:
                 # ... (Your existing code for creating Job entries)
 
-            flash("Job entry added successfully!", "success-msg")
-            return redirect(url_for("job.add_job", tab='entry', item_id=0))
+                flash("Job entry added successfully!", "success-msg")
+                return redirect(url_for("job.add_job", tab='entry', item_id=0))
 
     # ... (Your existing code for rendering the initial form)
 
 
 @job_bp.route("/delete_job/<int:item_id>")
 def delete_job(item_id):
-    # ... (Your existing code for deleting job entries)
+    f
+    # ... (Your existing code for deleting job entries)f
