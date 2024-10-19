@@ -411,10 +411,19 @@ class Fuel(db.Model):
 
 
 
+class RunningCosts (db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    year = db.Column(db.Date, nullable=False)
+    office_staff = db.Column(db.Integer, nullable=False)
+    truck_finance =  db.Column(db.Integer, nullable=False)
+    goods_in_transit =  db.Column(db.Integer, nullable=False)
+    truck_maintenance =  db.Column(db.Integer, nullable=False)
 
-#     def __repr__(self): 
-#     #represents itself in form of string
-#         return f"Running costs for year: {self.year}"
+    def __repr__(self): 
+    #represents itself in form of string
+        return f"Running costs for year: {self.year}"
+
 
 
 
