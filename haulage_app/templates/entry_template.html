@@ -18,7 +18,7 @@
 {% set scc_msg = get_flashed_messages(category_filter=["success-msg"]) %}
 {% with messages = err_msg if err_msg else scc_msg %}
 {% if messages %}
-<div class="messages-container s12 {{'err-msg' if (err_msg) else 'scc-msg'}} ">
+<div class="messages-container s12 {{'err-msg' if err_msg else 'scc-msg'}} ">
     {% for message in messages %}
     <ul>
         <li> {{ message }}</li>
@@ -52,7 +52,7 @@
 <!-- history column -->
 <div class="col s12 l6 entry-history content-container {{ 'active' if (tab == 'history') else '' }}" id="entry_history">
     <!-- history title -->
-    <h4>{% block entry_history_title %}Test history{% endblock %}</h4>
+    <h4>{% block entry_history_title %}Test history{% endblock %}</h4>{% if first_entry %} <a href="#modal_first" class="btn modal-trigger">Weekly Entries</a> {% endif %}
     <!-- history content -->
     <ul class="collapsible">
         {% for item in list %}
@@ -91,7 +91,7 @@
             <!-- Edit modal -->
             <div id="modal_edit_{{ item.id }}" class="modal">
                 <div class="modal-content">
-                    <h3 class="center-align">Edit {{type|replace("_"," ")|capitalize()}}</h3>
+                    <h3 class="center-align">Edit {{type|replace("_"," ")|capitalize()}} {{weekly_modal_trigger}}</h3>
 
                     <!-- error messages -->
                     {% with messages = get_flashed_messages(category_filter=["error-msg-modal"]) %}
@@ -140,10 +140,14 @@
     </ul>
 </div>
 
+{% block additional_content %}{% endblock %}    
+
 <!-- triggers edit-modal if invalid form submission -->
 {% block modal_triggers %}
-{% if item_id is defined and item_id > 0 %}
-<div class="open-edit-modal">modal_edit_{{item_id}}</div>
+{% if weekly_modal_trigger %}
+<div class="open-modal">modal_first</div>
+{% elif item_id is defined and item_id > 0 %}
+<div class="open-modal">modal_edit_{{item_id}}</div>
 {% endif %}
 {% endblock %}
 

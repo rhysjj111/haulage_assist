@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let modal = document.querySelectorAll('.modal');
     M.Modal.init(modal);
     // edit-modal re-open when invalid form submission
-    let modalOpen = document.querySelector('.open-edit-modal')
+    let modalOpen = document.querySelector('.open-modal')
     if (modalOpen){
         modalOpen = modalOpen.textContent;
         modalOpen = document.querySelector(`#${modalOpen}`);
