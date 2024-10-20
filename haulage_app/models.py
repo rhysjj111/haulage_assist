@@ -5,7 +5,7 @@ from sqlalchemy.orm import validates
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask import redirect, url_for, flash, request
 from datetime import datetime
-import enum
+from enum import Enum
 
 
 class Driver(db.Model):
@@ -156,6 +156,7 @@ class Truck (db.Model):
 
 class Day(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
     date = db.Column(db.Date, nullable=False, index=True)
     driver_id = db.Column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False, index=True)
     truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=False, index=True)  
@@ -410,83 +411,70 @@ class Fuel(db.Model):
         return fuel_cost  
 
 
+class Expense(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    name = db.Column(db.String(50), nullable=False, index=True)
+    description = db.Column(db.String(200))
 
+    occurances = db.relationship("ExpenseOccurance", back_populates="expense")
 
-# class Expenses (db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     timestamp = db.Column(db.DateTime, default=datetime.now)
+    def __repr__(self):
+        #represents itself in form of string
+            return f"Expense: {self.name}"
+
+class ExpenseOccurance(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    expense_id = db.Column(db.Integer, db.ForeignKey("expense.id"), nullable=False, index=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    date_start = db.Column(db.Date, nullable=False, index=True)
+    date_end = db.Column(db.Date, index=True)
+    cost = db.Column(db.Integer, nullable=False)
+    frequency = db.Column(db.Enum("Weekly","Monthly","Yearly", "One-off"), nullable=False, default="Weekly")
+
+    expense = db.relationship("Expense", back_populates="occurances")
+
+    def __repr__(self):
+        #represents itself in form of string
+            return f"Occurance For Expense: {self.expense.name}, Start Date: {self.date_start}"
     
-#     year = db.Column(db.Date, nullable=False)
-#     office_staff = db.Column(db.Integer, nullable=False)
-#     truck_finance =  db.Column(db.Integer, nullable=False)
-#     goods_in_transit =  db.Column(db.Integer, nullable=False)
-#     truck_maintenance =  db.Column(db.Integer, nullable=False)
+    @validates('date_start', 'date_end')
+    def validate_start_date(self, key, date):
+        try:
+            date = date_to_db(date)
+        except:
+            raise ValueError('Please enter date in format dd/mm/yyyy')
+        return date
 
+    @validates('date_end')
+    def validate_date_end(self, key, date_end):
+        if date_end is not None:
+            if date_end <= self.date_start:
+                raise ValueError("End date must be after start date")
+        return date_end
 
-# class ExpenseType(enum.Enum):
-#     ONE = "One-off"
-#     TERM = "Fixed-term"
-#     RECURRING = "Recurring"
+    @validates('date_start')
+    def validate_date_start(self, key, date_start):
+        if self.date_end is not None and date_start >= self.date_end:
+            raise ValueError("Start date must be before end date")
+        return date_start
+    
+    @validates('cost')
+    def validate_earned(self, key, cost):
+        try:
+            cost = currency_to_db(cost)
+        except:
+            raise ValueError('Please enter a value between £1.00 and £1500.00')
+        else:
+            if not(100 < cost < 150000):
+                raise ValueError('Please enter a value between £1.00 and £1500.00')
+        return cost
 
-# class EstimationMethod(enum.Enum):
-#     ESTIMATED = 'Estimated'
-#     ACTUAL = 'Actual'
-
-# class PaymentFrequency(enum.Enum):
-#     WEEKLY = 'Weekly'
-#     MONTHLY = 'Monthly'
-#     YEARLY = 'Yearly'
-#     ONE = 'One-off'
-
-# class ReminderFrequency(enum.Enum):
-#     NEVER = 'Never'
-#     MONTHLY = 'Monthly'
-#     QUARTERLY = 'Quarterly'
-#     BIANNUALLY = 'Biannually'
-#     YEARLY = 'Yearly'
-
-# class Expense(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(255), nullable=False)
-#     truck_id = db.Column(db.Integer, db.ForeignKey('truck.id', ondelete='CASCADE'))
-#     expense_type = db.Column(db.Enum(ExpenseType), nullable=False)
-#     estimation_method = db.Column(db.Enum(EstimationMethod), nullable=False)
-#     start_date = db.Column(db.Date, nullable=False)
-#     end_date = db.Column(db.Date)
-#     cost = db.Column(db.DECIMAL(10, 2), nullable=False)
-#     payment_frequency = db.Column(db.Enum(PaymentFrequency))
-#     reminder_frequency = db.Column(db.Enum('Never', 'Monthly', 'Quarterly', 'Biannually', 'Yearly'))
-
-#     # Relationship with Truck model
-#     truck = db.relationship('Truck', backref='expenses')
-
-#     @validates('start_date', 'end_date')
-#     def validate_dates(self, key, date):
-#         if date and date > datetime.date.today():
-#             raise ValueError(f"{key} cannot be in the future.")
-#         if key == 'end_date' and self.start_date and date < self.start_date:
-#             raise ValueError("End date cannot be before start date.")
-#         return date
-
-#     @validates('cost')
-#     def validate_cost(self, key, cost):
-#         if cost is not None and cost <= 0:
-#             raise ValueError("Cost must be a positive value.")
-#         return cost
-
-#     def __init__(self, **kwargs):
-#         super(Expense, self).__init__(**kwargs)
-#         self.validate_overlapping_dates()  # Call validation on instantiation
-
-#     def validate_overlapping_dates(self):
-#         if self.expense_type == 'Recurring':
-#             existing_expenses = Expense.query.filter_by(truck_id=self.truck_id, expense_name=self.expense_name) \
-#                                            .filter(Expense.expense_id != self.expense_id) \
-#                                            .all()
-#             for expense in existing_expenses:
-#                 if (self.start_date < expense.end_date and self.end_date > expense.start_date) or \
-#                    (self.start_date == expense.start_date):
-#                     raise ValueError("Overlapping dates for recurring expenses with the same name are not allowed.")
+    @validates('frequency')
+    def validate_frequency(self, key, frequency):
+        if frequency not in ["Weekly","Monthly","Yearly", "One-off"]:
+            raise ValueError('Please enter a valid frequency')
+        return frequency
 
 
 
