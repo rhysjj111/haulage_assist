@@ -1,0 +1,40 @@
+{% extends "entry_template.html" %}
+
+
+{% block entry_title %}+ EXPENSES{% endblock %}
+
+    {% block entry_form_title %}Add a Expenses:{% endblock %}
+        {% block entry_form_questions %}
+            <form method="post" action="{{ url_for(type+'.add_'+type, item_id=0, tab='entry') }}">
+                {{ macros[type]('add', expenses, trucks, f) }}
+            </form>
+        {% endblock %}
+
+    {% block entry_history_title %}Expenses Entry History:{% endblock %}
+        {% block collapsible_header %}{{ item.name }}{% endblock %}
+
+        {% block collapsible_body %}
+            <p>
+                {#
+                Basic wage: {{ f.format_currency(f.display_currency(item.basic_wage)) }}<br>
+                Daily bonus threshold: {{ f.format_currency(f.display_currency(item.daily_bonus_threshold)) }}<br>
+                Daily bonus percentage: {{ f.format_percentage(f.display_percentage(item.daily_bonus_percentage)) }}<br>
+                Weekly bonus threshold: {{ f.format_currency(f.display_currency(item.weekly_bonus_threshold)) }}<br>
+                Weekly bonus percentage: {{ f.format_percentage(f.display_percentage(item.weekly_bonus_percentage)) }}<br>
+                Overnight: {{ f.format_currency(f.display_currency(item.overnight_value)) }}<br>
+                {% for truck in trucks %}
+                    {% if truck.id == item.truck_id %}
+                        Preferred truck: {{ truck.registration }}
+                    {% else %}
+                        Preferred truck: none
+                    {% endif %}
+                {% endfor %}
+                #}
+            </p>
+        {% endblock %}
+    
+        {% block entry_history_questions scoped %}
+            <form method="POST" class="modal-trigger" action="{{ url_for(type+'.edit_'+type, item_id=item.id, tab='history') }}">                                        
+                {{ macros[type]('edit', item, trucks, f) }}                                        
+            </form>
+        {% endblock %}

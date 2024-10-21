@@ -33,8 +33,10 @@ from haulage_app.fuel import fuel_bp
 from haulage_app.payslip import payslip_bp
 from haulage_app.wages_calculator import wages_calculator_bp
 from haulage_app.analysis import analysis_bp
+from haulage_app.analysis import expenses_bp
 
-blueprints = [api_bp, driver_bp, day_bp, truck_bp, job_bp, fuel_bp, payslip_bp, wages_calculator_bp, analysis_bp]
+blueprints = [expenses, api_bp, driver_bp, day_bp, truck_bp, 
+              job_bp, fuel_bp, payslip_bp, wages_calculator_bp, analysis_bp]
 
 for blueprint in blueprints:
     app.register_blueprint(blueprint)
