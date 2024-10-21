@@ -874,7 +874,63 @@ from datetime import datetime
 
 
 
-{% macro running_cost(type, running_cost, f) %}
+{% macro expense(type, expense, f) %}
+    <!-- expense name -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="name" name="name" type="text" required
+            {% if expense.expense.name is defined %} 
+            value="{{ expense.expense.name }}" 
+            {% endif %}
+            >
+            <label for="name">Name:</label>
+        </div>
+    </div>
+
+    <!-- expense description -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="description" name="description" type="text" required
+            {% if expense.description is defined %} 
+            value="{{ expense.expense.description }}" 
+            {% endif %}
+            >
+            <label for="name">Description:</label>
+        </div>
+    </div>
+    
+    <!-- date -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
+            <input id="date" name="start_date"  type="text" class="datepicker" required
+                {% if expense is defined and type == 'edit' %} 
+                    value="{{ f.display_date(expense.start_date) }}" 
+                {% elif expense is defined %}
+                    value="{{ expense.start_date}}"
+                {% endif %}
+                >
+            <label for="date">Date:</label>
+        </div>
+    </div>
+
+    <!-- cost -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
+            <input id="cost" name="cost" type="number" step="0.01" required
+                    {% if expense.cost is defined and type == "edit" %} 
+                        value="{{ '%0.2f' % f.display_currency(expense.cost) }}" 
+                    {% elif expense.cost is defined %} 
+                        value="{{ expense.cost }}" 
+                    {% endif %}
+                    >
+            <label for="cost">Expense cost (£):</label>
+        </div>
+    </div>
+
     <!-- submit button -->
     <div class="row">
         <div class="col s12 center-align">

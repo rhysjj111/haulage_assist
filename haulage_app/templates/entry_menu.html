@@ -54,6 +54,14 @@
                         </div>
                     </a>
                 </div>
+                <div class="col s12 xl6 data-entry-button-container">
+                    <a href="{{ url_for('expense.add_expense', item_id=0, tab='entry') }}">
+                        <div class="main-button btn">
+                            <i class="large material-icons data-entry-icon row-3">none</i>
+                            <h3 class="data-entry-title">Add Expense</h3>
+                        </div>
+                    </a>
+                </div>
             </div>
         </div>
     {% endblock %}

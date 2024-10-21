@@ -437,26 +437,28 @@ class ExpenseOccurance(db.Model):
     def __repr__(self):
         #represents itself in form of string
             return f"Occurance For Expense: {self.expense.name}, Start Date: {self.date_start}"
-    
-    @validates('date_start', 'date_end')
-    def validate_start_date(self, key, date):
-        try:
-            date = date_to_db(date)
-        except:
-            raise ValueError('Please enter date in format dd/mm/yyyy')
-        return date
 
     @validates('date_end')
     def validate_date_end(self, key, date_end):
-        if date_end is not None:
-            if date_end <= self.date_start:
-                raise ValueError("End date must be after start date")
+        try:
+            date_end = date_to_db(date_end)
+        except:
+            raise ValueError('Please enter date in format dd/mm/yyyy')
+        else:
+            if date_end is not None:
+                if date_end <= self.date_start:
+                    raise ValueError("End date must be after start date")
         return date_end
 
     @validates('date_start')
     def validate_date_start(self, key, date_start):
-        if self.date_end is not None and date_start >= self.date_end:
-            raise ValueError("Start date must be before end date")
+        try:
+            date = date_to_db(date)
+        except:
+            raise ValueError('Please enter date in format dd/mm/yyyy')
+        else:
+            if self.date_end is not None and date_start >= self.date_end:
+                raise ValueError("Start date must be before end date")
         return date_start
     
     @validates('cost')
