@@ -423,6 +423,12 @@ class Expense(db.Model):
         #represents itself in form of string
             return f"Expense: {self.name}"
 
+class TimeFrequency(Enum):
+    WEEKLY = "Weekly"
+    MONTHLY = "Monthly"
+    YEARLY = "Yearly"
+    ONE_OFF = "One-off"
+
 class ExpenseOccurance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     expense_id = db.Column(db.Integer, db.ForeignKey("expense.id"), nullable=False, index=True)
@@ -430,7 +436,7 @@ class ExpenseOccurance(db.Model):
     date_start = db.Column(db.Date, nullable=False, index=True)
     date_end = db.Column(db.Date, index=True)
     cost = db.Column(db.Integer, nullable=False)
-    frequency = db.Column(db.Enum("Weekly","Monthly","Yearly", "One-off"), nullable=False, default="Weekly")
+    frequency = db.Column(db.Enum(TimeFrequency), nullable=False, default=TimeFrequency.WEEKLY)
 
     expense = db.relationship("Expense", back_populates="occurances")
 
