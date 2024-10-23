@@ -457,7 +457,7 @@ from datetime import datetime
             <input id="driver_id" name="driver_id"  type="hidden" value="{{day.driver_id}}">
             <input id="truck_id" name="truck_id"  type="hidden" value="{{day.truck_id}}">
             <input id="status" name="status"  type="hidden" value="{{day.status}}">
-            <input id="overnight" name="overnight"  type="hidden" value="{{'on' if day.overnight}}">
+            <input id="overnight" name="overnight"  type="hidden" value="{{'on' if day.overnight else ''}}">
             <input id="additional_earned" name="additional_earned"  type="hidden" value="{{day.additional_earned}}">
             <input id="additional_wages" name="additional_wages"  type="hidden" value="{{day.additional_wages}}">
         </div>

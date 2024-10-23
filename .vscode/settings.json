@@ -18,5 +18,6 @@
    "terminal.integrated.gpuAcceleration": "canvas",
    "editor.defaultFormatter": "HookyQR.beautify",
    "IDX.aI.enableInlineCompletion": true,
-   "IDX.aI.enableCodebaseIndexing": true
+   "IDX.aI.enableCodebaseIndexing": true,
+   "workbench.editor.enablePreview": false
 }

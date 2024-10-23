@@ -248,7 +248,7 @@ class Day(db.Model):
     def validate_boolean_field(self, key, value):
         if value == 'on':
             return True
-        elif value is None or value == None:
+        elif value is None or value == None or value == "":
             return False
         else:
             raise ValueError(f'Invalid value for {key}. Please use the selector.')

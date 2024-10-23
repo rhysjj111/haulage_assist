@@ -193,7 +193,7 @@ footer, nav{
     width: 75% !important;
     max-height: 90% !important;
 }
-.open-edit-modal{
+.open-modal{
     display: none;
 }
 .delete-all-collapsible{
