@@ -1,7 +1,7 @@
 import re
 from haulage_app import db
 from haulage_app.functions import *
-from sqlalchemy.orm import validates 
+from sqlalchemy.orm import (Mapped, mapped_column, validates,)
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask import redirect, url_for, flash, request
 from datetime import datetime
@@ -423,12 +423,6 @@ class Expense(db.Model):
         #represents itself in form of string
             return f"Expense: {self.name}"
 
-class TimeFrequency(Enum):
-    WEEKLY = "Weekly"
-    MONTHLY = "Monthly"
-    YEARLY = "Yearly"
-    ONE_OFF = "One-off"
-
 class ExpenseOccurance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     expense_id = db.Column(db.Integer, db.ForeignKey("expense.id"), nullable=False, index=True)
@@ -436,7 +430,6 @@ class ExpenseOccurance(db.Model):
     date_start = db.Column(db.Date, nullable=False, index=True)
     date_end = db.Column(db.Date, index=True)
     cost = db.Column(db.Integer, nullable=False)
-    frequency = db.Column(db.Enum(TimeFrequency), nullable=False, default=TimeFrequency.WEEKLY)
 
     expense = db.relationship("Expense", back_populates="occurances")
 
@@ -477,12 +470,6 @@ class ExpenseOccurance(db.Model):
             if not(100 < cost < 150000):
                 raise ValueError('Please enter a value between £1.00 and £1500.00')
         return cost
-
-    @validates('frequency')
-    def validate_frequency(self, key, frequency):
-        if frequency not in ["Weekly","Monthly","Yearly", "One-off"]:
-            raise ValueError('Please enter a valid frequency')
-        return frequency
 
 
 

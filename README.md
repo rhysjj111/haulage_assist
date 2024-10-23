@@ -152,9 +152,23 @@ In future, I'd like to:
 #### Creating tables in Gitpod
 #### Creating db tables on Gitpod
 - To create database run following commands:
-- from wages_calc import db, app
-- with app.app_context():<br>
+```
+from wages_calc import db, app
+  with app.app_context():
     db.create_all()
+```
+#### Migrating database from Gitpod environment to Heroku
+##### Login to Heroku via CLI
+- Obtain Heroku api key from Heroku dashboard. Run:
+- `heroku login -i`
+- Follow instructions.
+##### Migrating databases from Gitpod to Heroku
+- Run these commands in the Gitpod terminal:
+- `flask db migrate -m "Description."`
+- `flask db upgrade`
+- Check migrations are ok within development environment.
+- Push changes to GitHub. Run following command:
+- `heroku run -a jjcalc flask db upgrade`
 #### Deploy locally
 ##### Fork the repository (creating a copy)
 - Create a Github account & login.
