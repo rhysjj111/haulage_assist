@@ -452,9 +452,10 @@ class ExpenseOccurance(db.Model):
     @validates('date_start')
     def validate_date_start(self, key, date_start):
         try:
-            date = date_to_db(date)
+            print(date_start)
+            date_start = date_to_db(date_start)
         except:
-            raise ValueError('Please enter date in format dd/mm/yyyy')
+            raise ValueError('Please enter date in format dd/mm/yyyy asdva')
         else:
             if self.date_end is not None and date_start >= self.date_end:
                 raise ValueError("Start date must be before end date")

@@ -12,24 +12,31 @@ def add_expense(item_id, tab):
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     expense = {}
-    # if request.method == "POST":
-    #     try:
-    #         new_entry = expense(
-    #             date = request.form.get("date"),
-    #             driver_id = request.form.get("driver_id"),
-    #             total_wage = request.form.get("total_wage"),
-    #             total_cost_to_employer = request.form.get("total_cost_to_employer")    
-    #         )
-    #         db.session.add(new_entry)
-    #         db.session.commit()
-    #     except ValueError as e:
-    #         flash(str(e), 'error-msg')
-    #         #retrieve previous answers
-    #         expense = request.form
-    #     else:
-    #         flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
-    #         return redirect(url_for("expense.add_expense", drivers=drivers, expenses=expenses, 
-    #                         tab='entry', item_id=0))
+    if request.method == "POST":
+        try:
+            new_expense = Expense(
+                name=request.form.get("name"),
+                description=request.form.get("description")
+            )
+            db.session.add(new_expense)
+            db.session.flush()  # This assigns an ID to new_expense before commit
+            
+            # Then create the ExpenseOccurance linked to the Expense
+            new_occurance = ExpenseOccurance(
+                expense_id=new_expense.id,
+                date_start=request.form.get("date_start"),
+                cost=request.form.get("cost")
+            )
+            db.session.add(new_occurance)
+            db.session.commit()
+        except ValueError as e:
+            flash(str(e), 'error-msg')
+            #retrieve previous answers
+            expense = request.form
+        else:
+            flash(f"Entry Success: {new_expense.name} - {f.display_date(new_occurance.date_start)}", "success-msg")
+            return redirect(url_for("expense.add_expense", expenses=expenses, 
+                            tab='entry', item_id=0))
     return render_template("add_expense.html", tab=tab, 
                            expense=expense, item_id=item_id, type='expense')
 
