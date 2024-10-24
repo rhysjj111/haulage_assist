@@ -417,7 +417,7 @@ class Expense(db.Model):
     name = db.Column(db.String(50), nullable=False, index=True)
     description = db.Column(db.String(200))
 
-    occurances = db.relationship("ExpenseOccurance", back_populates="expense")
+    occurances = db.relationship("ExpenseOccurance", back_populates="expense", cascade="all, delete-orphan")
 
     def __repr__(self):
         #represents itself in form of string
@@ -425,7 +425,7 @@ class Expense(db.Model):
 
 class ExpenseOccurance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    expense_id = db.Column(db.Integer, db.ForeignKey("expense.id"), nullable=False, index=True)
+    expense_id = db.Column(db.Integer, db.ForeignKey("expense.id", ondelete="CASCADE"), nullable=False, index=True)
     timestamp = db.Column(db.DateTime, default=datetime.now)
     date_start = db.Column(db.Date, nullable=False, index=True)
     date_end = db.Column(db.Date, index=True)

@@ -880,8 +880,8 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="name" name="name" type="text" required
-            {% if expense is defined %} 
-            value="{{ expense }}" 
+            {% if expense.expense is defined %} 
+            value="{{ expense.expense.name }}" 
             {% endif %}
             >
             <label for="name">Name:</label>
@@ -893,8 +893,8 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="description" name="description" type="text" required
-            {% if expense is defined %} 
-            value="{{ expense }}" 
+            {% if expense.expense is defined %} 
+            value="{{ expense.expense.description}}" 
             {% endif %}
             >
             <label for="name">Description:</label>

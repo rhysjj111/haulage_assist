@@ -6,9 +6,7 @@ from haulage_app.expense import expense_bp
 
 @expense_bp.route("/add_expense/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_expense(item_id, tab):
-    # expenses = list(Expense.query.order_by(Expense.name).all())
-    test='test'
-    expenses = {test: 'test'}
+    expenses = list(ExpenseOccurance.query.all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     expense = {}
@@ -37,20 +35,21 @@ def add_expense(item_id, tab):
             flash(f"Entry Success: {new_expense.name} - {f.display_date(new_occurance.date_start)}", "success-msg")
             return redirect(url_for("expense.add_expense", expenses=expenses, 
                             tab='entry', item_id=0))
-    return render_template("add_expense.html", tab=tab, 
+    return render_template("add_expense.html", tab=tab, list=expenses,
                            expense=expense, item_id=item_id, type='expense')
 
 @expense_bp.route("/delete_expense/<int:item_id>")
 def delete_expense(item_id):
-    entry = expense.query.get_or_404(item_id)
-    db.session.delete(entry)
+    expense_occurance = ExpenseOccurance.query.get_or_404(item_id)
+    expense = expense_occurance.expense
+    db.session.delete(expense)
     db.session.commit()
     flash("Entry deleted", "success-msg")
     return redirect(url_for("expense.add_expense", item_id=0, tab='history'))
 
 @expense_bp.route("/edit_expense/<int:item_id>", methods=["POST"])
 def edit_expense(item_id):
-    entry = expense.query.get_or_404(item_id)
+    entry = Expense.query.get_or_404(item_id)
     try:
         entry.date = request.form.get("date")
         entry.driver_id = request.form.get("driver_id")
