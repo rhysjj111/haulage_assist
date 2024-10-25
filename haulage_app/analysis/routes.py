@@ -23,8 +23,13 @@ def calculate_expenses_for_period(start_date, end_date):
         ExpenseOccurrence.start_date <= end_date
     # returns only the first occurrence if two fall within the dates
     ).all()
+
+    print(expenses)
+    print('akljhfdlkasjdflksj')
     
     total_cost = sum(expense.cost for expense in expenses)
+
+    print(total_cost)
     return total_cost
 
 @analysis_bp.route("/weekly_analysis", methods=["GET"])
@@ -127,11 +132,13 @@ def weekly_analysis():
                 'end_date': end_date,
             }
 
-            total_expenses = calculate_expenses_for_period(start_date, end_date)
+        total_expenses = calculate_expenses_for_period(start_date, end_date)
 
-            grand_total_data = {
-                'total_expenses': total_expenses,
-            }
+        grand_total_data = {
+            'total_expenses': total_expenses,
+        }
+
+        pprint(grand_total_data)
 
 
         
