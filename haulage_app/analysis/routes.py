@@ -1,6 +1,6 @@
 from flask import render_template, request, url_for
 from haulage_app import db, f
-from haulage_app.models import Driver, Day, Job, Truck, Fuel
+from haulage_app.models import Driver, Day, Job, Truck, Fuel, Expense, ExpenseOccurrence
 from datetime import timedelta, date, datetime
 from haulage_app.analysis import analysis_bp
 from pprint import pprint
@@ -12,6 +12,20 @@ def get_week_number_sat_to_fri(date):
     # Use the year and ISO week number of the week's start date
     return (shifted_date.year, shifted_date.isocalendar().week)
 
+def calculate_expenses_for_period(start_date, end_date):
+    expenses = ExpenseOccurrence.query.filter(
+        db.or_(
+            ExpenseOccurrence.end_date >= start_date,
+            #checks if there is no end date
+            ExpenseOccurrence.end_date == None
+        ),
+        # makes sure an expense 
+        ExpenseOccurrence.start_date <= end_date
+    # returns only the first occurrence if two fall within the dates
+    ).distinct(Expense.id).all()
+    
+    total_cost = sum(expense.cost for expense in expenses)
+    return total_cost
 
 @analysis_bp.route("/weekly_analysis", methods=["GET"])
 def weekly_analysis():
@@ -19,15 +33,15 @@ def weekly_analysis():
     all_days = Day.query.all()
     # Extract dates from the days
     dates = [day.date for day in all_days]
-    # pprint(dates)
     # Calculate week numbers for each day
     week_numbers = [get_week_number_sat_to_fri(day.date) for day in all_days]
-    # pprint(week_numbers)
+    # Get unique week numbers
     available_weeks = sorted(set(week_numbers), reverse=True)
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())
     driver_data = {}
     truck_data = {}
+    grand_total_data = {}
     start_date = date.today()
 
     if request.args.get('week_select'):
@@ -113,6 +127,12 @@ def weekly_analysis():
                 'end_date': end_date,
             }
 
+            total_expenses = calculate_expenses_for_period(start_date, end_date)
+
+            grand_total_data = {
+                'total_expenses': total_expenses,
+            }
+
 
         
 
@@ -125,6 +145,7 @@ def weekly_analysis():
         driver_data=driver_data,
         truck_data=truck_data,
         start_date=start_date,
+        grand_total_data=grand_total_data,
     )
 
 

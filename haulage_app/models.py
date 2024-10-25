@@ -417,49 +417,48 @@ class Expense(db.Model):
     name = db.Column(db.String(50), nullable=False, index=True)
     description = db.Column(db.String(200))
 
-    occurances = db.relationship("ExpenseOccurance", back_populates="expense", cascade="all, delete-orphan")
+    occurrences = db.relationship("ExpenseOccurrence", back_populates="expense", cascade="all, delete-orphan")
 
     def __repr__(self):
         #represents itself in form of string
             return f"Expense: {self.name}"
 
-class ExpenseOccurance(db.Model):
+class ExpenseOccurrence(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     expense_id = db.Column(db.Integer, db.ForeignKey("expense.id", ondelete="CASCADE"), nullable=False, index=True)
     timestamp = db.Column(db.DateTime, default=datetime.now)
-    date_start = db.Column(db.Date, nullable=False, index=True)
-    date_end = db.Column(db.Date, index=True)
+    start_date = db.Column(db.Date, nullable=False, index=True)
+    end_date = db.Column(db.Date, index=True)
     cost = db.Column(db.Integer, nullable=False)
 
-    expense = db.relationship("Expense", back_populates="occurances")
+    expense = db.relationship("Expense", back_populates="occurrences")
 
     def __repr__(self):
         #represents itself in form of string
-            return f"Occurance For Expense: {self.expense.name}, Start Date: {self.date_start}"
+            return f"Occurrence For Expense: {self.expense.name}, Start Date: {self.start_date}"
 
-    @validates('date_end')
-    def validate_date_end(self, key, date_end):
+    @validates('end_date')
+    def validate_end_date(self, key, end_date):
         try:
-            date_end = date_to_db(date_end)
+            end_date = date_to_db(end_date)
         except:
             raise ValueError('Please enter date in format dd/mm/yyyy')
         else:
-            if date_end is not None:
-                if date_end <= self.date_start:
+            if end_date is not None:
+                if end_date <= self.start_date:
                     raise ValueError("End date must be after start date")
-        return date_end
+        return end_date
 
-    @validates('date_start')
-    def validate_date_start(self, key, date_start):
+    @validates('start_date')
+    def validate_start_date(self, key, start_date):
         try:
-            print(date_start)
-            date_start = date_to_db(date_start)
+            start_date = date_to_db(start_date)
         except:
             raise ValueError('Please enter date in format dd/mm/yyyy asdva')
         else:
-            if self.date_end is not None and date_start >= self.date_end:
+            if self.end_date is not None and start_date >= self.end_date:
                 raise ValueError("Start date must be before end date")
-        return date_start
+        return start_date
     
     @validates('cost')
     def validate_earned(self, key, cost):

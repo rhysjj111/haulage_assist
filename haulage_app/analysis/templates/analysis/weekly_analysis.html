@@ -26,12 +26,16 @@
         <div class="col s12">
             <div class="card hoverable wages-card small">
                 <div class="card-content">
-                    <span class="card-title activator"><h5>totals</h5>
+                    <span class="card-title activator"><h5>Grand Totals</h5>
                         <!-- <i class="material-icons right">more_vert</i> -->
                         <div class="divider"></div>
                     </span>
                     <br>
-                    <p class="wages-calc-card-text">totals</p>
+                    <p class="wages-calc-card-text">
+                        {% if grand_total_data.expenses %}
+                        Total Expenses: {{ f.df_currency(grand_total_data.total_expenses) }}
+                        {% endif %}
+                    </p>
                 </div>
             </div>
         </div>
