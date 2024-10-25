@@ -22,7 +22,7 @@ def calculate_expenses_for_period(start_date, end_date):
         # makes sure an expense 
         ExpenseOccurrence.start_date <= end_date
     # returns only the first occurrence if two fall within the dates
-    ).distinct(Expense.id).all()
+    ).all()
     
     total_cost = sum(expense.cost for expense in expenses)
     return total_cost

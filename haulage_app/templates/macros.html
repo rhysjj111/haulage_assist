@@ -905,11 +905,11 @@ from datetime import datetime
     <div class="row">
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
-            <input id="date" name="date_start"  type="text" class="datepicker" required
+            <input id="date" name="start_date"  type="text" class="datepicker" required
                 {% if expense is defined and type == 'edit' %} 
-                    value="{{ f.display_date(expense.date_start) }}" 
+                    value="{{ f.display_date(expense.start_date) }}" 
                 {% elif expense is defined %}
-                    value="{{ expense.date_start }}"
+                    value="{{ expense.start_date }}"
                 {% endif %}
                 >
             <label for="date">Date:</label>
