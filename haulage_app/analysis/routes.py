@@ -4,13 +4,31 @@ from haulage_app.models import Driver, Day, Job, Truck, Fuel, Expense, ExpenseOc
 from datetime import timedelta, date, datetime
 from haulage_app.analysis import analysis_bp
 from pprint import pprint
+from haulage_app.calculations.driver_truck_metrics import (
+    calculate_driver_metrics,
+)
 
 def get_week_number_sat_to_fri(date):
     """Returns the week number with Saturday as the start of the week."""
-    # Shift the day of the week so Saturday is 0, Sunday is 1, etc.
-    shifted_date = date - timedelta(days=2)
-    # Use the year and ISO week number of the week's start date
-    return (shifted_date.year, shifted_date.isocalendar().week)
+    """Returns a tuple of (year, week_number) with Saturday as week start."""
+    adjusted_date = date - timedelta(days=2)
+    year = adjusted_date.year
+    week = adjusted_date.isocalendar().week
+    return (year, week)
+
+def get_start_end_of_week(year, week_number):
+    """Returns the start and end dates of the week."""
+    # Get January 1st of selected year
+    year_start = date(year, 1, 1)
+    # Calculate offset to previous Saturday
+    saturday_offset = (year_start.weekday() + 2) % 7
+    # Calculate days to add for desired week
+    week_offset = (week_number - 1) * 7
+    # Calculate final start date
+    start_date = year_start + timedelta(days=week_offset - saturday_offset)
+    # Calculate the end date of the week
+    end_date = start_date + timedelta(days=6)
+    return start_date, end_date
 
 def calculate_expenses_for_period(start_date, end_date):
     expenses = ExpenseOccurrence.query.filter(
@@ -26,14 +44,11 @@ def calculate_expenses_for_period(start_date, end_date):
     
     total_cost = sum(expense.cost for expense in expenses)
 
-    print(total_cost)
     return total_cost
 
 def calculate_fuel_economy(mileage, fuel_volume):
     # Calculate fuel economy based on the given mileage and fuel cost
-    # You can use your own formula or logic here
-    # For example, you can divide the mileage by the fuel cost
-    return round(mileage / fuel_volume * 3.78541)
+    return round((mileage / fuel_volume) * 3.78541)
 
 @analysis_bp.route("/weekly_analysis", methods=["GET"])
 def weekly_analysis():
@@ -55,58 +70,13 @@ def weekly_analysis():
     if request.args.get('week_select'):
         selected_week = request.args.get('week_select')
         selected_year, selected_week_number = map(int, selected_week.split('-'))
-        # Calculate start date (Saturday) of the selected week
-        start_date = date(selected_year, 1, 1) + timedelta(
-            days=(selected_week_number - 1) * 7 - (date(selected_year, 1, 1).weekday() + 2) % 7
-        )
-        end_date = start_date + timedelta(days=6)
-        # print(start_date, end_date)
+        start_date, end_date = get_start_end_of_week(
+            selected_year, selected_week_number)
 
-        
         for driver in drivers:
-            day_entries = Day.query.filter(
-                Day.driver_id == driver.id, 
-                Day.date >= start_date, 
-                Day.date <= end_date
-                ).order_by(Day.date).all()
-            
-            job_entries = Job.query.join(Day).filter(
-                Day.driver_id == driver.id,
-                Day.date >= start_date,
-                Day.date <= end_date
-                ).order_by(Day.date, Job.id).all()
 
-            # Calculate wages for each driver
-            weekly_total_earned = 0
-            weekly_total_overnight = 0
-            weekly_total_bonus_wage = 0
-            weekly_total_wage = 0
-            weekly_bonus = 0
-            for day in day_entries:
-                day.daily_bonus = day.calculate_daily_bonus(driver)
-                weekly_total_bonus_wage += day.daily_bonus
-                weekly_total_earned += day.calculate_total_earned()
-                if day.overnight == True:
-                    weekly_total_overnight += 3000
-            if weekly_total_earned > driver.weekly_bonus_threshold:
-                weekly_bonus = (weekly_total_earned - driver.weekly_bonus_threshold) * driver.weekly_bonus_percentage
-                weekly_total_bonus_wage += weekly_bonus
-            weekly_extras = weekly_total_bonus_wage - (15000 - weekly_total_overnight)
-            weekly_total_wage = weekly_extras + driver.basic_wage
-
-            driver_data[driver.id]={
-                'driver': driver,
-                'day_entries': day_entries,
-                'weekly_total_earned': weekly_total_earned,
-                'weekly_total_overnight': weekly_total_overnight,
-                'weekly_total_bonus_wage': weekly_total_bonus_wage,
-                'weekly_total_wage': weekly_total_wage,
-                'weekly_bonus': weekly_bonus,
-                'weekly_extras': weekly_extras,
-                'start_date': start_date,
-                'end_date': end_date,
-                'job_entries': job_entries
-            }
+            driver_data[driver.id] = calculate_driver_metrics(
+                driver, Day, Job, start_date, end_date)
 
         for truck in trucks:
             day_entries = Day.query.filter(
