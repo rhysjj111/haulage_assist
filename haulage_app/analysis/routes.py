@@ -23,9 +23,6 @@ def calculate_expenses_for_period(start_date, end_date):
         ExpenseOccurrence.start_date <= end_date
     # returns only the first occurrence if two fall within the dates
     ).all()
-
-    print(expenses)
-    print('akljhfdlkasjdflksj')
     
     total_cost = sum(expense.cost for expense in expenses)
 
@@ -117,9 +114,14 @@ def weekly_analysis():
                 Fuel.date <= end_date
                 ).order_by(Fuel.date).all()
 
-            total_fuel_volume = sum(f.display_currency(fuel.fuel_volume) for fuel in fuel_entries)  
-            total_fuel_cost = sum(f.display_currency(fuel.fuel_cost) for fuel in fuel_entries)         
+            average_miles_per_litre = 2.9
+            average_pound_per_litre = 1.19
+
+            total_fuel_volume = sum(f.display_currency(fuel.fuel_volume) for fuel in fuel_entries)
+            total_fuel_cost = sum(f.display_currency(fuel.fuel_cost) for fuel in fuel_entries)        
             total_mileage = sum((f.display_currency(day.end_mileage)-f.display_currency(day.start_mileage)) for day in day_entries)
+            est_fuel_volume = round(total_mileage / average_miles_per_litre)
+            est_fuel_cost = round(est_fuel_volume * average_pound_per_litre)
             fuel_economy = (total_mileage / total_fuel_volume) if total_fuel_volume else 0
 
             truck_data[truck.id]={
@@ -127,6 +129,8 @@ def weekly_analysis():
                 'total_mileage': total_mileage,
                 'total_fuel_volume': total_fuel_volume,
                 'total_fuel_cost': total_fuel_cost,
+                'est_fuel_volume': est_fuel_volume,
+                'est_fuel_cost': est_fuel_cost,
                 'fuel_economy': fuel_economy,
                 'start_date': start_date,
                 'end_date': end_date,

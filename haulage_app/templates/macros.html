@@ -554,7 +554,7 @@ from datetime import datetime
                         <!-- Check if form has been repopulated due to an error -->
                         {% if job.driver_id is defined %}
                             {% if job.driver_id|string == driver.id|string %}
-                                <option value="{{ driver.id }}" selected>{{ driver.full_name }}</option>
+                                <option value="{{ driver.id }}" selected>{{ driver.full_name }} </option>
                             {% else %}
                                 <option value="{{ driver.id }}">{{ driver.full_name }}</option>
                             {% endif %}
@@ -950,8 +950,13 @@ from datetime import datetime
                     <div class="divider"></div>
                 </span>
                 <br>
+                {% if data.total_fuel_cost == 0 %}
+                <p class="wages-calc-card-text">Est. volume of fuel: {{ data.est_fuel_volume }} L</p>
+                <p class="wages-calc-card-text">Est. cost of fuel: {{ f.format_currency(data.est_fuel_cost) }}</p>
+                {% else %}
                 <p class="wages-calc-card-text">Total volume of fuel: {{ data.total_fuel_volume }} L</p>
                 <p class="wages-calc-card-text">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}</p>
+                {% endif %}
                 <p class="wages-calc-card-text">Mileage: {{ data.total_mileage | int }} miles</p><br>
                 <p class="wages-calc-card-text"><strong><em>Fuel Economy: {{ f.format_currency(data.fuel_economy) }}</em></strong></p>
             </div>
