@@ -66,7 +66,11 @@
                                     <div class="input-field col s12">
                                         <div class="switch">
                                             <label for="overnight_{{ date }}">
+                                                {% if f.date_to_db(day_not_present[date]).strftime('%A') == 'Friday' %}
+                                                <input id="overnight_{{ date }}" name="overnight_{{ date }}" type="checkbox">
+                                                {% else %}
                                                 <input id="overnight_{{ date }}" name="overnight_{{ date }}" type="checkbox" checked>
+                                                {% endif %}
                                                 <span class="lever"></span>
                                                 Overnight
                                             </label>  
