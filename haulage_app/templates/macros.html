@@ -975,8 +975,8 @@ from datetime import datetime
                 </span>
                 <br>
                 {# if data.day_entries|length >= 5 #}
-                <p class="wages-calc-card-text">Total earned: {{ f.df_currency(data.weekly_total_earned) }}</p>
-                <p class="wages-calc-card-text"><strong>Extras: {{ f.df_currency(data.weekly_extras) }}</strong></p>
+                <p class="wages-calc-card-text">Total earned: {{ f.fd_currency(data.weekly_total_earned) }}</p>
+                <p class="wages-calc-card-text"><strong>Extras: {{ f.fd_currency(data.weekly_extras) }}</strong></p>
                 {# else #}
                 <!-- <p class="wages-calc-card-text red-text">There are {{data.day|length}} days recorded for this week.</p> -->
                 <!-- <p><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}" class="">Add day entries</a></p>
@@ -1010,8 +1010,8 @@ from datetime import datetime
                     {% for day in data.day_entries %}    
                     <tr>
                         <td>{{ f.display_date(day.date) }}</td>
-                        <td>{{ f.df_currency(day.calculate_total_earned()) }}</td>
-                        <td>{{ f.df_currency(day.calculate_daily_bonus(data.driver)) }}</td>
+                        <td>{{ f.fd_currency(day.calculate_total_earned()) }}</td>
+                        <td>{{ f.fd_currency(day.calculate_daily_bonus(data.driver)) }}</td>
                         <td>{% if day.overnight %}
                             <i class="material-icons green-text">check</i> 
                             {% else %}
@@ -1024,9 +1024,9 @@ from datetime import datetime
                     </tr>
                     <tr class="totals-row">
                         <td><em>Totals:</em></td>
-                        <td><em>{{ f.df_currency(data.weekly_total_earned) }}</em></td>
-                        <td><em>{{ f.df_currency(data.weekly_total_bonus_wage) }}</em></td>
-                        <td><em>{{ f.df_currency(data.weekly_total_overnight) }}</em></td>
+                        <td><em>{{ f.fd_currency(data.weekly_total_earned) }}</em></td>
+                        <td><em>{{ f.fd_currency(data.weekly_total_bonus_wage) }}</em></td>
+                        <td><em>{{ f.fd_currency(data.weekly_total_overnight) }}</em></td>
                     </tr>
                 </tbody>
             </table> 
@@ -1059,7 +1059,7 @@ from datetime import datetime
                         <td>{{ f.display_date(job.day.date) }}</td>
                         <td>{{ job.collection | capitalize }}</td>
                         <td>{{ job.delivery | capitalize }}</td>
-                        <td>{{ f.df_currency(job.earned) }}</td>
+                        <td>{{ f.fd_currency(job.earned) }}</td>
                         <td>{% if job.split %}
                             <i class="material-icons green-text">check</i> 
                             {% else %}

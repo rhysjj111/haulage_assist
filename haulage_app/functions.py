@@ -39,9 +39,9 @@ def display_percentage(percentage):
     """ To be used to convert floats to percentages to store in the database """
     return float((percentage*100))
 
-def df_currency(amount):
+def fd_currency(amount):
     return format_currency(display_float(amount))
 
-def df_percentage(percentage):
+def fd_percentage(percentage):
     return format_percentage(display_percentage(percentage))
 

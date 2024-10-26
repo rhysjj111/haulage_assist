@@ -283,7 +283,7 @@ class Job(db.Model):
 
     def __repr__(self): 
     #represents itself in form of string
-        return f"Job entry: {display_date(self.day.date)} {self.day.driver.full_name} - {df_currency(self.earned)} "
+        return f"Job entry: {display_date(self.day.date)} {self.day.driver.full_name} - {fd_currency(self.earned)} "
 
 
     @validates('collection', 'delivery')
