@@ -47,7 +47,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="basic_wage" name="basic_wage" type="number" step="0.01" required
                     {% if driver.basic_wage is defined and type == "edit" %} 
-                        value="{{'%0.2f' % f.display_currency(driver.basic_wage) }}" 
+                        value="{{'%0.2f' % f.display_float(driver.basic_wage) }}" 
                     {% elif driver.basic_wage is defined %} 
                         value="{{driver.basic_wage}}" 
                     {% endif %}
@@ -62,7 +62,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="daily_bonus_threshold" name="daily_bonus_threshold" type="number" step="0.01" required
                     {% if driver.daily_bonus_threshold is defined and type == "edit" %} 
-                        value="{{'%0.2f' % f.display_currency(driver.daily_bonus_threshold) }}" 
+                        value="{{'%0.2f' % f.display_float(driver.daily_bonus_threshold) }}" 
                     {% elif driver.daily_bonus_threshold is defined %} 
                         value="{{driver.daily_bonus_threshold}}" 
                     {% endif %}
@@ -92,7 +92,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="weekly_bonus_threshold" name="weekly_bonus_threshold" type="number" step="0.01" required
                     {% if driver.weekly_bonus_threshold is defined and type == "edit" %} 
-                        value="{{'%0.2f' % f.display_currency(driver.weekly_bonus_threshold) }}" 
+                        value="{{'%0.2f' % f.display_float(driver.weekly_bonus_threshold) }}" 
                     {% elif driver.weekly_bonus_threshold is defined %} 
                         value="{{driver.weekly_bonus_threshold}}" 
                     {% endif %}
@@ -122,7 +122,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="overnight_value" name="overnight_value" type="number" step="0.01" required
                 {% if driver.overnight_value is defined and type == "edit" %} 
-                    value="{{'%0.2f' % f.display_currency(driver.overnight_value) }}" 
+                    value="{{'%0.2f' % f.display_float(driver.overnight_value) }}" 
                 {% elif driver is defined %}
                     value="{{driver.overnight_value}}"
                 {% endif %}
@@ -361,7 +361,7 @@ from datetime import datetime
                     {% if type == "edit" and day.start_mileage == 0 %}
                         value="{{ none }}"
                     {% elif type == "edit" %}
-                        value="{{ '%0.2f' % f.display_currency(day.start_mileage) }}" 
+                        value="{{ '%0.2f' % f.display_float(day.start_mileage) }}" 
                     {% else %}
                         value="{{ day.start_mileage }}" 
                     {% endif %}
@@ -382,7 +382,7 @@ from datetime import datetime
                     {% if type == "edit" and day.end_mileage == 0 %}
                         value="{{ none }}"
                     {% elif type == "edit" %}
-                        value="{{ '%0.2f' % f.display_currency(day.end_mileage) }}" 
+                        value="{{ '%0.2f' % f.display_float(day.end_mileage) }}" 
                     {% else %}
                         value="{{ day.end_mileage }}" 
                     {% endif %}
@@ -403,7 +403,7 @@ from datetime import datetime
                     {% if type == "edit" and day.additional_earned == 0 %}
                         value="{{ none }}"
                     {% elif type == "edit" %}
-                        value="{{ '%0.2f' % f.display_currency(day.additional_earned) }}" 
+                        value="{{ '%0.2f' % f.display_float(day.additional_earned) }}" 
                     {% else %}
                         value="{{ day.additional_earned }}" 
                     {% endif %}
@@ -424,7 +424,7 @@ from datetime import datetime
                     {% if type == "edit" and day.additional_wages == 0 %}
                         {# No value here #}
                     {% elif type == "edit" %}
-                        value="{{ '%0.2f' % f.display_currency(day.additional_wages) }}" 
+                        value="{{ '%0.2f' % f.display_float(day.additional_wages) }}" 
                     {% else %}
                         value="{{ day.additional_wages }}" 
                     {% endif %}
@@ -471,7 +471,7 @@ from datetime import datetime
                 {% if day.start_mileage == 0 %}
                     value="{{ none }}"
                 {% else %}
-                    value="{{ f.display_currency(day.start_mileage) }}" 
+                    value="{{ f.display_float(day.start_mileage) }}" 
                 {% endif %}
                 >
             <label for="start_mileage">Start mileage:</label>
@@ -486,7 +486,7 @@ from datetime import datetime
                 {% if day.end_mileage == 0 %}
                     value="{{ none }}"
                 {% else %}
-                    value="{{ f.display_currency(day.end_mileage) }}" 
+                    value="{{ f.display_float(day.end_mileage) }}" 
                 {% endif %}
                 >
             <label for="end_mileage">End mileage:</label>
@@ -591,7 +591,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="earned" name="earned" type="number" step="0.01" step="0.01" required
                 {% if job is defined and type == 'edit' %} 
-                    value="{{'%0.2f' % f.display_currency(job.earned) }}" 
+                    value="{{'%0.2f' % f.display_float(job.earned) }}" 
                 {% elif job is defined %}
                     value="{{ job.earned }}"
                 {% endif %}
@@ -739,7 +739,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="total_wage" name="total_wage" type="number" step="0.01" required
                     {% if payslip.total_wage is defined and type == "edit" %} 
-                        value="{{'%0.2f' % f.display_currency(payslip.total_wage) }}" 
+                        value="{{'%0.2f' % f.display_float(payslip.total_wage) }}" 
                     {% elif payslip.total_wage is defined %} 
                         value="{{payslip.total_wage}}" 
                     {% endif %}
@@ -754,7 +754,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="total_cost_to_employer" name="total_cost_to_employer" type="number" step="0.01" required
                     {% if payslip.total_cost_to_employer is defined and type == "edit" %} 
-                        value="{{'%0.2f' % f.display_currency(payslip.total_cost_to_employer) }}" 
+                        value="{{'%0.2f' % f.display_float(payslip.total_cost_to_employer) }}" 
                     {% elif payslip.total_cost_to_employer is defined %} 
                         value="{{payslip.total_cost_to_employer}}" 
                     {% endif %}
@@ -838,7 +838,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="fuel_volume" name="fuel_volume" type="number" step="0.01" required
                     {% if fuel.fuel_volume is defined and type == "edit" %} 
-                        value="{{'%0.2f' % f.display_currency(fuel.fuel_volume) }}" 
+                        value="{{'%0.2f' % f.display_float(fuel.fuel_volume) }}" 
                     {% elif fuel.fuel_volume is defined %} 
                         value="{{fuel.fuel_volume}}" 
                     {% endif %}
@@ -853,7 +853,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="fuel_cost" name="fuel_cost" type="number" step="0.01" required
                     {% if fuel.fuel_cost is defined and type == "edit" %} 
-                        value="{{'%0.2f' % f.display_currency(fuel.fuel_cost) }}" 
+                        value="{{'%0.2f' % f.display_float(fuel.fuel_cost) }}" 
                     {% elif fuel.fuel_cost is defined %} 
                         value="{{fuel.fuel_cost}}" 
                     {% endif %}
@@ -922,7 +922,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="cost" name="cost" type="number" step="0.01" required
                     {% if expense.cost is defined and type == "edit" %} 
-                        value="{{ '%0.2f' % f.display_currency(expense.cost) }}" 
+                        value="{{ '%0.2f' % f.display_float(expense.cost) }}" 
                     {% elif expense.cost is defined %} 
                         value="{{ expense.cost }}" 
                     {% endif %}
@@ -950,15 +950,16 @@ from datetime import datetime
                     <div class="divider"></div>
                 </span>
                 <br>
+                <p class="wages-calc-card-text">Mileage: {{ data.total_mileage | int }} miles</p>
                 {% if data.total_fuel_cost == 0 %}
-                <p class="wages-calc-card-text">Est. volume of fuel: {{ data.est_fuel_volume }} L</p>
-                <p class="wages-calc-card-text">Est. cost of fuel: {{ f.format_currency(data.est_fuel_cost) }}</p>
+                <p class="wages-calc-card-text">Est. Volume of Fuel: {{ data.est_fuel_volume }} L</p>
+                <p class="wages-calc-card-text"><strong><em>Est. Fuel Economy: {{ data.est_fuel_economy }} mpg</em></strong></p>
+                <p class="wages-calc-card-text">Est. Fuel Cost: {{ f.format_currency(data.est_fuel_cost) }}</p>
                 {% else %}
-                <p class="wages-calc-card-text">Total volume of fuel: {{ data.total_fuel_volume }} L</p>
+                <p class="wages-calc-card-text">Total Volume of Fuel: {{ data.total_fuel_volume }} L</p>
+                <p class="wages-calc-card-text"><strong><em>Fuel Economy: {{ data.fuel_economy }} mpg</em></strong></p>
                 <p class="wages-calc-card-text">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}</p>
                 {% endif %}
-                <p class="wages-calc-card-text">Mileage: {{ data.total_mileage | int }} miles</p><br>
-                <p class="wages-calc-card-text"><strong><em>Fuel Economy: {{ f.format_currency(data.fuel_economy) }}</em></strong></p>
             </div>
         </div>
     </div>

@@ -51,7 +51,7 @@ class Driver(db.Model):
     @validates('basic_wage')
     def validate_basic_wage(self, key, basic_wage):
         try:
-            basic_wage = currency_to_db(basic_wage)
+            basic_wage = float_to_db(basic_wage)
         except:
             raise ValueError('Please enter a basic wage value between £400 and £2000')
         else:
@@ -62,7 +62,7 @@ class Driver(db.Model):
     @validates('daily_bonus_threshold')
     def validate_daily_bonus_threshold(self, key, daily_bonus_threshold):
         try:
-            daily_bonus_threshold = currency_to_db(daily_bonus_threshold)
+            daily_bonus_threshold = float_to_db(daily_bonus_threshold)
         except:
             raise ValueError('Please enter a daily bonus threshold value between £300.00 and £450.00')
         else:
@@ -84,7 +84,7 @@ class Driver(db.Model):
     @validates('weekly_bonus_threshold')
     def validate_weekly_bonus_threshold(self, key, weekly_bonus_threshold):
         try:
-            weekly_bonus_threshold = currency_to_db(weekly_bonus_threshold)
+            weekly_bonus_threshold = float_to_db(weekly_bonus_threshold)
         except:
             raise ValueError('Please enter a weekly bonus threshold value between £2,200.00 and £3,000.00')
         else:
@@ -106,7 +106,7 @@ class Driver(db.Model):
     @validates('overnight_value')
     def validate_overnight_value(self, key, overnight_value):
         try:
-            overnight_value = currency_to_db(overnight_value)
+            overnight_value = float_to_db(overnight_value)
         except:
             raise ValueError('Please enter an overnight value between £10.00 and £50.00')
         else:
@@ -223,7 +223,7 @@ class Day(db.Model):
         if field is None or field == "":  # Check for None or empty string
             return 0 
         try:
-            field = currency_to_db(field)
+            field = float_to_db(field)
         except:
             raise ValueError('Please enter a value earned between £0 and £2000')
         else:
@@ -236,7 +236,7 @@ class Day(db.Model):
         if field is None or field == "":  # Check for None or empty string
             return 0 
         try:
-            field = currency_to_db(field)
+            field = float_to_db(field)
         except:
             raise ValueError('Please enter a number')
         else:
@@ -283,7 +283,7 @@ class Job(db.Model):
 
     def __repr__(self): 
     #represents itself in form of string
-        return f"Job entry: {display_date(self.day.date)} {self.day.driver.full_name} - {format_currency(display_currency(self.earned))} "
+        return f"Job entry: {display_date(self.day.date)} {self.day.driver.full_name} - {df_currency(self.earned)} "
 
 
     @validates('collection', 'delivery')
@@ -299,7 +299,7 @@ class Job(db.Model):
     @validates('earned')
     def validate_earned(self, key, earned):
         try:
-            earned = currency_to_db(earned)
+            earned = float_to_db(earned)
         except:
             raise ValueError('Please enter a value earned between £1 and £2000')
         else:
@@ -355,7 +355,7 @@ class Payslip(db.Model):
     @validates('total_wage', 'total_cost_to_employer')
     def validate_earned(self, key, field):
         try:
-            field = currency_to_db(field)
+            field = float_to_db(field)
         except:
             raise ValueError('Please enter a value earned between £1 and £3000')
         else:
@@ -391,7 +391,7 @@ class Fuel(db.Model):
     @validates('fuel_volume')
     def validate_fuel_volume(self, key, fuel_volume):
         try:
-            fuel_volume = currency_to_db(fuel_volume)
+            fuel_volume = float_to_db(fuel_volume)
         except:
             raise ValueError('Please enter a volume between 1.00L and 1000.00L')
         else:
@@ -402,7 +402,7 @@ class Fuel(db.Model):
     @validates('fuel_cost')
     def validate_earned(self, key, fuel_cost):
         try:
-            fuel_cost = currency_to_db(fuel_cost)
+            fuel_cost = float_to_db(fuel_cost)
         except:
             raise ValueError('Please enter a value between £1.00 and £1500.00')
         else:
@@ -463,7 +463,7 @@ class ExpenseOccurrence(db.Model):
     @validates('cost')
     def validate_earned(self, key, cost):
         try:
-            cost = currency_to_db(cost)
+            cost = float_to_db(cost)
         except:
             raise ValueError('Please enter a value between £1.00 and £1500.00')
         else:

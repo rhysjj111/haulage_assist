@@ -21,8 +21,8 @@
                 Date: {{ f.display_date(item.date) }}<br>
                 Driver: {{ item.driver.full_name }}<br>
                 Truck: {{ item.truck.registration }}<br>
-                Start mileage: {{ f.display_currency(item.start_mileage) }} mls<br>
-                End mileage: {{ f.display_currency(item.end_mileage) }} mls<br>
+                Start mileage: {{ f.display_float(item.start_mileage) }} mls<br>
+                End mileage: {{ f.display_float(item.end_mileage) }} mls<br>
                 Total earned: {{ f.df_currency(item.calculate_total_earned()) }}
             </p>
         {% endblock %}

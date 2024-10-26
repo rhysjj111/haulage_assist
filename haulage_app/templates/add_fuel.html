@@ -18,8 +18,8 @@
         {% block collapsible_body %}
             <p>
                 Fuel card: {{ item.fuel_card_name }}<br>
-                Volume: {{ f.display_currency(item.fuel_volume) }} L<br>
-                Cost: {{ f.format_currency(f.display_currency(item.fuel_cost)) }}
+                Volume: {{ f.display_float(item.fuel_volume) }} L<br>
+                Cost: {{ f.df_currency(item.fuel_cost) }}
             </p>
         {% endblock %}
     

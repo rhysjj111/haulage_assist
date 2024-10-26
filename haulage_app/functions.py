@@ -10,12 +10,12 @@ def name_to_db(value):
     """ Converts a name to a string which is lowercase with no whitespace at start or end of string """
     return str(value).capitalize().strip()
 
-def currency_to_db(value):
-    """ To be used to convert £ to pence to store in the database """
+def float_to_db(value):
+    """ To be used to convert floats to integers to store in the database """
     return round(float(value), 2)*100
 
 def percentage_to_db(value):
-    """ To be used to convert percentages to decimals to store in the database """
+    """ To be used to convert percentages to floats to store in the database """
     return round(float(value), 2)/100
 
 #functions format to display on web
@@ -31,16 +31,16 @@ def format_percentage(percentage):
     """ Formats a number from 'xx.xx%' to 'x.xx' ready to display to user """
     return f"{percentage:.0f}%"
 
-def display_currency(amount):
-    """ Converts a number from pence to pounds ready to display to user """
+def display_float(amount):
+    """ Converts a number from integer to float ready to display to user """
     return float(amount/100)
 
 def display_percentage(percentage):
-    """ To be used to convert decimals to percentages to store in the database """
+    """ To be used to convert floats to percentages to store in the database """
     return float((percentage*100))
 
 def df_currency(amount):
-    return format_currency(display_currency(amount))
+    return format_currency(display_float(amount))
 
 def df_percentage(percentage):
     return format_percentage(display_percentage(percentage))

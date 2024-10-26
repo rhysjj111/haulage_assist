@@ -71,8 +71,8 @@
                             {% for day in day_entries %}    
                             <tr>
                                 <td>{{ f.display_date(day.date) }}</td>
-                                <td>{{ f.format_currency(f.display_currency(day.calculate_total_earned())) }}</td>
-                                <td>{{ f.format_currency(f.display_currency(day.calculate_daily_bonus(driver))) }}</td>
+                                <td>{{ f.df_currency(day.calculate_total_earned()) }}</td>
+                                <td>{{ f.df_currency(day.calculate_daily_bonus(driver)) }}</td>
                                 <td>{% if day.overnight %}
                                     <i class="material-icons green-text">check</i> 
                                     {% else %}
@@ -86,9 +86,9 @@
                             </tr>
                             <tr class="totals-row">
                                 <td><em>Totals:</em></td>
-                                <td><em>{{ f.format_currency(f.display_currency(total_earned)) }}</em></td>
-                                <td><em>{{ f.format_currency(f.display_currency(total_bonus_wage)) }}</em></td>
-                                <td><em>{{ f.format_currency(f.display_currency(total_overnight)) }}</em></td>
+                                <td><em>{{ f.df_currency(total_earned) }}</em></td>
+                                <td><em>{{ f.df_currency(total_bonus_wage) }}</em></td>
+                                <td><em>{{ f.df_currency(total_overnight) }}</em></td>
                             </tr>
                         </tbody>
                     </table> 
@@ -104,9 +104,9 @@
                             </tr>
                             <tbody>    
                                 <tr>
-                                    <td>{{ f.format_currency(f.display_currency(driver.basic_wage)) }}</td>
-                                    <td>{{ f.format_currency(f.display_currency(weekly_bonus)) }}</td>
-                                    <td>{{ f.format_currency(f.display_currency(total_wage)) }}</td>
+                                    <td>{{ f.df_currency(driver.basic_wage) }}</td>
+                                    <td>{{ f.df_currency(weekly_bonus) }}</td>
+                                    <td>{{ f.df_currency(total_wage) }}</td>
                                 </tr>
                             </tbody>
                         </table> 

@@ -17,12 +17,12 @@
 
         {% block collapsible_body %}
             <p>
-                Basic wage: {{ f.format_currency(f.display_currency(item.basic_wage)) }}<br>
-                Daily bonus threshold: {{ f.format_currency(f.display_currency(item.daily_bonus_threshold)) }}<br>
-                Daily bonus percentage: {{ f.format_percentage(f.display_percentage(item.daily_bonus_percentage)) }}<br>
-                Weekly bonus threshold: {{ f.format_currency(f.display_currency(item.weekly_bonus_threshold)) }}<br>
-                Weekly bonus percentage: {{ f.format_percentage(f.display_percentage(item.weekly_bonus_percentage)) }}<br>
-                Overnight: {{ f.format_currency(f.display_currency(item.overnight_value)) }}<br>
+                Basic wage: {{ f.df_currency(item.basic_wage) }}<br>
+                Daily bonus threshold: {{ f.df_currency(item.daily_bonus_threshold) }}<br>
+                Daily bonus percentage: {{ f.df_percentage(item.daily_bonus_percentage) }}<br>
+                Weekly bonus threshold: {{ f.df_currency(item.weekly_bonus_threshold) }}<br>
+                Weekly bonus percentage: {{ f.df_percentage(item.weekly_bonus_percentage) }}<br>
+                Overnight: {{ f.df_currency(item.overnight_value) }}<br>
                 {% for truck in trucks %}
                     {% if truck.id == item.truck_id %}
                         Preferred truck: {{ truck.registration }}

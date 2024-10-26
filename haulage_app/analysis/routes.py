@@ -29,6 +29,12 @@ def calculate_expenses_for_period(start_date, end_date):
     print(total_cost)
     return total_cost
 
+def calculate_fuel_economy(mileage, fuel_volume):
+    # Calculate fuel economy based on the given mileage and fuel cost
+    # You can use your own formula or logic here
+    # For example, you can divide the mileage by the fuel cost
+    return round(mileage / fuel_volume * 3.78541)
+
 @analysis_bp.route("/weekly_analysis", methods=["GET"])
 def weekly_analysis():
     # Get all days in the database
@@ -117,12 +123,13 @@ def weekly_analysis():
             average_miles_per_litre = 2.9
             average_pound_per_litre = 1.19
 
-            total_fuel_volume = sum(f.display_currency(fuel.fuel_volume) for fuel in fuel_entries)
-            total_fuel_cost = sum(f.display_currency(fuel.fuel_cost) for fuel in fuel_entries)        
-            total_mileage = sum((f.display_currency(day.end_mileage)-f.display_currency(day.start_mileage)) for day in day_entries)
+            total_fuel_volume = sum(f.display_float(fuel.fuel_volume) for fuel in fuel_entries)
+            total_fuel_cost = sum(f.display_float(fuel.fuel_cost) for fuel in fuel_entries)        
+            total_mileage = sum((f.display_float(day.end_mileage)-f.display_float(day.start_mileage)) for day in day_entries)
             est_fuel_volume = round(total_mileage / average_miles_per_litre)
             est_fuel_cost = round(est_fuel_volume * average_pound_per_litre)
             fuel_economy = (total_mileage / total_fuel_volume) if total_fuel_volume else 0
+            est_fuel_economy = calculate_fuel_economy(total_mileage, est_fuel_volume) if est_fuel_volume else 0
 
             truck_data[truck.id]={
                 'truck': truck,
@@ -134,6 +141,7 @@ def weekly_analysis():
                 'fuel_economy': fuel_economy,
                 'start_date': start_date,
                 'end_date': end_date,
+                'est_fuel_economy': est_fuel_economy,
             }
 
         total_expenses = calculate_expenses_for_period(start_date, end_date)
