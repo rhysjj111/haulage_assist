@@ -162,7 +162,7 @@ class Day(db.Model):
     truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=False, index=True)  
     status = db.Column(db.String(50), nullable=False, default="Working")
     overnight = db.Column(db.Boolean, nullable=False)
-    fuel = db.Column(db.Boolean, default=True)
+    fuel = db.Column(db.Boolean, default=False)
     start_mileage = db.Column(db.Integer, nullable=False, default=0)
     end_mileage = db.Column(db.Integer, nullable=False, default=0)
     additional_earned = db.Column(db.Integer, nullable=False, default=0)
