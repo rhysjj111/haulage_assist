@@ -10,8 +10,6 @@ from datetime import datetime
 {% endmacro %}
 
 
-
-
 <!----------------------------- question list macros -->
 
 {% macro driver(type, driver, trucks, f) %}
@@ -975,8 +973,12 @@ from datetime import datetime
                 </span>
                 <br>
                 {# if data.day_entries|length >= 5 #}
-                <p class="wages-calc-card-text">Total earned: {{ f.fd_currency(data.weekly_total_earned) }}</p>
+                <p class="wages-calc-card-text">Total earned: {{ f.fd_currency(data.total_earned) }}</p>
                 <p class="wages-calc-card-text"><strong>Extras: {{ f.fd_currency(data.weekly_extras) }}</strong></p>
+                <p class="wages-calc-card-text">Gross pay: {{ f.fd_currency(data.gross_pay) }}</strong></p>
+                {% if '/analysis/weekly' in request.path %}
+                <p class="wages-calc-card-text">Cost to employer: {{ f.fd_currency(data.total_cost_to_employer) }}{{ '*' if data.estimated==True}}</strong></p>
+                {% endif %}
                 {# else #}
                 <!-- <p class="wages-calc-card-text red-text">There are {{data.day|length}} days recorded for this week.</p> -->
                 <!-- <p><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}" class="">Add day entries</a></p>
@@ -1024,9 +1026,9 @@ from datetime import datetime
                     </tr>
                     <tr class="totals-row">
                         <td><em>Totals:</em></td>
-                        <td><em>{{ f.fd_currency(data.weekly_total_earned) }}</em></td>
-                        <td><em>{{ f.fd_currency(data.weekly_total_bonus_wage) }}</em></td>
-                        <td><em>{{ f.fd_currency(data.weekly_total_overnight) }}</em></td>
+                        <td><em>{{ f.fd_currency(data.total_earned) }}</em></td>
+                        <td><em>{# f.fd_currency(data.weekly_total_bonus_wage) #}</em></td>
+                        <td><em>{# f.fd_currency(data.weekly_total_overnight) #}</em></td>
                     </tr>
                 </tbody>
             </table> 

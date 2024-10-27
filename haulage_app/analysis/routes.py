@@ -1,12 +1,14 @@
 from flask import render_template, request, url_for
 from haulage_app import db, f
-from haulage_app.models import Driver, Day, Job, Truck, Fuel, Expense, ExpenseOccurrence
+from haulage_app.models import (
+    Driver, Day, Job, Truck, Fuel, Expense, 
+    ExpenseOccurrence, Payslip)
 from datetime import timedelta, date, datetime
 from haulage_app.analysis import analysis_bp
 from pprint import pprint
+from haulage_app.config import *
 from haulage_app.calculations.driver_truck_metrics import (
-    calculate_driver_metrics,
-)
+    calculate_driver_metrics_for_week,)
 
 def get_week_number_sat_to_fri(date):
     """Returns the week number with Saturday as the start of the week."""
@@ -48,7 +50,7 @@ def calculate_expenses_for_period(start_date, end_date):
 
 def calculate_fuel_economy(mileage, fuel_volume):
     # Calculate fuel economy based on the given mileage and fuel cost
-    return round((mileage / fuel_volume) * 3.78541)
+    return round((mileage / fuel_volume) * LITRE_TO_GALLON_MULTIPLIER)
 
 @analysis_bp.route("/weekly_analysis", methods=["GET"])
 def weekly_analysis():
@@ -75,8 +77,8 @@ def weekly_analysis():
 
         for driver in drivers:
 
-            driver_data[driver.id] = calculate_driver_metrics(
-                driver, Day, Job, start_date, end_date)
+            driver_data[driver.id] = calculate_driver_metrics_for_week(
+                driver, Day, Job, Payslip, start_date, end_date)
 
         for truck in trucks:
             day_entries = Day.query.filter(
@@ -90,14 +92,11 @@ def weekly_analysis():
                 Fuel.date <= end_date
                 ).order_by(Fuel.date).all()
 
-            average_miles_per_litre = 2.9
-            average_pound_per_litre = 1.19
-
             total_fuel_volume = sum(f.display_float(fuel.fuel_volume) for fuel in fuel_entries)
             total_fuel_cost = sum(f.display_float(fuel.fuel_cost) for fuel in fuel_entries)        
             total_mileage = sum((f.display_float(day.end_mileage)-f.display_float(day.start_mileage)) for day in day_entries)
-            est_fuel_volume = round(total_mileage / average_miles_per_litre)
-            est_fuel_cost = round(est_fuel_volume * average_pound_per_litre)
+            est_fuel_volume = round(total_mileage / MEDIAN_MILES_PER_LITRE)
+            est_fuel_cost = round(est_fuel_volume * MEDIAN_POUNDS_PER_LITRE)
             fuel_economy = (total_mileage / total_fuel_volume) if total_fuel_volume else 0
             est_fuel_economy = calculate_fuel_economy(total_mileage, est_fuel_volume) if est_fuel_volume else 0
 
