@@ -1072,13 +1072,13 @@ from datetime import datetime
                     <div class="divider"></div>
                 </span>
                 <div>
-                    <p class="wages-calc-card-text">Mileage: {{ data.total_mileage | int }} miles</p>
+                    <p class="wages-calc-card-text">Mileage: {{ f.display_float(data.total_mileage) | int }} miles</p>
                     {% if data.estimated == True %}
-                    <p class="wages-calc-card-text italics">Fuel Used: {{ data.total_fuel_volume }} L*</p><br>
-                    <p class="wages-calc-card-text italics bold">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}*</p>
+                    <p class="wages-calc-card-text italics">Fuel Used: {{ f.display_float(data.total_fuel_volume) | int }} L*</p><br>
+                    <p class="wages-calc-card-text italics bold">Fuel Cost: {{ f.fd_currency(data.total_fuel_cost) }}*</p>
                     {% else %}
-                    <p class="wages-calc-card-text">Fuel Used: {{ data.total_fuel_volume }} L</p><br>
-                    <p class="wages-calc-card-text bold">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}</p>
+                    <p class="wages-calc-card-text">Fuel Used: {{ f.display_float(data.total_fuel_volume) | int }} L</p><br>
+                    <p class="wages-calc-card-text bold">Fuel Cost: {{ f.fd_currency(data.total_fuel_cost) }}</p>
                     <p class="wages-calc-card-text text-small grey-text">(Fuel Economy: {{ data.fuel_economy }} mpg)</p>
                     {% endif %}
                 </div>
