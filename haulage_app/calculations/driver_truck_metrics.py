@@ -1,4 +1,7 @@
 from haulage_app.config import *
+from haulage_app.functions import *
+
+# DRIVER METRICS
 
 def calculate_driver_wages(day_entries, driver):
     total_earned = 0
@@ -19,12 +22,13 @@ def calculate_driver_wages(day_entries, driver):
     if total_earned > driver.weekly_bonus_threshold:
         total_weekly_bonus = (total_earned - driver.weekly_bonus_threshold) * driver.weekly_bonus_percentage
     
+    # Calculate gross pay and weekly extras
     weekly_extras = total_daily_bonus - (15000 - total_overnight)
     gross_pay = weekly_extras + driver.basic_wage
 
     return total_earned, weekly_extras, gross_pay
 
-def calculate_driver_metrics_for_week(driver, Day, Job, Payslip, start_date, end_date):
+def calculate_driver_metrics_week(driver, Day, Job, Payslip, start_date, end_date):
 
     estimated = False
     
@@ -33,11 +37,13 @@ def calculate_driver_metrics_for_week(driver, Day, Job, Payslip, start_date, end
         Day.date >= start_date,
         Day.date <= end_date
         ).order_by(Day.date).all()
+
     job_entries = Job.query.join(Day).filter(
         Day.driver_id == driver.id,
         Day.date >= start_date,
         Day.date <= end_date
         ).order_by(Day.date, Job.id).all()
+        
     payslip_entries = Payslip.query.filter(
         Payslip.driver_id == driver.id,
         Payslip.date >= start_date,
@@ -65,4 +71,57 @@ def calculate_driver_metrics_for_week(driver, Day, Job, Payslip, start_date, end
         'start_date': start_date,
         'end_date': end_date,
         'estimated': estimated
+    }
+
+# TRUCK METRICS
+def calculate_fuel_economy(mileage, fuel_volume):
+    # Calculate fuel economy based on the given mileage and fuel cost
+    return round((mileage / fuel_volume) * LITRE_TO_GALLON_MULTIPLIER, 2)
+
+def calculate_total_metric(metric_name, list_of_entries):
+    """ Calculate the total of a metric for a list of entries from a query """
+    return sum(display_float(getattr(fuel, metric_name)) for fuel in list_of_entries)
+
+def calculate_total_mileage(day_entries):
+    """ Calculate the total mileage for a list of day entries """
+    return sum((display_float(day.end_mileage)-display_float(day.start_mileage)) for day in day_entries)
+
+
+def calculate_truck_metrics_week(truck, Day, Fuel, start_date, end_date):
+
+    estimated = False
+
+    day_entries = Day.query.filter(
+        Day.truck_id == truck.id,
+        Day.date >= start_date,
+        Day.date <= end_date
+        ).order_by(Day.date).all()
+
+    fuel_entries = Fuel.query.filter(
+        Fuel.truck_id == truck.id,
+        Fuel.date >= start_date,
+        Fuel.date <= end_date
+        ).order_by(Fuel.date).all()
+
+    total_mileage = calculate_total_mileage(day_entries)
+    if fuel_entries:
+        total_fuel_volume = round(calculate_total_metric("fuel_volume", fuel_entries))
+        total_fuel_cost = calculate_total_metric("fuel_cost", fuel_entries)
+        fuel_economy = calculate_fuel_economy(total_mileage, total_fuel_volume)
+    else:
+        estimated = True
+        total_fuel_volume = round(total_mileage / MEDIAN_MILES_PER_LITRE)
+        total_fuel_cost = round(total_fuel_volume * MEDIAN_POUNDS_PER_LITRE)
+        fuel_economy = 0
+
+
+    return {
+        'estimated': estimated,
+        'truck': truck,
+        'total_mileage': total_mileage,
+        'total_fuel_volume': total_fuel_volume,
+        'total_fuel_cost': total_fuel_cost,
+        'fuel_economy': fuel_economy,
+        'start_date': start_date,
+        'end_date': end_date,
     }

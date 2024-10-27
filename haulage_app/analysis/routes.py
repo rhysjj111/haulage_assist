@@ -8,7 +8,8 @@ from haulage_app.analysis import analysis_bp
 from pprint import pprint
 from haulage_app.config import *
 from haulage_app.calculations.driver_truck_metrics import (
-    calculate_driver_metrics_for_week,)
+    calculate_driver_metrics_week,
+    calculate_truck_metrics_week,)
 
 def get_week_number_sat_to_fri(date):
     """Returns the week number with Saturday as the start of the week."""
@@ -18,8 +19,8 @@ def get_week_number_sat_to_fri(date):
     week = adjusted_date.isocalendar().week
     return (year, week)
 
-def get_start_end_of_week(year, week_number):
-    """Returns the start and end dates of the week."""
+def get_start_of_week(year, week_number):
+    """Returns the start date of the week."""
     # Get January 1st of selected year
     year_start = date(year, 1, 1)
     # Calculate offset to previous Saturday
@@ -28,6 +29,12 @@ def get_start_end_of_week(year, week_number):
     week_offset = (week_number - 1) * 7
     # Calculate final start date
     start_date = year_start + timedelta(days=week_offset - saturday_offset)
+    return start_date
+
+def get_start_end_of_week(year, week_number):
+    """Returns the start and end dates of the week."""
+    # Calculate the start date of the week
+    start_date = get_start_of_week(year, week_number)
     # Calculate the end date of the week
     end_date = start_date + timedelta(days=6)
     return start_date, end_date
@@ -48,10 +55,6 @@ def calculate_expenses_for_period(start_date, end_date):
 
     return total_cost
 
-def calculate_fuel_economy(mileage, fuel_volume):
-    # Calculate fuel economy based on the given mileage and fuel cost
-    return round((mileage / fuel_volume) * LITRE_TO_GALLON_MULTIPLIER)
-
 @analysis_bp.route("/weekly_analysis", methods=["GET"])
 def weekly_analysis():
     # Get all days in the database
@@ -67,7 +70,10 @@ def weekly_analysis():
     driver_data = {}
     truck_data = {}
     grand_total_data = {}
-    start_date = date.today()
+    # Get today's year and week number
+    today_year, today_week = get_week_number_sat_to_fri(date.today())
+    # Use these values to get the start date
+    start_date, end_date = get_start_end_of_week(today_year, today_week)
 
     if request.args.get('week_select'):
         selected_week = request.args.get('week_select')
@@ -75,56 +81,21 @@ def weekly_analysis():
         start_date, end_date = get_start_end_of_week(
             selected_year, selected_week_number)
 
-        for driver in drivers:
+    for driver in drivers:
 
-            driver_data[driver.id] = calculate_driver_metrics_for_week(
-                driver, Day, Job, Payslip, start_date, end_date)
+        driver_data[driver.id] = calculate_driver_metrics_week(
+            driver, Day, Job, Payslip, start_date, end_date)
 
-        for truck in trucks:
-            day_entries = Day.query.filter(
-                Day.truck_id == truck.id,
-                Day.date >= start_date,
-                Day.date <= end_date
-                ).order_by(Day.date).all()
-            fuel_entries = Fuel.query.filter(
-                Fuel.truck_id == truck.id,
-                Fuel.date >= start_date,
-                Fuel.date <= end_date
-                ).order_by(Fuel.date).all()
+    for truck in trucks:
 
-            total_fuel_volume = sum(f.display_float(fuel.fuel_volume) for fuel in fuel_entries)
-            total_fuel_cost = sum(f.display_float(fuel.fuel_cost) for fuel in fuel_entries)        
-            total_mileage = sum((f.display_float(day.end_mileage)-f.display_float(day.start_mileage)) for day in day_entries)
-            est_fuel_volume = round(total_mileage / MEDIAN_MILES_PER_LITRE)
-            est_fuel_cost = round(est_fuel_volume * MEDIAN_POUNDS_PER_LITRE)
-            fuel_economy = (total_mileage / total_fuel_volume) if total_fuel_volume else 0
-            est_fuel_economy = calculate_fuel_economy(total_mileage, est_fuel_volume) if est_fuel_volume else 0
+        truck_data[truck.id] = calculate_truck_metrics_week(
+            truck, Day, Fuel, start_date, end_date)
 
-            truck_data[truck.id]={
-                'truck': truck,
-                'total_mileage': total_mileage,
-                'total_fuel_volume': total_fuel_volume,
-                'total_fuel_cost': total_fuel_cost,
-                'est_fuel_volume': est_fuel_volume,
-                'est_fuel_cost': est_fuel_cost,
-                'fuel_economy': fuel_economy,
-                'start_date': start_date,
-                'end_date': end_date,
-                'est_fuel_economy': est_fuel_economy,
-            }
+    total_expenses = calculate_expenses_for_period(start_date, end_date)
 
-        total_expenses = calculate_expenses_for_period(start_date, end_date)
-
-        grand_total_data = {
-            'total_expenses': total_expenses,
-        }
-
-        pprint(grand_total_data)
-
-
-        
-
-
+    grand_total_data = {
+        'total_expenses': total_expenses,
+    }
 
     return render_template(
         'analysis/weekly_analysis.html',

@@ -939,31 +939,6 @@ from datetime import datetime
     </div>
 {% endmacro %}
 
-{% macro truck_card(truck_id, data, f) %}
-    <div class="col s12 xl4">
-        <div class="card hoverable wages-card small">
-            <div class="card-content">
-                <span class="card-title activator"><h5>{{ data.truck.registration }}</h5>
-                    <!-- <i class="material-icons right">more_vert</i> -->
-                    <div class="divider"></div>
-                </span>
-                <div class="center-align">
-                    <p class="wages-calc-card-text">Mileage: {{ data.total_mileage | int }} miles</p>
-                    {% if data.total_fuel_cost == 0 %}
-                    <p class="wages-calc-card-text italics">Fuel Used: {{ data.est_fuel_volume }} L*</p><br>
-                    <p class="wages-calc-card-text italics bold">Fuel Cost: {{ f.format_currency(data.est_fuel_cost) }}*</p>
-                    {% else %}
-                    <p class="wages-calc-card-text">Fuel Used: {{ data.total_fuel_volume }} L</p>
-                    <p class="wages-calc-card-text">Fuel Economy: {{ data.fuel_economy }} mpg</p><br>
-                    <p class="wages-calc-card-text">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}</p>
-                    {% endif %}
-                </div>
-
-            </div>
-        </div>
-    </div>
-{% endmacro %}
-
 {% macro driver_card(driver_id, data, f) %}
     <div class="col s12 xl4">
         <div class="card hoverable wages-card small">
@@ -972,7 +947,7 @@ from datetime import datetime
                     <!-- <i class="material-icons right">more_vert</i> -->
                     <div class="divider"></div>
                 </span>
-                <div class="center-align">
+                <div>
                     {# if data.day_entries|length >= 5 #}
                     <p class="wages-calc-card-text">Total Earned: {{ f.fd_currency(data.total_earned) }}</p>
                     {% if '/wages_calculator' in request.path %}
@@ -991,13 +966,13 @@ from datetime import datetime
                     {# endif #}
                 </div>
             </div>
-            <div class="card-action center-align">
+            <div class="card-action">
                 <a href="#modal_{{ driver_id }}" class="waves-effect waves-white blue darken-2 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
                 <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-white blue darken-2 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">list</i>Jobs</a>
             </div>
         </div>
     </div>
-
+    
     <!-- WEEK BREAKDOWN MODAL -->
     <div id="modal_{{ driver_id }}" class="modal">
         <div class="modal-content">
@@ -1012,7 +987,7 @@ from datetime import datetime
                         <th>Overnight</th>
                     </tr>
                 </thead>
-        
+                
                 <tbody>
                     {% for day in data.day_entries %}    
                     <tr>
@@ -1042,10 +1017,10 @@ from datetime import datetime
             <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
         </div>
     </div>
-
+    
     <!-- WEEK TIMETABLE MODAL -->
     <div id="modal_timetable_{{ driver_id }}" class="modal">
-
+        
         <div class="modal-content">
             <h4>{{ data.driver.full_name }}'s timetable</h4>
             <p class=""><a href="{{ url_for('job.add_job', item_id=0, tab='history', user_confirm='False') }}">Click here to edit/delete history.</a></p>
@@ -1059,7 +1034,7 @@ from datetime import datetime
                         <th>Split?</th>
                     </tr>
                 </thead>
-        
+                
                 <tbody>
                     {% for job in data.job_entries %}    
                     <tr>
@@ -1085,7 +1060,32 @@ from datetime import datetime
             <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
         </div>
     </div>
+    
+{% endmacro %}
 
+{% macro truck_card(truck_id, data, f) %}
+    <div class="col s12 xl4">
+        <div class="card hoverable wages-card small">
+            <div class="card-content">
+                <span class="card-title activator"><h5>{{ data.truck.registration }}</h5>
+                    <!-- <i class="material-icons right">more_vert</i> -->
+                    <div class="divider"></div>
+                </span>
+                <div>
+                    <p class="wages-calc-card-text">Mileage: {{ data.total_mileage | int }} miles</p>
+                    {% if data.estimated == True %}
+                    <p class="wages-calc-card-text italics">Fuel Used: {{ data.total_fuel_volume }} L*</p><br>
+                    <p class="wages-calc-card-text italics bold">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}*</p>
+                    {% else %}
+                    <p class="wages-calc-card-text">Fuel Used: {{ data.total_fuel_volume }} L</p><br>
+                    <p class="wages-calc-card-text bold">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}</p><br>
+                    <p class="wages-calc-card-text text-small">(Fuel Economy: {{ data.fuel_economy }} mpg)</p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
 {% endmacro %}
 
 

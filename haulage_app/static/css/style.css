@@ -23,7 +23,6 @@ h1{
     font-weight: 600;
 }
 
-
 .header-row{
     height: 6.5rem;
 }
@@ -225,6 +224,10 @@ footer, nav{
 /* wages calculator */
 .wages-calc-card-text{
     font-size: 18px;
+}
+
+.text-small{
+    font-size: 14px;
 }
 
 .wc-button{
