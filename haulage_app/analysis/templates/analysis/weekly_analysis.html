@@ -37,8 +37,8 @@
                         Total Earned: {{ f.fd_currency(grand_total_data.grand_total_earned) }}<br>
                         Total Expenses: {{ f.fd_currency(grand_total_data.total_expenses) }} <br>
                         Total Fuel Costs: {{ f.fd_currency(grand_total_data.grand_total_fuel_cost) }} <br>
-                    <p class="small-text italics">
-                        Total Fuel Used: {{ f.display_float(grand_total_data.grand_total_fuel_volume) }} L
+                    <p class="small-text italics grey-text">
+                        (Total Fuel Used: {{ f.display_float(grand_total_data.grand_total_fuel_volume) }} L)
                     </p><br>
                     </p>
                     <p class="wages-calc-card-text bold">
@@ -52,6 +52,8 @@
 </div>
 
 <br>
+
+<p class="italics grey-text">* Value has been estimated.</p>
 
 <!-- drivers card -->
 <h5>DRIVERS</h5>

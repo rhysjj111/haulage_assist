@@ -1078,8 +1078,8 @@ from datetime import datetime
                     <p class="wages-calc-card-text italics bold">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}*</p>
                     {% else %}
                     <p class="wages-calc-card-text">Fuel Used: {{ data.total_fuel_volume }} L</p><br>
-                    <p class="wages-calc-card-text bold">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}</p><br>
-                    <p class="wages-calc-card-text text-small">(Fuel Economy: {{ data.fuel_economy }} mpg)</p>
+                    <p class="wages-calc-card-text bold">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}</p>
+                    <p class="wages-calc-card-text text-small grey-text">(Fuel Economy: {{ data.fuel_economy }} mpg)</p>
                     {% endif %}
                 </div>
 
