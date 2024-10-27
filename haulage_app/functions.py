@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import timedelta, date, datetime
 
 
 #functions format to db
@@ -44,4 +44,42 @@ def fd_currency(amount):
 
 def fd_percentage(percentage):
     return format_percentage(display_percentage(percentage))
+
+#functions for calculations
+
+def get_week_number_sat_to_fri(date):
+    """Returns the week number with Saturday as the start of the week."""
+    """Returns a tuple of (year, week_number) with Saturday as week start."""
+    adjusted_date = date - timedelta(days=2)
+    year = adjusted_date.year
+    week = adjusted_date.isocalendar().week
+    return (year, week)
+
+def get_start_of_week(year, week_number):
+    """Returns the start date of the week."""
+    # Get January 1st of selected year
+    year_start = date(year, 1, 1)
+    # Calculate offset to previous Saturday
+    saturday_offset = (year_start.weekday() + 2) % 7
+    # Calculate days to add for desired week
+    week_offset = (week_number - 1) * 7
+    # Calculate final start date
+    start_date = year_start + timedelta(days=week_offset - saturday_offset)
+    return start_date
+
+def get_start_end_of_week(year, week_number):
+    """Returns the start and end dates of the week."""
+    # Calculate the start date of the week
+    start_date = get_start_of_week(year, week_number)
+    # Calculate the end date of the week
+    end_date = start_date + timedelta(days=6)
+    return start_date, end_date
+
+def get_weeks_for_period(day_query):
+    """Returns a list of week numbers for the given period."""
+    # Calculate week numbers for each day
+    week_numbers = [get_week_number_sat_to_fri(day.date) for day in day_query]
+    # Get unique week numbers
+    available_weeks = sorted(set(week_numbers), reverse=True)
+    return available_weeks
 

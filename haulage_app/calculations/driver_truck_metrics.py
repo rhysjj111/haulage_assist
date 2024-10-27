@@ -61,6 +61,7 @@ def calculate_driver_metrics_week(driver, Day, Job, Payslip, start_date, end_dat
         total_cost_to_employer = 0
 
     return {
+        'estimated': estimated,
         'driver': driver,
         'day_entries': day_entries,
         'job_entries': job_entries,
@@ -69,8 +70,7 @@ def calculate_driver_metrics_week(driver, Day, Job, Payslip, start_date, end_dat
         'total_cost_to_employer': total_cost_to_employer,
         'weekly_extras': weekly_extras,
         'start_date': start_date,
-        'end_date': end_date,
-        'estimated': estimated
+        'end_date': end_date
     }
 
 # TRUCK METRICS
@@ -78,13 +78,17 @@ def calculate_fuel_economy(mileage, fuel_volume):
     # Calculate fuel economy based on the given mileage and fuel cost
     return round((mileage / fuel_volume) * LITRE_TO_GALLON_MULTIPLIER, 2)
 
-def calculate_total_metric(metric_name, list_of_entries):
+def calculate_total_metric_list(metric_name, list_of_entries):
     """ Calculate the total of a metric for a list of entries from a query """
-    return sum(display_float(getattr(fuel, metric_name)) for fuel in list_of_entries)
+    return sum(getattr(item, metric_name) for item in list_of_entries)
+
+def calculate_total_metric_dict(metric_name, dict):
+    """ Calculate the total of a metric for a list of entries from a query """
+    return sum(item[metric_name] for item in dict.values())
 
 def calculate_total_mileage(day_entries):
     """ Calculate the total mileage for a list of day entries """
-    return sum((display_float(day.end_mileage)-display_float(day.start_mileage)) for day in day_entries)
+    return sum((day.end_mileage - day.start_mileage) for day in day_entries)
 
 
 def calculate_truck_metrics_week(truck, Day, Fuel, start_date, end_date):
@@ -105,8 +109,8 @@ def calculate_truck_metrics_week(truck, Day, Fuel, start_date, end_date):
 
     total_mileage = calculate_total_mileage(day_entries)
     if fuel_entries:
-        total_fuel_volume = round(calculate_total_metric("fuel_volume", fuel_entries))
-        total_fuel_cost = calculate_total_metric("fuel_cost", fuel_entries)
+        total_fuel_volume = round(calculate_total_metric_list("fuel_volume", fuel_entries))
+        total_fuel_cost = calculate_total_metric_list("fuel_cost", fuel_entries)
         fuel_economy = calculate_fuel_economy(total_mileage, total_fuel_volume)
     else:
         estimated = True
