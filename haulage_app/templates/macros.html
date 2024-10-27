@@ -940,53 +940,58 @@ from datetime import datetime
 {% endmacro %}
 
 {% macro truck_card(truck_id, data, f) %}
-    <div class="col s12 m4">
+    <div class="col s12 xl4">
         <div class="card hoverable wages-card small">
             <div class="card-content">
                 <span class="card-title activator"><h5>{{ data.truck.registration }}</h5>
                     <!-- <i class="material-icons right">more_vert</i> -->
                     <div class="divider"></div>
                 </span>
-                <br>
-                <p class="wages-calc-card-text">Mileage: {{ data.total_mileage | int }} miles</p>
-                {% if data.total_fuel_cost == 0 %}
-                <p class="wages-calc-card-text">Est. Volume of Fuel: {{ data.est_fuel_volume }} L</p>
-                <p class="wages-calc-card-text"><strong><em>Est. Fuel Economy: {{ data.est_fuel_economy }} mpg</em></strong></p>
-                <p class="wages-calc-card-text">Est. Fuel Cost: {{ f.format_currency(data.est_fuel_cost) }}</p>
-                {% else %}
-                <p class="wages-calc-card-text">Total Volume of Fuel: {{ data.total_fuel_volume }} L</p>
-                <p class="wages-calc-card-text"><strong><em>Fuel Economy: {{ data.fuel_economy }} mpg</em></strong></p>
-                <p class="wages-calc-card-text">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}</p>
-                {% endif %}
+                <div class="center-align">
+                    <p class="wages-calc-card-text">Mileage: {{ data.total_mileage | int }} miles</p>
+                    {% if data.total_fuel_cost == 0 %}
+                    <p class="wages-calc-card-text italics">Fuel Used: {{ data.est_fuel_volume }} L*</p><br>
+                    <p class="wages-calc-card-text italics bold">Fuel Cost: {{ f.format_currency(data.est_fuel_cost) }}*</p>
+                    {% else %}
+                    <p class="wages-calc-card-text">Fuel Used: {{ data.total_fuel_volume }} L</p>
+                    <p class="wages-calc-card-text">Fuel Economy: {{ data.fuel_economy }} mpg</p><br>
+                    <p class="wages-calc-card-text">Fuel Cost: {{ f.format_currency(data.total_fuel_cost) }}</p>
+                    {% endif %}
+                </div>
+
             </div>
         </div>
     </div>
 {% endmacro %}
 
 {% macro driver_card(driver_id, data, f) %}
-    <div class="col s12 m4">
+    <div class="col s12 xl4">
         <div class="card hoverable wages-card small">
-            <div class="card-content">
+            <div class="card-content ">
                 <span class="card-title activator"><h5>{{ data.driver.full_name }}</h5>
                     <!-- <i class="material-icons right">more_vert</i> -->
                     <div class="divider"></div>
                 </span>
-                <br>
-                {# if data.day_entries|length >= 5 #}
-                <p class="wages-calc-card-text">Total earned: {{ f.fd_currency(data.total_earned) }}</p>
-                <p class="wages-calc-card-text"><strong>Extras: {{ f.fd_currency(data.weekly_extras) }}</strong></p>
-                <p class="wages-calc-card-text">Gross pay: {{ f.fd_currency(data.gross_pay) }}</strong></p>
-                {% if '/analysis/weekly' in request.path %}
-                <p class="wages-calc-card-text">Cost to employer: {{ f.fd_currency(data.total_cost_to_employer) }}{{ '*' if data.estimated==True}}</strong></p>
-                {% endif %}
-                {# else #}
-                <!-- <p class="wages-calc-card-text red-text">There are {{data.day|length}} days recorded for this week.</p> -->
-                <!-- <p><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}" class="">Add day entries</a></p>
-                <p><a href="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='False') }}" class="">Add job entries</a></p> -->
-
-                {# endif #}
+                <div class="center-align">
+                    {# if data.day_entries|length >= 5 #}
+                    <p class="wages-calc-card-text">Total Earned: {{ f.fd_currency(data.total_earned) }}</p>
+                    {% if '/wages_calculator' in request.path %}
+                    <p class="wages-calc-card-text bold">Extras: {{ f.fd_currency(data.weekly_extras) }}</p>
+                    {% endif %}
+                    <p class="wages-calc-card-text">Gross Pay: {{ f.fd_currency(data.gross_pay) }}</p><br>
+                    {% if '/analysis/weekly' in request.path %}
+                    <p class="wages-calc-card-text bold {{'italics' if data.estimated == True }}">
+                        Employer Cost: {{ f.fd_currency(data.total_cost_to_employer) }}{{ '*' if data.estimated==True}}
+                    </p>
+                    {% endif %}
+                    {# else #}
+                    <!-- <p class="wages-calc-card-text red-text">There are {{data.day|length}} days recorded for this week.</p> -->
+                    <!-- <p><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}" class="">Add day entries</a></p>
+                    <p><a href="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='False') }}" class="">Add job entries</a></p> -->
+                    {# endif #}
+                </div>
             </div>
-            <div class="card-action">
+            <div class="card-action center-align">
                 <a href="#modal_{{ driver_id }}" class="waves-effect waves-white blue darken-2 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
                 <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-white blue darken-2 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">list</i>Jobs</a>
             </div>

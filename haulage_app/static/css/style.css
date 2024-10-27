@@ -15,6 +15,15 @@ h1{
     text-align: center;
 }
 
+.italics {
+    font-style: italic;
+}
+
+.bold{
+    font-weight: 600;
+}
+
+
 .header-row{
     height: 6.5rem;
 }
@@ -222,5 +231,20 @@ footer, nav{
     margin-bottom: 2px;
 }
 
+@media screen and (max-width: 500px) {
+    .wc-button {
+        margin-right: 0!important;
+    }
+}
+
+@media screen and (min-width: 1200px) and (max-width: 1400px) {
+    .wc-button {
+        margin-right: 0!important;
+    }
+}
+
+.card-title{
+    margin-bottom: 7px;
+}
 
 
