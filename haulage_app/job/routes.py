@@ -64,8 +64,9 @@ def add_job(item_id, tab):
                         new_entry = Day(
                             date = dates[date],
                             driver_id = request.form.get("driver_id"),
-                            overnight = request.form.get("overnight_" + date),
-                            truck_id = request.form.get("truck_id_" + date)            
+                            status = "Working",
+                            truck_id = request.form.get("truck_id_" + date),          
+                            overnight = request.form.get("overnight_" + date)
                         )
                         db.session.add(new_entry)
                         db.session.commit()

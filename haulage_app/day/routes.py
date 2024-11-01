@@ -35,15 +35,18 @@ def add_day(item_id, tab):
             new_entry = Day(
                 date = request.form.get("date"),
                 driver_id = request.form.get("driver_id"),
-                truck_id = request.form.get("truck_id"),
                 status = request.form.get("status"),
-                overnight = request.form.get("overnight"),
-                fuel = request.form.get("fuel"),
-                start_mileage = request.form.get("start_mileage"),
-                end_mileage = request.form.get("end_mileage"),
-                additional_earned = request.form.get("additional_earned"),
-                additional_wages = request.form.get("additional_wages")              
             )
+
+            if request.form.get("status") == "Working":
+                new_entry.truck_id = request.form.get("truck_id")
+                new_entry.overnight = request.form.get("overnight")
+                new_entry.fuel = request.form.get("fuel")
+                new_entry.start_mileage = request.form.get("start_mileage")
+                new_entry.end_mileage = request.form.get("end_mileage")
+                new_entry.additional_earned = request.form.get("additional_earned")
+                new_entry.additional_wages = request.form.get("additional_wages")              
+            
             db.session.add(new_entry)
             db.session.commit()
         except ValueError as e:
@@ -84,16 +87,16 @@ def edit_day(item_id):
     try:
         entry.date = request.form.get("date")
         entry.driver_id = request.form.get("driver_id")
-
-        print(request.form.get("overnight"))
         entry.overnight = request.form.get("overnight")
-        entry.fuel = request.form.get("fuel")
-        
-        entry.start_mileage = request.form.get("start_mileage")
-        entry.end_mileage = request.form.get("end_mileage")
-        entry.additional_earned = request.form.get("additional_earned")
-        entry.additional_wages = request.form.get("additional_wages")
-        entry.truck_id = request.form.get("truck_id")
+
+        if request.form.get("status") == "Working":
+            entry.fuel = request.form.get("fuel")
+            entry.start_mileage = request.form.get("start_mileage")
+            entry.end_mileage = request.form.get("end_mileage")
+            entry.additional_earned = request.form.get("additional_earned")
+            entry.additional_wages = request.form.get("additional_wages")
+            entry.truck_id = request.form.get("truck_id")
+            
         db.session.commit()
     except ValueError as e:
         if request.args.get('weekly'):

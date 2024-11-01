@@ -214,7 +214,7 @@ class Day(db.Model):
 
     @validates('truck_id')
     def validate_select_driver(self, key, truck_id):
-        if self.status == "working":
+        if self.status == "Working":
             if not (Truck.query.filter(Truck.id == truck_id).first()):
                 raise ValueError('Selection not available in database. Please select a truck')
             return truck_id
@@ -223,37 +223,43 @@ class Day(db.Model):
     @validates('additional_earned', 'additional_wages')
     def validate_additional(self, key, field):
         if field is None or field == "":  # Check for None or empty string
-            return 0 
-        try:
-            field = float_to_db(field)
-        except:
-            raise ValueError('Please enter a value earned between £0 and £2000')
-        else:
-            if not(0 <= field < 200000):
+            return 0
+        if self.status == "Working":
+            try:
+                field = float_to_db(field)
+            except:
                 raise ValueError('Please enter a value earned between £0 and £2000')
-        return field
+            else:
+                if not(0 <= field < 200000):
+                    raise ValueError('Please enter a value earned between £0 and £2000')
+            return field
+        return 0
     
     @validates('start_mileage', 'end_mileage')
     def validate_mileage(self, key, field):
         if field is None or field == "":  # Check for None or empty string
             return 0 
-        try:
-            field = float_to_db(field)
-        except:
-            raise ValueError('Please enter a number')
-        else:
-            if not(0 <= field < 1000000000):
-                raise ValueError('Please enter a number between 0 and 10000000')
-        return field
+        if self.status == "Working":
+            try:
+                field = float_to_db(field)
+            except:
+                raise ValueError('Please enter a number')
+            else:
+                if not(0 <= field < 1000000000):
+                    raise ValueError('Please enter a number between 0 and 10000000')
+            return field
+        return 0
 
     @validates('overnight', 'fuel')
     def validate_boolean_field(self, key, value):
-        if value == 'on':
-            return True
-        elif value is None or value == None or value == "":
-            return False
-        else:
-            raise ValueError(f'Invalid value for {key}. Please use the selector.')
+        if self.status == "Working":
+            if value == 'on':
+                return True
+            elif value is None or value == None or value == "":
+                return False
+            else:
+                raise ValueError(f'Invalid value for {key}. Please use the selector.')
+        return False
 
 
     @db.event.listens_for(db.session, 'before_flush')

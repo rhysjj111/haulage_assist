@@ -51,4 +51,3 @@ def context_processor():
     return dict(f=f)
 
 
-from haulage_app import routes 
