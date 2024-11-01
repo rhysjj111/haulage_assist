@@ -10,5 +10,5 @@ with app.app_context():
         pprint(day.truck_id)
         day.truck_id = None
         pprint(day.truck_id)
-    # db.session.commit()
+    db.session.commit()
 

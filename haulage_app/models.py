@@ -214,9 +214,11 @@ class Day(db.Model):
 
     @validates('truck_id')
     def validate_select_driver(self, key, truck_id):
-        if not (Truck.query.filter(Truck.id == truck_id).first()):
-            raise ValueError('Selection not available in database. Please select a truck')
-        return truck_id
+        if self.status == "working":
+            if not (Truck.query.filter(Truck.id == truck_id).first()):
+                raise ValueError('Selection not available in database. Please select a truck')
+            return truck_id
+        return None
     
     @validates('additional_earned', 'additional_wages')
     def validate_additional(self, key, field):
