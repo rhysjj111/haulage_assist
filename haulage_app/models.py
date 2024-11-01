@@ -159,7 +159,7 @@ class Day(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.now)
     date = db.Column(db.Date, nullable=False, index=True)
     driver_id = db.Column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False, index=True)
-    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=False, index=True)  
+    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=True, index=True)  
     status = db.Column(db.String(50), nullable=False, default="Working")
     overnight = db.Column(db.Boolean, nullable=False)
     fuel = db.Column(db.Boolean, default=False)
