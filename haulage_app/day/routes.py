@@ -10,33 +10,14 @@ def add_day(item_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())
     components = {'drivers':drivers, 'trucks':trucks}
-    day_entries_working = list(
-        Day.query.join(Driver)
-        .filter(Day.status == 'working')
-        .order_by(
-            db.case(
-                *(
-                    (Day.start_mileage == 0, 0),
-                    (Day.end_mileage == 0, 0),
-                ),
-                else_=1
-            ).asc(),
-            Day.driver_id,
-            Driver.first_name,
-            Driver.last_name,
-            Day.date.asc()
-        ).all()
-    )
-    # for day in day_entries_working:
-    #     pprint(day.status)
+
     day_entries = list(
         Day.query.join(Driver)
         .order_by(
             db.case(
                 *(
-                    (Day.start_mileage == 0, 0),
-                    (Day.end_mileage == 0, 0),
-                    (Day.status == 'working', 0),
+                    (db.and_(Day.status == 'working', Day.start_mileage == 0), 0),
+                    (db.and_(Day.status == 'working', Day.end_mileage == 0), 0),
                 ),
                 else_=1
             ).asc(),
@@ -46,8 +27,7 @@ def add_day(item_id, tab):
             Day.date.asc()
         ).all()
     )
-    # for day in day_entries:
-    #     pprint(day.status)
+
     first_day_entry = day_entries[0]
     weekly_modal_trigger = request.args.get('weekly')
     #empty dictionary to be filled with users previous answers if there
@@ -76,7 +56,6 @@ def add_day(item_id, tab):
             flash(str(e), 'error-msg')
             #retrieve previous answers
             day = request.form
-            # print('askljdfaslkdjfalksdjfsa')
         else:
             flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
             return redirect(url_for("day.add_day", tab='entry', item_id=0))
