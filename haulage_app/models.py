@@ -160,8 +160,8 @@ class Day(db.Model):
     date = db.Column(db.Date, nullable=False, index=True)
     driver_id = db.Column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False, index=True)
     truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=True, index=True)  
-    status = db.Column(db.String(50), nullable=False, default="Working")
-    overnight = db.Column(db.Boolean, nullable=False)
+    status = db.Column(db.String(50), nullable=False, default="working")
+    overnight = db.Column(db.Boolean, nullable=False, default=False)
     fuel = db.Column(db.Boolean, default=False)
     start_mileage = db.Column(db.Integer, nullable=False, default=0)
     end_mileage = db.Column(db.Integer, nullable=False, default=0)
@@ -214,7 +214,7 @@ class Day(db.Model):
 
     @validates('truck_id')
     def validate_select_driver(self, key, truck_id):
-        if self.status == "Working":
+        if self.status == "working":
             if not (Truck.query.filter(Truck.id == truck_id).first()):
                 raise ValueError('Selection not available in database. Please select a truck')
             return truck_id
@@ -224,7 +224,7 @@ class Day(db.Model):
     def validate_additional(self, key, field):
         if field is None or field == "":  # Check for None or empty string
             return 0
-        if self.status == "Working":
+        if self.status == "working":
             try:
                 field = float_to_db(field)
             except:
@@ -239,7 +239,7 @@ class Day(db.Model):
     def validate_mileage(self, key, field):
         if field is None or field == "":  # Check for None or empty string
             return 0 
-        if self.status == "Working":
+        if self.status == "working":
             try:
                 field = float_to_db(field)
             except:
@@ -252,7 +252,7 @@ class Day(db.Model):
 
     @validates('overnight', 'fuel')
     def validate_boolean_field(self, key, value):
-        if self.status == "Working":
+        if self.status == "working":
             if value == 'on':
                 return True
             elif value is None or value == None or value == "":

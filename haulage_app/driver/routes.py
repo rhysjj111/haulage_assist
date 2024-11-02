@@ -26,6 +26,7 @@ def add_driver(item_id, tab):
             db.session.add(new_entry)
             db.session.commit()
         except ValueError as e:
+            db.session.rollback()
             flash(str(e), 'error-msg')
             #retrieve previous answers
             driver = request.form

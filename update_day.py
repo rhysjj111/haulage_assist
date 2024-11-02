@@ -5,7 +5,7 @@ from pprint import pprint
 
 with app.app_context():
 
-    days = Day.query.filter(Day.status != 'Working').all()
+    days = Day.query.filter(Day.status != 'working').all()
     for day in days:
         pprint(day.truck_id)
         day.truck_id = None

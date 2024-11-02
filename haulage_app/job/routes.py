@@ -64,7 +64,7 @@ def add_job(item_id, tab):
                         new_entry = Day(
                             date = dates[date],
                             driver_id = request.form.get("driver_id"),
-                            status = "Working",
+                            status = "working",
                             truck_id = request.form.get("truck_id_" + date),          
                             overnight = request.form.get("overnight_" + date)
                         )
