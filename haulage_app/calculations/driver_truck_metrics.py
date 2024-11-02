@@ -9,6 +9,7 @@ def calculate_driver_wages(day_entries, driver):
     total_daily_bonus = 0
     total_weekly_bonus = 0
     gross_pay = 0
+    worked_days = 0
     for day in day_entries:
         # Calculate total earned by driver for week
         total_earned += day.calculate_total_earned()
@@ -16,17 +17,26 @@ def calculate_driver_wages(day_entries, driver):
         daily_bonus = day.calculate_daily_bonus(driver)
         total_daily_bonus += daily_bonus
         # Calculate total overnight for week
+        if day.status == 'working':
+            worked_days += 1
         if day.overnight == True:
             total_overnight += 3000
+
     # Calculate weekly bonus
     if total_earned > driver.weekly_bonus_threshold:
         total_weekly_bonus = (total_earned - driver.weekly_bonus_threshold) * driver.weekly_bonus_percentage
-    
+
     # Calculate gross pay and weekly extras
-    weekly_extras = total_daily_bonus + total_weekly_bonus - (15000 - total_overnight)
-    gross_pay = weekly_extras + driver.basic_wage
+    if worked_days <= 3 or total_earned < 150000:
+        weekly_extras = total_daily_bonus + total_weekly_bonus
+        gross_pay = weekly_extras + driver.basic_wage
+    else:
+        weekly_extras = total_daily_bonus + total_weekly_bonus - (15000 - total_overnight)
+        gross_pay = weekly_extras + driver.basic_wage
+        total_overnight = 15000
 
     return total_earned, weekly_extras, gross_pay, total_overnight
+
 
 def calculate_driver_metrics_week(driver, Day, Job, Payslip, start_date, end_date):
 
@@ -74,18 +84,22 @@ def calculate_driver_metrics_week(driver, Day, Job, Payslip, start_date, end_dat
         'end_date': end_date
     }
 
+
 # TRUCK METRICS
 def calculate_fuel_economy(mileage, fuel_volume):
     # Calculate fuel economy based on the given mileage and fuel cost
     return round((mileage / fuel_volume) * LITRE_TO_GALLON_MULTIPLIER, 2)
 
+
 def calculate_total_metric_list(metric_name, list_of_entries):
     """ Calculate the total of a metric for a list of entries from a query """
     return sum(getattr(item, metric_name) for item in list_of_entries)
 
+
 def calculate_total_metric_dict(metric_name, dict):
     """ Calculate the total of a metric for a list of entries from a query """
     return sum(item[metric_name] for item in dict.values())
+
 
 def calculate_total_mileage(day_entries):
     """ Calculate the total mileage for a list of day entries """

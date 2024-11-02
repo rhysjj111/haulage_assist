@@ -78,8 +78,7 @@ def weekly_analysis():
         'grand_total_fuel_cost': grand_total_fuel_cost,
         'profit': profit,
     }
-    pprint(driver_data)
-    pprint(truck_data)
+    
     return render_template(
         'analysis/weekly_analysis.html',
         available_weeks=available_weeks, 
