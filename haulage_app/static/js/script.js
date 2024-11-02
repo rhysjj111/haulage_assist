@@ -66,24 +66,46 @@ document.addEventListener('DOMContentLoaded', function () {
     closeMessages.forEach(button => {
     button.addEventListener('click', () => {
         button.closest('.messages-container').style.display = 'none';
+        });
     });
-});
+
+    // A funtion to toggle the visibility of working questions based on the status selection
+    const statusSelects = document.querySelectorAll('select[name="status"]');
+    statusSelects.forEach(statusSelect => {
+        // Get working questions only within this form
+        const form = statusSelect.closest('form');
+        const workingQuestions = form.querySelectorAll('.working_question');
+        
+        // Initial check on page load
+        toggleWorkingQuestions();
+        
+        // Add listener for status changes
+        statusSelect.addEventListener('change', toggleWorkingQuestions);
+        
+        function toggleWorkingQuestions() {
+            const isWorking = statusSelect.value === 'working';
+            workingQuestions.forEach(question => {
+                question.style.display = isWorking ? 'block' : 'none';
+            });
+        }
+    });
 
 
 })
 
 
-    const splitInput = document.querySelector('#split');
-    const lever = document.querySelector('.lever');
-    const nwdInput = document.querySelector('#date_nwd')
-    const nwdContainer = document.querySelector('.nwd-container');
-    lever.addEventListener('click', () => {
-        if (splitInput.checked) {
-            nwdContainer.classList.add('hide');
-            nwdInput.removeAttribute('required','');
-        } else {
-            nwdContainer.classList.remove('hide');
-            nwdInput.setAttribute('required','');
-        }
-    })
-    
+const splitInput = document.querySelector('#split');
+const lever = document.querySelector('.lever');
+const nwdInput = document.querySelector('#date_nwd')
+const nwdContainer = document.querySelector('.nwd-container');
+lever.addEventListener('click', () => {
+    if (splitInput.checked) {
+        nwdContainer.classList.add('hide');
+        nwdInput.removeAttribute('required','');
+    } else {
+        nwdContainer.classList.remove('hide');
+        nwdInput.setAttribute('required','');
+    }
+})
+
+

@@ -219,6 +219,27 @@ from datetime import datetime
 
 
 {% macro day(type, day, components, f) %}
+    <!-- status -->
+    <div class="row">
+        <div class="input-field col s12">
+            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
+            <select name="status" id="status" class="validate" required>
+                {% if day != {} %}
+                
+                <option value="{{day.status}}" selected>{{day.status.capitalize()}}</option>
+                <option value="working" >Working</option>
+                <option value="holiday" >Holiday</option>
+                <option value="absent" >Absent</option>
+                {% else %}
+                <option value="working" selected>Working</option>
+                <option value="holiday" >Holiday</option>
+                <option value="absent" >Absent</option>
+                {% endif %}
+            </select>
+            <label for="status">Select status:</label>
+        </div>
+    </div>
+
     <!-- date -->
     <div class="row">
         <div class="input-field col s12">
@@ -259,12 +280,12 @@ from datetime import datetime
     </div>
 
     <!-- truck -->
-    <div class="row">
+    <div class="row working_question">
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
             <select name="truck_id" id="truck_id" >
                 {% if day != {} %}
-                    
+                
                     {% for truck in components.trucks %}
                         {% if day.truck == truck %}
                             <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
@@ -273,7 +294,7 @@ from datetime import datetime
                         {% else %}
                             <option value="{{ truck.id }}">{{ truck.registration }}</option>
                         {% endif %}
-                    {% endfor %}        
+                        {% endfor %}        
                 {% else %}
                     <option value="" disabled selected>Please select</option>
                     {% for truck in components.trucks %}
@@ -284,22 +305,9 @@ from datetime import datetime
             <label for="truck_id">Truck:</label>
         </div>
     </div>
-
-    <!-- status -->
-    <div class="row">
-        <div class="input-field col s12">
-            <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
-            <select name="status" id="status" class="validate" required>
-                <option value="working" selected>Working</option>
-                <option value="holiday" >Holiday</option>
-                <option value="absent" >Absent</option>
-            </select>
-            <label for="status">Select status:</label>
-        </div>
-    </div>
-
+    
     <!-- overnight -->
-    <div class="row">
+    <div class="row working_question">
         <div class="input-field col s12">
             <div class="switch">
                 <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
@@ -325,7 +333,7 @@ from datetime import datetime
     </div>
 
     <!-- fuel -->
-    <div class="row">
+    <div class="row working_question">
         <div class="input-field col s12">
             <div class="switch">
                 <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
@@ -351,7 +359,7 @@ from datetime import datetime
     </div>
 
     <!-- start mileage -->
-    <div class="row">
+    <div class="row working_question">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="start_mileage" name="start_mileage" type="number" step="0.01"
@@ -372,7 +380,7 @@ from datetime import datetime
     </div>
 
     <!-- end mileage -->
-    <div class="row">
+    <div class="row working_question">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="end_mileage" name="end_mileage" type="number" step="0.01"
@@ -393,7 +401,7 @@ from datetime import datetime
     </div>
 
     <!-- additional earned -->
-    <div class="row">
+    <div class="row working_question">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="additional_earned" name="additional_earned" type="number" step="0.01"
@@ -414,7 +422,7 @@ from datetime import datetime
     </div>
 
     <!-- additional wages -->
-    <div class="row">
+    <div class="row working_question">
         <div class="input-field col s12">
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="additional_wages" name="additional_wages" type="number" step="0.01"

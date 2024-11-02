@@ -80,7 +80,6 @@ def add_day(item_id, tab):
         else:
             flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
             return redirect(url_for("day.add_day", tab='entry', item_id=0))
-    print('alskdhf;akjsdhf;aslkjdfaslkf')
     return render_template(
         "add_day.html",
         components=components,
@@ -113,6 +112,7 @@ def edit_day(item_id):
         entry.date = request.form.get("date")
         entry.driver_id = request.form.get("driver_id")
         entry.overnight = request.form.get("overnight")
+        entry.status = request.form.get("status")
 
         if request.form.get("status") == "working":
             entry.fuel = request.form.get("fuel")
@@ -121,7 +121,15 @@ def edit_day(item_id):
             entry.additional_earned = request.form.get("additional_earned")
             entry.additional_wages = request.form.get("additional_wages")
             entry.truck_id = request.form.get("truck_id")
-            
+        else:
+            entry.truck_id = None
+            entry.overnight = None
+            entry.fuel = None
+            entry.start_mileage = None
+            entry.end_mileage = None
+            entry.additional_earned = None
+            entry.additional_wages = None
+
         db.session.commit()
     except ValueError as e:
         if request.args.get('weekly'):
