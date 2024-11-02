@@ -26,7 +26,7 @@ def calculate_driver_wages(day_entries, driver):
     weekly_extras = total_daily_bonus + total_weekly_bonus - (15000 - total_overnight)
     gross_pay = weekly_extras + driver.basic_wage
 
-    return total_earned, weekly_extras, gross_pay
+    return total_earned, weekly_extras, gross_pay, total_overnight
 
 def calculate_driver_metrics_week(driver, Day, Job, Payslip, start_date, end_date):
 
@@ -50,7 +50,7 @@ def calculate_driver_metrics_week(driver, Day, Job, Payslip, start_date, end_dat
         Payslip.date <= end_date
         ).order_by(Payslip.date).all()
 
-    total_earned, weekly_extras, gross_pay = calculate_driver_wages(day_entries, driver)
+    total_earned, weekly_extras, gross_pay, total_overnight = calculate_driver_wages(day_entries, driver)
 
     if payslip_entries:
         total_cost_to_employer = payslip_entries[0].total_wage
@@ -67,6 +67,7 @@ def calculate_driver_metrics_week(driver, Day, Job, Payslip, start_date, end_dat
         'job_entries': job_entries,
         'total_earned': total_earned,
         'gross_pay': gross_pay,
+        'total_overnight': total_overnight,
         'total_cost_to_employer': total_cost_to_employer,
         'weekly_extras': weekly_extras,
         'start_date': start_date,
