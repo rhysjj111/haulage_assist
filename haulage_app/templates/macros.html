@@ -977,8 +977,8 @@ from datetime import datetime
         <div>
             {% if data.day_entries|length < 5 %}
             <p class="wages-calc-card-text orange-text text-small valign-wrapper no-margin"><i class="material-icons">warning</i>  Only {{data.day_entries |length}} day(s) recorded.</p>
-            <a class="text-small" href="{{ url_for('day.add_day', item_id=0, tab='history') }} ">(Add Day Entries)</a><br>
-            <a class="text-small" href="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='False') }}">(Add Job Entries)</a>
+            <a class="text-small" href="{{ url_for('day.add_day', item_id=0, tab='history') }} ">Add Day entries</a><br>
+            <a class="text-small" href="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='False') }}">Add Job entries</a>
             {% endif %}
         </div>
     </div>

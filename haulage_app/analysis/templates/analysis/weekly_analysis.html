@@ -34,9 +34,9 @@
                     <br>
                     <p class="wages-calc-card-text">
                         {% if grand_total_data.total_expenses %}
-                        Total Earned: {{ f.fd_currency(grand_total_data.grand_total_earned) }}<br>
-                        Total Expenses: {{ f.fd_currency(grand_total_data.total_expenses) }} <br>
-                        Total Fuel Costs: {{ f.fd_currency(grand_total_data.grand_total_fuel_cost) }} <br>
+                        Earned: {{ f.fd_currency(grand_total_data.grand_total_earned) }}<br>
+                        Expenses: {{ f.fd_currency(grand_total_data.total_expenses) }} <br>
+                        Fuel Costs: {{ f.fd_currency(grand_total_data.grand_total_fuel_cost) }} <br>
                     <p class="small-text italics grey-text">
                         (Total Fuel Used: {{ f.display_float(grand_total_data.grand_total_fuel_volume) }} L)
                     </p><br>

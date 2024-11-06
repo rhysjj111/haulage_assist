@@ -22,7 +22,7 @@
                 Driver: {{ item.driver.full_name }}<br>
                 {% if item.status == 'working' %}
                 Truck: {{ item.truck.registration }}<br>
-                Start mileage: {{ f.display_float(item.start_mileage) }} mls<br>
+                Start mileage: {{ f.display_float(item.start_mileage) }}<br>
                 End mileage: {{ f.display_float(item.end_mileage) }}<br>
                 Total earned: {{ f.fd_currency(item.calculate_total_earned()) }}
                 {% else %}
