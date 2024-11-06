@@ -10,6 +10,6 @@ with app.app_context():
         if day.driver_id == 1:
             print(day.truck_id)
             day.truck_id = 3
-            print(day.truck_id)
+            print(day.truck_id, "sa;fjkh")
     # db.session.commit()
 
