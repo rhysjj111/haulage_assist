@@ -19,5 +19,5 @@ with app.app_context():
             print("old value for", day.driver.first_name, day.truck_id)
             day.truck_id = 2
             print("NEW value for", day.driver.first_name, day.truck_id)
-    # db.session.commit()
+    db.session.commit()
 
