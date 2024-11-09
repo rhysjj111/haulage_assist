@@ -63,7 +63,7 @@ def weekly_analysis():
         ),
         ExpenseOccurrence.start_date <= end_date).all()
 
-    total_expenses = calculate_total_metric_list('cost', expenses)
+    total_expenses = calculate_total_metric_list('cost', expenses)*3
     grand_total_earned = calculate_total_metric_dict('total_earned', driver_data)
     grand_total_wages = calculate_total_metric_dict('total_cost_to_employer', driver_data)
     grand_total_fuel_volume = calculate_total_metric_dict('total_fuel_volume', truck_data)
