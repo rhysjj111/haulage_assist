@@ -63,7 +63,8 @@ def calculate_driver_metrics_week(driver, Day, Job, Payslip, start_date, end_dat
     total_earned, weekly_extras, gross_pay, total_overnight = calculate_driver_wages(day_entries, driver)
 
     if payslip_entries:
-        total_cost_to_employer = payslip_entries[0].total_wage
+        gross_pay = payslip_entries[0].total_wage
+        total_cost_to_employer = payslip_entries[0].total_cost_to_employer
     elif gross_pay > 0: 
         estimated = True
         total_cost_to_employer = gross_pay * TAX_NI_MULTIPLIER
