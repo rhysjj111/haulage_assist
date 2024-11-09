@@ -33,6 +33,8 @@ def weekly_analysis():
     driver_data = {}
     truck_data = {}
     grand_total_data = {}
+    selected_year = None
+    selected_week_number = None
 
     # Get today's year and week number
     today_year, today_week = get_week_number_sat_to_fri(date.today())
@@ -75,12 +77,15 @@ def weekly_analysis():
         'grand_total_earned': grand_total_earned,
         'total_expenses': total_expenses,
         'grand_total_fuel_volume': grand_total_fuel_volume,
+        'grand_total_wages': grand_total_wages,
         'grand_total_fuel_cost': grand_total_fuel_cost,
         'profit': profit,
     }
     
     return render_template(
         'analysis/weekly_analysis.html',
+        selected_week_number=selected_week_number,
+        selected_year=selected_year,
         available_weeks=available_weeks, 
         drivers=drivers, 
         driver_data=driver_data,

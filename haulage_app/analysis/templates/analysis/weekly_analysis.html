@@ -13,7 +13,11 @@
             <label for="week_select">Select Week:</label>
             <select name="week_select" id="week_select">
                 {% for year, week in available_weeks %}
+                    {% if selected_week_number == week and selected_year == year %}
+                    <option value="{{ year }}-{{ week }}" selected>Week {{ week }}, {{ year }}</option>
+                    {% else %}
                     <option value="{{ year }}-{{ week }}">Week {{ week }}, {{ year }}</option>
+                    {% endif %}
                 {% endfor %}
             </select>
             <input type="submit" value="Submit">
@@ -35,8 +39,9 @@
                     <p class="wages-calc-card-text">
                         {% if grand_total_data.total_expenses %}
                         Earned: {{ f.fd_currency(grand_total_data.grand_total_earned) }}<br>
-                        Expenses: {{ f.fd_currency(grand_total_data.total_expenses) }} <br>
-                        Fuel Costs: {{ f.fd_currency(grand_total_data.grand_total_fuel_cost) }} <br>
+                        Overheads: {{ f.fd_currency(grand_total_data.total_expenses) }} <br>
+                        Wages: {{ f.fd_currency(grand_total_data.grand_total_wages) }} <br>
+                        Fuel: {{ f.fd_currency(grand_total_data.grand_total_fuel_cost) }} <br>
                     <p class="small-text italics grey-text">
                         (Total Fuel Used: {{ f.display_float(grand_total_data.grand_total_fuel_volume) }} L)
                     </p><br>
