@@ -43,10 +43,6 @@ main {
     display:block;
 }
 
-.back-arrow{
-    color: black;
-}
-
 footer, nav{
     position:fixed;
     bottom:0;
