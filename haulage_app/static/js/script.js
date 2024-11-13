@@ -20,6 +20,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     })
 
+
+    // sidenav initialization
+    let sidenavigation = document.querySelectorAll('.sidenav');
+    M.Sidenav.init(sidenavigation);
+
+
     // modal initialisation
     let modal = document.querySelectorAll('.modal');
     M.Modal.init(modal);
