@@ -1,0 +1,48 @@
+
+
+{% extends "entry_template.html" %}
+
+
+{% block entry_title %} WEEKLY ENTRIES {% endblock %}
+
+    {% block entry_form_title %}Edit Weekly Entry:{% endblock %}
+        {% block entry_form_questions %}
+            <form method="POST" action="{{ url_for('week.week', item_id=0, tab='entry') }}">
+                {{ macros['week'](selected_entry, components, f) }}
+            </form>
+        {% endblock %}
+
+    {% block entry_history_title %}Day Entry History:{% endblock %}
+
+        {% block collapsible_header %}{{item.driver.full_name}} - {{f.display_date(item.date)}}{% endblock %}
+
+        {% block collapsible_body %}
+            <p>
+                Date: {{ f.display_date(item.date) }}<br>
+                Driver: {{ item.driver.full_name }}<br>
+                {% if item.status == 'working' %}
+                Truck: {{ item.truck.registration }}<br>
+                Start mileage: {{ f.display_float(item.start_mileage) }}<br>
+                End mileage: {{ f.display_float(item.end_mileage) }}<br>
+                Total earned: {{ f.fd_currency(item.calculate_total_earned()) }}
+                {% else %}
+                <span class="italics">Status: {{ item.status.capitalize() }}</span>
+                {% endif %}
+            </p>
+        {% endblock %}
+
+        {% block entry_history_questions scoped %}
+            <form method="POST" action="{{ url_for(type+'.edit_'+type, item_id=item.id, tab='history')}}">
+                {{ macros[type]('edit', item, components, f) }}
+            </form>
+        {% endblock %}
+
+        {% block additional_content %}
+
+        {% endblock %}
+
+
+            
+ 
+    
+        

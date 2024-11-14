@@ -3,7 +3,7 @@
 {% extends "entry_template.html" %}
 
 
-{% block entry_title %}+ DAY {{weekly}}{% endblock %}
+{% block entry_title %}+ DAY {% endblock %}
 
     {% block entry_form_title %}Add Day Entry:{% endblock %}
         {% block entry_form_questions %}
@@ -60,7 +60,7 @@
 
                 <div class="row">
                    <form method="POST" action="{{ url_for(type+'.edit_'+type, item_id=first_entry.id, tab='history', weekly=True) }}">
-                    {{ macros['weekly'](first_entry, components, f) }}
+                    {{ macros['week'](first_entry, components, f) }}
                    </form>
                 </div>
             </div>

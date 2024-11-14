@@ -27,8 +27,7 @@
     <ul class="tabs z-depth-1 hide-tabs" id="sub-menu-tabs">
         <li class="tab col s2 "><a class="{{ 'active' if (tab == 'entry') else '' }}" href="#entry_form">Entry</a></li>
         <li class="tab col s2 "><a class="{{ 'active' if (tab == 'history') else '' }}"
-                href="#entry_history">History
-            </a>
+            href="#entry_history">History</a>
         </li>
     </ul>
 </div>
@@ -68,7 +67,7 @@
                 <a href="#modal_delete_{{ item.id }}" class="btn red modal-trigger">Delete</a>
             </div>
 
-
+            {% if type != 'week' %}
             <!-- Delete entry modal -->
             <div id="modal_delete_{{ item.id }}" class="modal">
                 <div class="modal-content">
@@ -106,6 +105,7 @@
                 </div>
             </div>
         </li>
+        {% endif %}
         {% endfor %}
         <!-- delete all collapsible  -->
         <!-- <li>
@@ -120,16 +120,16 @@
         </li> -->
 
         <!-- Delete all modal -->
-        <div id="modal_delete_all" class="modal">
+        <!-- <div id="modal_delete_all" class="modal">
             <div class="modal-content">
                 <h4>Delete ALL {{type}} entries?</h4>
                 <p>ALL {{type}} entries will be deleted permanently.</p>
             </div>
             <div class="modal-footer">
-                <a href="{{ url_for(type+'.delete_'+type, item_id=0) }}" class="btn red">Delete All</a>
+                <a href="{#' url_for(type+'.delete_'+type, item_id=0) #}" class="btn red">Delete All</a>
                 <a href="" class="modal-close btn grey">Cancel</a>
             </div>
-        </div>
+        </div> -->
     </ul>
 </div>
 
