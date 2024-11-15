@@ -51,7 +51,7 @@
         {% for item in list %}
         <li>
             <!-- collapsible header -->
-            <div class="collapsible-header {{'blue-grey lighten-5' if selected_entry is defined and item.id == selected_entry.id}}">
+            <div class="collapsible-header {{'green lighten-5' if selected_entry is defined and item.id == selected_entry.id else 'grey lighten-5'}}">
                 {% if (item.start_mileage == 0 or item.end_mileage == 0) and item.status == 'working' %}
                 <i class="material-icons orange-text">warning</i>
                 {% else %}
