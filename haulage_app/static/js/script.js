@@ -28,7 +28,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // modal initialisation
     let modal = document.querySelectorAll('.modal');
-    M.Modal.init(modal);
+    M.Modal.init(modal, {
+        endingTop: '10%',
+        preventScrolling: false
+    });
     // edit-modal re-open when invalid form submission
     let modalOpen = document.querySelector('.open-modal')
     if (modalOpen){

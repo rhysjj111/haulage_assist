@@ -151,6 +151,7 @@ footer, nav{
     }
 } */
 
+
 .data-entry-icon{
     font-size: 50px !important;
     margin-top: 40px;
@@ -194,8 +195,9 @@ footer, nav{
 }
 .modal{
     top: 5% !important;
-    width: 75% !important;
+    width: 80% !important;
     max-height: 90% !important;
+    padding: 2rem 10% ;
 }
 .open-modal{
     display: none;
@@ -217,13 +219,19 @@ footer, nav{
     border-radius: 10px;
 }
 
+.icon-container{
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+}
+
 /* wages calculator */
 .wages-calc-card-text{
     font-size: 18px;
 }
 
 .no-margin{
-    margin: 0;
+    margin: 0!important;
 }
 
 .text-small{

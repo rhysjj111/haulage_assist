@@ -44,7 +44,8 @@
 <!-- history column -->
 <div class="col s12 l6 entry-history content-container {{ 'active' if (tab == 'history') else '' }}" id="entry_history">
     <!-- history title -->
-    <h4>{% block entry_history_title %}Test history{% endblock %}</h4>{% if first_entry %} <a href="#modal_first" class="btn modal-trigger">Weekly Entries</a> {% endif %}
+    <h4>{% block entry_history_title %}Test history{% endblock %}</h4>
+    {#{% if first_entry %} <a href="#modal_first" class="btn modal-trigger">Weekly Entries</a> {% endif %}#}
     <!-- history content -->
     <ul class="collapsible">
         {% for item in list %}
@@ -57,16 +58,28 @@
                 <i class="material-icons">filter_drama</i>
                 {% endif %}
                 <strong>{% block collapsible_header scoped %}{% endblock %}</strong>
+                <div style="margin-left: auto; display: flex;">
+                    <a href="#modal_edit_{{ item.id }}" class="modal-trigger icon-container {{'hide' if item.split is true}}">
+                        <i class="material-icons green-text">edit</i>
+                    </a>
+                    {% if type != 'week' %}
+                    <a href="#modal_delete_{{ item.id }}" class="icon-container modal-trigger">
+                        <i class="material-icons no-margin grey-text">delete</i>
+                    </a>
+                    {% endif %}
+                </div>
             </div>
             <!-- collapsible-body -->
             <div class="collapsible-body">
                 {% block collapsible_body scoped %}{% endblock %}
+                {# delete if necessary
                 <!-- buttons -->
-                <a href="#modal_edit_{{ item.id }}"
-                    class="btn green accent-4 modal-trigger {{'hide' if item.split is true}}">Edit</a>
+                <!-- <a href="#modal_edit_{{ item.id }}"
+                    class="btn green accent-4 modal-trigger {{'hide' if item.split is true}}">Edit</a> -->
                 {% if type != 'week' %}
-                <a href="#modal_delete_{{ item.id }}" class="btn red modal-trigger">Delete</a>
+                <!-- <a href="#modal_delete_{{ item.id }}" class="btn red modal-trigger">Delete</a> -->
                 {% endif %}
+                #}
             </div>
 
             {% if type == 'week' %}
@@ -78,7 +91,7 @@
                 </div>
                 <div class="modal-footer">
                     <a href="{{ url_for('week.week', item_id=item.id, tab='entry')}}" class="btn green">Confirm</a>
-                    <a href="" class="modal-close btn grey">Cancel</a>
+                    <a class="modal-close btn grey">Cancel</a>
                 </div>
             </div>
 
@@ -92,14 +105,14 @@
                 </div>
                 <div class="modal-footer">
                     <a href="{{ url_for(type+'.delete_'+type, item_id=item.id)}}" class="btn red">Delete</a>
-                    <a href="" class="modal-close btn grey">Cancel</a>
+                    <a class="modal-close btn grey">Cancel</a>
                 </div>
             </div>
 
             <!-- Edit modal -->
             <div id="modal_edit_{{ item.id }}" class="modal">
                 <div class="modal-content">
-                    <h3 class="center-align">Edit {{type|replace("_"," ")|capitalize()}} {{weekly_modal_trigger}}</h3>
+                    <h3 class="center-align">Edit {{type|replace("_"," ")|capitalize()}}</h3>
 
                     <!-- error messages -->
                     {% with messages = get_flashed_messages(category_filter=["error-msg-modal"]) %}
