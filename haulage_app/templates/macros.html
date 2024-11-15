@@ -456,8 +456,8 @@ from datetime import datetime
     <!-- hidden fields -->
     <div class="row">
         <div class="input-field col s12">
-            <h5>Date: <strong>{{f.display_date(day.date)}} ({{ day.date.strftime("%A") }})</strong></h5>
-            <h5>Driver: <strong>{{ day.driver.full_name }}</strong></h5>
+            <h5><strong>{{f.display_date(day.date)}}</strong> ({{ day.date.strftime("%A") }})</h5>
+            <h5><strong>{{ day.driver.full_name }}</strong></h5>
 
             <input id="date" name="date"  type="hidden" value="{{ f.display_date(day.date) }}">
             <input id="driver_id" name="driver_id"  type="hidden" value="{{day.driver_id}}">

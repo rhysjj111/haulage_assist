@@ -50,7 +50,7 @@
         {% for item in list %}
         <li>
             <!-- collapsible header -->
-            <div class="collapsible-header">
+            <div class="collapsible-header {{'blue-grey lighten-5' if selected_entry is defined and item.id == selected_entry.id}}">
                 {% if (item.start_mileage == 0 or item.end_mileage == 0) and item.status == 'working' %}
                 <i class="material-icons orange-text">warning</i>
                 {% else %}
@@ -64,10 +64,26 @@
                 <!-- buttons -->
                 <a href="#modal_edit_{{ item.id }}"
                     class="btn green accent-4 modal-trigger {{'hide' if item.split is true}}">Edit</a>
+                {% if type != 'week' %}
                 <a href="#modal_delete_{{ item.id }}" class="btn red modal-trigger">Delete</a>
+                {% endif %}
             </div>
 
-            {% if type != 'week' %}
+            {% if type == 'week' %}
+
+            <!-- Select week modal -->
+            <div id="modal_edit_{{ item.id }}" class="modal">
+                <div class="modal-content">
+                    <h4>Edit {{item}} entries?</h4>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ url_for('week.week', item_id=item.id, tab='entry')}}" class="btn green">Confirm</a>
+                    <a href="" class="modal-close btn grey">Cancel</a>
+                </div>
+            </div>
+
+            {% else %}
+
             <!-- Delete entry modal -->
             <div id="modal_delete_{{ item.id }}" class="modal">
                 <div class="modal-content">

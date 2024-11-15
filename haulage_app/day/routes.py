@@ -86,7 +86,12 @@ def delete_day(item_id):
 
 @day_bp.route("/edit_day/<int:item_id>", methods=["POST"])
 def edit_day(item_id):
+
     entry = Day.query.get_or_404(item_id)
+    referrer = request.referrer
+    print(referrer)
+    is_week_page = '/week/' in referrer
+
     try:
         entry.date = request.form.get("date")
         entry.driver_id = request.form.get("driver_id")
@@ -114,6 +119,9 @@ def edit_day(item_id):
         if request.args.get('weekly'):
             flash(str(e), 'error-msg-modal')
             return redirect(url_for("day.add_day", item_id=item_id, tab='edit', weekly=True))
+        elif is_week_page:
+            flash(str(e), 'error-msg')
+            return redirect(url_for("week.week", item_id=item_id, tab='edit'))
         else:
             flash(str(e), 'error-msg-modal')
             return redirect(url_for("day.add_day", item_id=item_id, tab='edit'))
@@ -121,6 +129,9 @@ def edit_day(item_id):
         if request.args.get('weekly'):
             flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg-modal")
             return redirect(url_for("day.add_day", item_id=0, tab='edit', weekly=True))
+        elif is_week_page:
+                flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg")
+                return redirect(url_for("week.week", item_id=item_id, tab='edit', success=True))
         else:
             flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg")
             return redirect(url_for("day.add_day", item_id=0, tab='edit'))

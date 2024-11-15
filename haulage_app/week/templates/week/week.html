@@ -5,9 +5,9 @@
 
 {% block entry_title %} WEEKLY ENTRIES {% endblock %}
 
-    {% block entry_form_title %}Edit Weekly Entry:{% endblock %}
+    {% block entry_form_title %}Weekly Entry:{% endblock %}
         {% block entry_form_questions %}
-            <form method="POST" action="{{ url_for('week.week', item_id=0, tab='entry') }}">
+            <form method="POST" action="{{ url_for('day.edit_day', item_id=selected_entry.id, tab='entry') }}">
                 {{ macros['week'](selected_entry, components, f) }}
             </form>
         {% endblock %}
@@ -32,12 +32,14 @@
         {% endblock %}
 
         {% block entry_history_questions scoped %}
-            <form method="POST" action="{{ url_for(type+'.edit_'+type, item_id=item.id, tab='history')}}">
-                {{ macros[type]('edit', item, components, f) }}
+            <form method="POST" action="{{ url_for('week.week', item_id=item.id, tab='entry')}}">
+                {{ macros['week'](selected_entry, components, f) }}
             </form>
         {% endblock %}
 
         {% block additional_content %}
+
+
 
         {% endblock %}
 
