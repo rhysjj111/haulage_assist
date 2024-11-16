@@ -1,5 +1,5 @@
 from flask import render_template, request, url_for
-from haulage_app import db
+from haulage_app import db, genaimodel
 from haulage_app.models import (
     Driver, Day, Job, Truck, Fuel, Expense, 
     ExpenseOccurrence, Payslip)
@@ -81,11 +81,23 @@ def weekly_analysis():
         'grand_total_fuel_cost': grand_total_fuel_cost,
         'profit': profit,
     }
+
+    driver_analysis_prompt = f"""Analyze this driver performance data, keep the response simple and bullet point format:
+    {driver_data}
+    Focus on:
+    1. Highest and lowest performing drivers
+    2. Notable patterns in earnings
+    3. Any concerning metrics
+    4. Recommendations for improvement"""
+
+    response = genaimodel.generate_content(driver_analysis_prompt)
+
     
     return render_template(
         'analysis/weekly_analysis.html',
         selected_week_number=selected_week_number,
         selected_year=selected_year,
+        airesponse=response.text,
         available_weeks=available_weeks, 
         drivers=drivers, 
         driver_data=driver_data,
