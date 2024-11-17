@@ -1,11 +1,9 @@
 import re
 from haulage_app import db
 from haulage_app.functions import *
-from sqlalchemy.orm import (Mapped, mapped_column, validates,)
+from sqlalchemy.orm import validates
 from sqlalchemy.ext.hybrid import hybrid_property
-from flask import redirect, url_for, flash, request
 from datetime import datetime
-from enum import Enum
 
 
 class Driver(db.Model):
