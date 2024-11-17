@@ -6,7 +6,7 @@ from haulage_app.models import (
 # from haulage_app.ai_verification.models import VerificationFeedback
 
 from datetime import timedelta, date, datetime
-from haulage_app.analysis import analysis_bp
+from haulage_app.notification import notification_bp
 from pprint import pprint
 from haulage_app.config import *
 from haulage_app.calculations.driver_truck_metrics import (
@@ -19,3 +19,7 @@ from haulage_app.functions import(
     get_start_of_week,
     get_start_end_of_week,
     get_weeks_for_period,)
+
+@notification_bp.route("/", methods=["GET"])
+def notification():
+    return render_template("notification.html")
