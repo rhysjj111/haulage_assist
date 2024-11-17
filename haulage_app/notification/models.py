@@ -1,7 +1,7 @@
 from haulage_app.models import db
 from datetime import datetime
 from enum import Enum
-from haulage_app.ai_verification.models import VerificationFeedback
+# from haulage_app.ai_verification.models import VerificationFeedback
 
 
 class TimeframeEnum(Enum):
@@ -33,4 +33,4 @@ class Notification(db.Model):
     answer = db.Column(db.String(200), nullable=False)
     is_read = db.Column(db.Boolean, default=False)
 
-    feedback = db.relationship('VerificationFeedback', backref='notification', lazy=True)
+    # feedback = db.relationship('VerificationFeedback', backref='notification', lazy=True)

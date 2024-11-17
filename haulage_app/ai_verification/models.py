@@ -1,6 +1,6 @@
 from haulage_app import db
 from datetime import datetime
-from haulage_app.notifications.models import Notification
+from haulage_app.notification.models import Notification
 
 class VerificationFeedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
