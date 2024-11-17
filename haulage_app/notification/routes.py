@@ -3,10 +3,11 @@ from haulage_app import db, ai
 from haulage_app.models import (
     Driver, Day, Job, Truck, Fuel, Expense, 
     ExpenseOccurrence, Payslip)
-# from haulage_app.ai_verification.models import VerificationFeedback
+from haulage_app.ai_verification.models import VerificationFeedback
 
 from datetime import timedelta, date, datetime
 from haulage_app.notification import notification_bp
+from haulage_app.notification.models import TimeframeEnum, ErrorTypeEnum, FaultAreaEnum, Notification
 from pprint import pprint
 from haulage_app.config import *
 from haulage_app.calculations.driver_truck_metrics import (
@@ -23,3 +24,16 @@ from haulage_app.functions import(
 @notification_bp.route("/", methods=["GET"])
 def notification():
     return render_template("notification.html")
+
+@notification_bp.route("/create_test")
+def create_test_notification():
+    test_notification = Notification(
+        verification_data={'test': 'data'},
+        timeframe=TimeframeEnum.DAILY,
+        error_type=ErrorTypeEnum.INFO,
+        primary_fault_area=FaultAreaEnum.FUEL,
+        answer="This is a test notification"
+    )
+    db.session.add(test_notification)
+    db.session.commit()
+    return "Test notification created!"

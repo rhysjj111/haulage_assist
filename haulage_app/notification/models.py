@@ -1,7 +1,7 @@
 from haulage_app.models import db
 from datetime import datetime
 from enum import Enum
-# from haulage_app.ai_verification.models import VerificationFeedback
+from haulage_app.ai_verification.models import VerificationFeedback
 
 
 class TimeframeEnum(Enum):
@@ -9,28 +9,27 @@ class TimeframeEnum(Enum):
     WEEKLY = "weekly"
 
 class ErrorTypeEnum(Enum):
-    INFO = "info"
-    MISSING_DATA = "missing_data" 
-    INCORRECT_DATA = "incorrect_data"
-    SUSPICIOUS_ACTIVITY = "suspicious_activity"
+    MISSING_DATA = "Missing data" 
+    INCORRECT_DATA = "Incorrect data"
+    SUSPICIOUS_ACTIVITY = "Suspicious activity"
 
 class FaultAreaEnum(Enum):
-    DAY_FUEL = "day_fuel"
-    DAY_MILEAGE = "day_mileage"
-    DAY_EARNED = "day_earned"
-    FUEL = "fuel"
-    PAYSLIP = "payslip"
-    JOB = "job"
+    DAY_FUEL = "Day - fuel"
+    DAY_MILEAGE = "Day - mileage"
+    DAY_EARNED = "Day - earned"
+    FUEL = "Fuel"
+    PAYSLIP = "Payslip"
+    JOB = "Job"
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     verification_data = db.Column(db.JSON)
     timeframe = db.Column(db.Enum(TimeframeEnum))
-    error_type = db.Column(db.Enum(ErrorTypeEnum), default=ErrorTypeEnum.INFO)
+    error_type = db.Column(db.Enum(ErrorTypeEnum))
     primary_fault_area = db.Column(db.Enum(FaultAreaEnum))
     secondary_fault_area = db.Column(db.Enum(FaultAreaEnum))
     answer = db.Column(db.String(200), nullable=False)
     is_read = db.Column(db.Boolean, default=False)
 
-    # feedback = db.relationship('VerificationFeedback', backref='notification', lazy=True)
+    feedback = db.relationship('VerificationFeedback', backref='notification', lazy=True)
