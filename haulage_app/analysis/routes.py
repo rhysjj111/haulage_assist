@@ -1,5 +1,5 @@
 from flask import render_template, request, url_for
-from haulage_app import db, genaimodel
+from haulage_app import db, ai
 from haulage_app.models import (
     Driver, Day, Job, Truck, Fuel, Expense, 
     ExpenseOccurrence, Payslip)
@@ -82,22 +82,43 @@ def weekly_analysis():
         'profit': profit,
     }
 
-    driver_analysis_prompt = f"""Analyze this driver performance data, keep the response simple and bullet point format:
-    {driver_data}
-    Focus on:
-    1. Highest and lowest performing drivers
-    2. Notable patterns in earnings
-    3. Any concerning metrics
-    4. Recommendations for improvement"""
+    # drivers_ai = Driver.query.options(
+    #     db.joinedload(Driver.days),
+    #     db.joinedload(Driver.payslips)
+    # ).all()
 
-    response = genaimodel.generate_content(driver_analysis_prompt)
+    # driver_list = []
+    # for driver in drivers_ai:
+    #     # Get all columns from the Driver model
+    #     driver_dict = {column.name: getattr(driver, column.name) 
+    #                 for column in Driver.__table__.columns}
+        
+    #     # Add related days
+    #     driver_dict['days'] = [{column.name: getattr(day, column.name) 
+    #                         for column in Day.__table__.columns}
+    #                         for day in driver.days]
+        
+    #     # Add related payslips
+    #     driver_dict['payslips'] = [{column.name: getattr(payslip, column.name) 
+    #                             for column in Payslip.__table__.columns}
+    #                             for payslip in driver.payslips]
+        
+    #     driver_list.append(driver_dict)
+
+    # driver_analysis_prompt = f"""Find and list any possible missing payslips for the following data:
+    # {driver_list}
+    # Display the suspected missing payslip dates in a list. Only include this list in the answer"""
+
+    # response = ai.generate_content(driver_analysis_prompt)
+
+    # print(response.text)
 
     
     return render_template(
         'analysis/weekly_analysis.html',
         selected_week_number=selected_week_number,
         selected_year=selected_year,
-        airesponse=response.text,
+        # airesponse=response.text,
         available_weeks=available_weeks, 
         drivers=drivers, 
         driver_data=driver_data,

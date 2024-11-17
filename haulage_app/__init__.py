@@ -21,7 +21,7 @@ else:
     app.config["SQLALCHEMY_DATABASE_URI"] = uri
 
 genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
-genaimodel = genai.GenerativeModel('gemini-1.5-pro-latest')
+ai = genai.GenerativeModel('gemini-1.5-pro-latest')
 
 db = SQLAlchemy(app)
 

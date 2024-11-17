@@ -1,0 +1,214 @@
+###### Verification Blueprint ######
+
+from flask import Blueprint, flash
+from haulage_app.models import Driver, DayEnd
+
+verification = Blueprint('verification', __name__)
+
+@verification.route('/verify-data')
+def verify_data():
+    # Check for data inconsistencies
+    drivers = Driver.query.all()
+    day_ends = DayEnd.query.all()
+    
+    ############ AI Verification in place of this ############
+    # Example verifications
+    for driver in drivers:
+        if driver.base_wage <= 0:
+            notification = Notification(
+                message=f"Driver {driver.first_name} has invalid base wage",
+                category="warning"
+            )
+            db.session.add(notification)
+            db.session.commit()
+        
+            
+    for day_end in day_ends:
+            notification = Notification(
+                message=f"High earnings detected: £{day_end.total_earned} for {day_end.driver.first_name}",
+                category="alert"
+            )
+            db.session.add(notification)
+            db.session.commit()
+    
+    return notifications
+
+
+###### Verification Trigger ########
+
+from haulage_app.verification import DataVerifier
+
+@app.route('/add_driver', methods=['POST'])
+def add_driver():
+    # Your existing driver creation code
+    new_driver = Driver(...)
+    
+    # Run verification before commit
+    notifications = verification.verify_data()
+    for notification in notifications:
+        flash(alert, 'verification')
+        
+    db.session.add(new_driver)
+    db.session.commit()
+
+
+######### Notification Button Html #########
+
+"""
+<div class="notification-icon">
+    <i class="material-icons dropdown-trigger" data-target="notifications-dropdown">notifications</i>
+    <span class="notification-badge">{{ notifications|length }}</span>
+</div>
+
+<ul id="notifications-dropdown" class="dropdown-content">
+    {% for notification in notifications %}
+    <li class="notification-item">
+        <span class="notification-text">{{ notification }}</span>
+        <span class="notification-time">{{ notification.timestamp }}</span>
+    </li>
+    {% endfor %}
+    {% if not notifications %}
+    <li class="notification-item">No new notifications</li>
+    {% endif %}
+</ul>
+"""
+
+
+########## Notification Button Javascript #########
+"""
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize dropdown
+    var elems = document.querySelectorAll('.dropdown-trigger');
+    var instances = M.Dropdown.init(elems, {
+        alignment: 'left',
+        coverTrigger: false,
+        constrainWidth: false
+    });
+});
+"""
+
+######### Notification Button CSS #########
+"""
+.notification-icon {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #333a56;
+    color: #f7f5e6;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+.notification-item {
+    padding: 15px;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.notification-time {
+    font-size: 12px;
+    color: #52658f;
+}
+"""
+
+
+############ Notification Blueprint #########
+
+from flask import Blueprint
+from .models import Notification
+
+notifications = Blueprint('notifications', __name__)
+
+@notifications.context_processor
+def inject_notifications():
+    def get_notifications():
+        return Notification.query.filter_by(is_read=False).order_by(Notification.timestamp.desc()).all()
+    return dict(notifications=get_notifications())
+
+@notifications.route('/notifications/mark-read/<int:notification_id>', methods=['POST'])
+def mark_read(notification_id):
+    notification = Notification.query.get_or_404(notification_id)
+    notification.is_read = True
+    db.session.commit()
+    return {'status': 'success'}
+
+
+########## Notification model #########
+
+from haulage_app import db
+from datetime import datetime
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    verification_data = db.Column(db.JSON)
+    timeframe = db.Column(db.String(20)) # daily, weekly
+    type_of_error = db.Column(db.String(20), default='info') # missing_data, incorrect_data, suspicious_activity
+    primary_fault_area = db.Column(db.Boolean, default=False) # day_fuel, day_mileage, fuel, payslip, job
+    secondary_fault_area = db.Column(db.Boolean, default=False) # day_fuel, day_mileage, fuel, payslip, job
+    answer = db.Column(db.String(200), nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+
+    feedback = db.relationship('VerificationFeedback', backref='notification', lazy=True)
+
+class VerificationFeedback(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    notification_id = db.Column(db.Integer, db.ForeignKey('notification.id'))
+    acceptable_structure = db.Column(db.Boolean, nullable=False)
+    notification_effective = db.Column(db.Boolean, nullable=False)
+
+
+########## AI-powered Driver Verification #########
+
+import google.generativeai as genai
+from haulage_app.blueprints.notifications.models import Notification, VerificationFeedback
+
+class GeminiVerifier:
+    def __init__(self):
+        genai.configure(api_key='your-api-key')
+        self.model = genai.GenerativeModel('gemini-pro')
+
+    def verify_earnings(self, day_end):
+        historical_context = self._get_historical_data(day_end.driver)
+        feedback_patterns = self._get_feedback_patterns()
+        
+        prompt = f"""
+        Historical driver data:
+        {historical_context}
+        
+        Previous verification insights rated helpful:
+        {feedback_patterns}
+        
+        Current data to analyze:
+        Driver: {day_end.driver.first_name} {day_end.driver.last_name}
+        Date: {day_end.date}
+        Earnings: £{day_end.total_earned}
+        Base wage: £{day_end.driver.base_wage}
+        
+        Based on historical patterns and previous feedback, analyze this data for anomalies.
+        """
+        
+    def _get_historical_data(self, driver):
+        # Get last 30 days of earnings for this driver
+        history = DayEnd.query.filter_by(driver_id=driver.id).order_by(DayEnd.date.desc()).limit(30).all()
+        return "\n".join([
+            f"Date: {entry.date}, Earnings: £{entry.total_earned}"
+            for entry in history
+        ])
+        
+    def _get_feedback_patterns(self):
+        # Get verified patterns from feedback
+        helpful_feedback = VerificationFeedback.query.filter_by(was_helpful=True).all()
+        return "\n".join([
+            f"Verified pattern: {feedback.verification_data}"
+            for feedback in helpful_feedback
+        ])
