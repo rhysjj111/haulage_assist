@@ -1,7 +1,7 @@
 from haulage_app.models import db
 from datetime import datetime
 from enum import Enum
-from haulage_app.ai_verification.models import VerificationFeedback
+# from haulage_app.ai_verification.models import VerificationFeedback
 
 
 class TimeframeEnum(Enum):
