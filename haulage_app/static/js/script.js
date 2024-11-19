@@ -60,6 +60,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     window.onresize = removeTabs;
     removeTabs();
+
+    // Initialize Materialize dropdown
+    let notification_dropdown = document.querySelectorAll('.dropdown-trigger');
+     M.Dropdown.init(notification_dropdown, {
+        alignment: 'left',
+        coverTrigger: false,
+        constrainWidth: false
+    });
     
     //flash feedback timeout and remove container after a time interval
     // const messageContainer = document.querySelector(".scc-msg");

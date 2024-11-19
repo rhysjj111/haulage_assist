@@ -35,7 +35,7 @@ def add_expense(item_id, tab):
             flash(f"Entry Success: {new_expense.name} - {f.display_date(new_occurrence.start_date)}", "success-msg")
             return redirect(url_for("expense.add_expense", expenses=expenses, 
                             tab='entry', item_id=0))
-    return render_template("add_expense.html", tab=tab, list=expenses,
+    return render_template("expense/add_expense.html", tab=tab, list=expenses,
                            expense=expense, item_id=item_id, type='expense')
 
 @expense_bp.route("/delete_expense/<int:item_id>")

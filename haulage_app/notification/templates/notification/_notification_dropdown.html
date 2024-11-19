@@ -1,0 +1,16 @@
+<div class="notification-icon ">
+    <i class="material-icons dropdown-trigger" data-target="notifications-dropdown">notifications</i>
+    <span class="notification-badge">{{ notifications|length }}</span>
+</div>
+
+<ul id="notifications-dropdown" class="dropdown-content">
+    {% for notification in notifications %}
+    <li class="notification-item">
+        <span class="notification-text">{{ notification }}</span>
+        <span class="notification-time">{{ notification.timestamp }}</span>
+    </li>
+    {% endfor %}
+    {% if not notifications %}
+    <li class="notification-item">No new notifications</li>
+    {% endif %}
+</ul>
