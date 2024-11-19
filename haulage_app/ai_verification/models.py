@@ -1,6 +1,6 @@
 from haulage_app import db
 from datetime import datetime
-# from haulage_app.notification.models import Notification
+from haulage_app.notification.models import Notification
 
 class VerificationFeedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -8,4 +8,3 @@ class VerificationFeedback(db.Model):
     notification_id = db.Column(db.Integer, db.ForeignKey('notification.id'))
     acceptable_structure = db.Column(db.Boolean, nullable=False)
     notification_effective = db.Column(db.Boolean, nullable=False)
-

@@ -1,7 +1,6 @@
 from haulage_app.models import db
 from datetime import datetime
 from enum import Enum
-# from haulage_app.ai_verification.models import VerificationFeedback
 
 
 class TimeframeEnum(Enum):
@@ -14,9 +13,9 @@ class ErrorTypeEnum(Enum):
     SUSPICIOUS_ACTIVITY = "Suspicious activity"
 
 class FaultAreaEnum(Enum):
-    DAY_FUEL = "Day - fuel"
-    DAY_MILEAGE = "Day - mileage"
-    DAY_EARNED = "Day - earned"
+    DAY_FUEL = "Day - fuel flag"
+    DAY_MILEAGE = "Day - mileage covered"
+    DAY_EARNED = "Day - total earned"
     FUEL = "Fuel"
     PAYSLIP = "Payslip"
     JOB = "Job"
