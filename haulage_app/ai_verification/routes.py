@@ -169,28 +169,23 @@ from flask import jsonify, request  # Import necessary modules
 
 # ... other imports
 
-@ai_verification_bp.route('/verification-feedback/<int:formatted_anomaly_id>', methods=['POST'])
-def create_verification_feedback(formatted_anomaly_id):
-    """Creates VerificationFeedback for a given FormattedAnomaly."""
-    data = request.get_json()
-    formatted_anomaly = FormattedAnomoly.query.get_or_404(formatted_anomaly_id)
-    
-    user_confirmed = data.get('user_confirmed_anomaly')
-    ai_response_id = data.get('ai_response_id')
+# @ai_verification_bp.route('/verification-feedback/<int:formatted_anomaly_id>', methods=['POST'])
+# def create_verification_feedback(formatted_anomaly_id):
+#     """Creates VerificationFeedback for a given FormattedAnomaly."""
+#     formatted_anomaly = FormattedAnomoly.query.get_or_404(formatted_anomaly_id)
 
-    if user_confirmed is None or ai_response_id is None:
-        return jsonify({"error": "Missing required fieldsor'user_confirmed_anomaly' and 'ai_response_id'"}), 400
+#     is_helpful = request.form.get('is_helpful')
 
-    feedback = VerificationFeedback(
-        user_confirmed_alomaly=user_confirmed,
-        ai_response_id=ai_response_id,
-        formatted_anomaly_id=formatted_anomaly_id
-    )
+#     feedback = VerificationFeedback(
+#         user_confirmed_alomaly=user_confirmed,
+#         ai_response_id=ai_response_id,
+#         formatted_anomaly_id=formatted_anomaly_id
+#     )
 
-    db.session.add(feedback)
-    db.session.commit()
+#     db.session.add(feedback)
+#     db.session.commit()
 
-    return jsonify({
-        'status': 'success',
-        'feedback_id': feedback.id
-    }), 201
+#     return jsonify({
+#         'status': 'success',
+#         'feedback_id': feedback.id
+#     }), 201
