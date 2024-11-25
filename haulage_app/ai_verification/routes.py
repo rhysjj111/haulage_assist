@@ -9,18 +9,24 @@ import json
 class GeminiVerifier:
     def __init__(self):
         genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
-        self.model = genai.GenerativeModel('gemini-1.5-pro')
-        # print(self.list_models())
+        self.model = genai.GenerativeModel('gemini-1.5-pro-latest')
+        # models = genai.list_models()
+        # print("Available Gemini models:")
+        # for model in models:
+        #     print(f"- {model.name}")
 
     def process_llm_response(self, verification_result, ai_response_id):
         try:
+            print('stage 1')
             # Parse the JSON response
-            anomalies = json.loads(verification_result.text.strip())
+            anomalies = json.loads(verification_result.strip())
+            print('stage 2')
             
             # Validate it's a list
             if not isinstance(anomalies, list):
                 raise ValueError("Response is not a list format")
-            
+
+            print('stage 3')
             test_results = []
 
             # Process each anomaly
@@ -40,9 +46,10 @@ class GeminiVerifier:
                     'ai_response_id': ai_response_id,
                 }
                 test_results.append(test_result)
+                print(test_results)
             
-            print(test_results)
-            return True
+            return test_results
+            # return True
             
         except json.JSONDecodeError:
             # Handle invalid JSON
@@ -62,10 +69,9 @@ class GeminiVerifier:
                 column.name: getattr(payslip, column.name) 
                 for column in Payslip.__table__.columns
             }
-            historical_context[payslip.id]['driver_name'] = payslip.driver.full_name   
+            # historical_context[payslip.id]['driver_name'] = payslip.driver.full_name   
         # print(historical_context.__len__())
 
-        
         # historical_context['all_day_entries'][day.id] = day_data
             
         verification_result = self.model.generate_content(
@@ -75,10 +81,10 @@ class GeminiVerifier:
             Check every driver's payslip history systematically. For each missing payslip across ALL drivers, provide:
             [
                 {{
-                    "asdf": "DD/MM/YYYY",
-                    "asdf": "Monday",
-                    "aase": "John Doe",
-                    "gaser": integer
+                    "anomaly_date": "DD/MM/YYYY",
+                    "day_of_week": "Monday",
+                    "anomaly_driver_name": "John Doe",
+                    "anomaly_driver_id": integer
                 }}
             ]
             
@@ -92,9 +98,13 @@ class GeminiVerifier:
             
             # Do not include any other text or explanation
             # """)
-        self.process_llm_response(verification_result, 1)
-        
-        return verification_result
+        print(verification_result.text)
+        formatted_result = self.process_llm_response(verification_result.text, 1)
+        # print(formatted_result)
+        if formatted_result:
+            return formatted_result
+        else:
+            return None
         
     # def _get_historical_data(self, driver):
     #     # Get last 30 days of earnings for this driver
@@ -154,3 +164,33 @@ class GeminiVerifier:
         print(verification_result.text)
         
         return verification_result
+
+from flask import jsonify, request  # Import necessary modules
+
+# ... other imports
+
+@ai_verification_bp.route('/verification-feedback/<int:formatted_anomaly_id>', methods=['POST'])
+def create_verification_feedback(formatted_anomaly_id):
+    """Creates VerificationFeedback for a given FormattedAnomaly."""
+    data = request.get_json()
+    formatted_anomaly = FormattedAnomoly.query.get_or_404(formatted_anomaly_id)
+    
+    user_confirmed = data.get('user_confirmed_anomaly')
+    ai_response_id = data.get('ai_response_id')
+
+    if user_confirmed is None or ai_response_id is None:
+        return jsonify({"error": "Missing required fieldsor'user_confirmed_anomaly' and 'ai_response_id'"}), 400
+
+    feedback = VerificationFeedback(
+        user_confirmed_alomaly=user_confirmed,
+        ai_response_id=ai_response_id,
+        formatted_anomaly_id=formatted_anomaly_id
+    )
+
+    db.session.add(feedback)
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'feedback_id': feedback.id
+    }), 201

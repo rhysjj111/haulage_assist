@@ -12,7 +12,7 @@ class AiResponse(db.Model):
 class VerificationFeedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    user_confirmed_alomaly = db.Column(db.Boolean)
+    user_confirmed_anomaly = db.Column(db.Boolean)
 
     ai_response_id = db.Column(db.Integer, db.ForeignKey('ai_response.id'), nullable=False)
     formatted_anomaly_id = db.Column(db.Integer, db.ForeignKey('formatted_anomaly.id'))

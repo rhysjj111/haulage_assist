@@ -39,11 +39,10 @@ def inject_notification():
     #     }
     # ]
     # print('hello world'
-    verifier = GeminiVerifier()
-    test_notifications = verifier.verify_missing_payslip()
-    print(type(test_notifications.text))
+    # verifier = GeminiVerifier()
+    # test_notifications = verifier.verify_missing_payslip()
 
-    return {'notifications': [test_notifications.text]}
+    return {'notifications': [test_notifications]}
 
 @notification_bp.route("/", methods=["GET"])
 def notification():
