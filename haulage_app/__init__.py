@@ -3,7 +3,6 @@ from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from haulage_app import functions as f
 from flask_migrate import Migrate
-import google.generativeai as genai
 
 if os.path.exists("env.py"):
     import env
@@ -20,8 +19,6 @@ else:
         uri = uri.replace("postgres://", "postgresql://", 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = uri
 
-genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
-ai = genai.GenerativeModel('gemini-1.5-pro-latest')
 
 db = SQLAlchemy(app)
 

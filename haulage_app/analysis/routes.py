@@ -1,5 +1,5 @@
 from flask import render_template, request, url_for
-from haulage_app import db, ai
+from haulage_app import db
 from haulage_app.models import (
     Driver, Day, Job, Truck, Fuel, Expense, 
     ExpenseOccurrence, Payslip)

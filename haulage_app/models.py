@@ -22,6 +22,8 @@ class Driver(db.Model):
     truck_id = db.Column(db.Integer, db.ForeignKey("truck.id"))
     days = db.relationship("Day", back_populates="driver", cascade="all, delete", lazy=True)
     payslips = db.relationship("Payslip", back_populates="driver", cascade="all, delete", lazy=True)
+
+    # formatted_anomaly = db.relationship("FormattedAnomaly", back_populates="driver", uselist=False, lazy=True)
     
     def __repr__(self): 
         #represents itself in form of string
@@ -135,6 +137,8 @@ class Truck (db.Model):
 
     fuel_entries = db.relationship("Fuel", back_populates="truck", lazy=True)
     days = db.relationship("Day", back_populates="truck", cascade="all, delete", lazy=True)
+
+    # formatted_anomaly = db.relationship("FormattedAnomaly", back_populates="truck", uselist=False, lazy=True)
 
     def __repr__(self): 
     #represents itself in form of string

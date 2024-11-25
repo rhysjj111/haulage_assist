@@ -1,12 +1,13 @@
 from flask import render_template, request, url_for, jsonify
-from haulage_app import db, ai, app
+from haulage_app import db, app
 from haulage_app.models import (
     Driver, Day, Job, Truck, Fuel, Expense, 
     ExpenseOccurrence, Payslip)
-from haulage_app.ai_verification.models import VerificationFeedback
+# from haulage_app.ai_verification.models import VerificationFeedback
+from haulage_app.ai_verification.routes import GeminiVerifier
 from datetime import timedelta, date, datetime
 from haulage_app.notification import notification_bp
-from haulage_app.notification.models import TimeframeEnum, ErrorTypeEnum, FaultAreaEnum, Notification
+# from haulage_app.notification.models import TimeframeEnum, ErrorTypeEnum, FaultAreaEnum, Notification
 from pprint import pprint
 
 @app.context_processor
@@ -14,31 +15,35 @@ def inject_notification():
     # def get_notification():
     #     return Notification.query.filter_by(is_read=False).order_by(Notification.timestamp.desc()).all()
     # return dict(notifications=get_notifications())
-    test_notifications = [
-        {
-            'id': 1,
-            'message': 'Driver John Smith has unusually high earnings of £2800',
-            'timestamp': datetime.now(),
-            'category': 'verification',
-            'is_read': False
-        },
-        {
-            'id': 2,
-            'message': 'Multiple drivers showing earnings below base wage this week',
-            'timestamp': datetime.now() - timedelta(hours=2),
-            'category': 'alert',
-            'is_read': False
-        },
-        {
-            'id': 3,
-            'message': 'New pattern detected: Weekend earnings 40% higher than weekday average',
-            'timestamp': datetime.now() - timedelta(days=1),
-            'category': 'insight',
-            'is_read': False
-        }
-    ]
-    print('hello world')
-    return {'notifications': test_notifications}
+    # test_notifications = [
+    #     {
+    #         'id': 1,
+    #         'message': 'Driver John Smith has unusually high earnings of £2800',
+    #         'timestamp': datetime.now(),
+    #         'category': 'verification',
+    #         'is_read': False
+    #     },
+    #     {
+    #         'id': 2,
+    #         'message': 'Multiple drivers showing earnings below base wage this week',
+    #         'timestamp': datetime.now() - timedelta(hours=2),
+    #         'category': 'alert',
+    #         'is_read': False
+    #     },
+    #     {
+    #         'id': 3,
+    #         'message': 'New pattern detected: Weekend earnings 40% higher than weekday average',
+    #         'timestamp': datetime.now() - timedelta(days=1),
+    #         'category': 'insight',
+    #         'is_read': False
+    #     }
+    # ]
+    # print('hello world'
+    verifier = GeminiVerifier()
+    test_notifications = verifier.verify_missing_payslip()
+    print(type(test_notifications.text))
+
+    return {'notifications': [test_notifications.text]}
 
 @notification_bp.route("/", methods=["GET"])
 def notification():

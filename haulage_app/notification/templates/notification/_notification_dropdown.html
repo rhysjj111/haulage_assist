@@ -1,6 +1,12 @@
+{% if notifications %}
+    {% set notif_count = notifications|length %}
+{% else %}
+    {% set notif_count = 0 %}
+{% endif %}
+
 <div class="notification-icon ">
     <i class="material-icons dropdown-trigger" data-target="notifications-dropdown">notifications</i>
-    <span class="notification-badge">{{ notifications|length }}</span>
+    <span class="notification-badge {{'red' if notif_count > 0}}">{{ notif_count }}</span>
 </div>
 
 <ul id="notifications-dropdown" class="dropdown-content">
