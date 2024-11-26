@@ -961,13 +961,13 @@ from datetime import datetime
                     <p class="wages-calc-card-text bold">Extras: {{ f.fd_currency(data.weekly_extras) }}</p>
                     <p class="wages-calc-card-text">Overnights: {{ f.fd_currency(data.total_overnight) }}</p>
                     {% endif %}
-                    <p class="wages-calc-card-text">Gross Pay: {{ f.fd_currency(data.gross_pay) }}</p><br>
+                    <p class="wages-calc-card-text">Gross Pay: {{ f.fd_currency(data.gross_pay) }}</p>
                     {% if '/analysis/weekly' in request.path %}
-                    <p class="wages-calc-card-text bold {{'italics' if data.estimated == True }}">
+                    <p class="wages-calc-card-text {{'italics' if data.estimated == True }}">
                         Cost to Employer: {{ f.fd_currency(data.total_cost_to_employer) }}{{ '*' if data.estimated==True}}
-                    </p>
+                    </p><br>
                     <p class="wages-calc-card-text bold {{'italics' if data.estimated == True }}">
-                        {{f.fd_currency(data.profit)}}
+                        Profit:{{f.fd_currency(data.profit)}}{{ '*' if data.estimated==True}}
                     {% endif %}
                 </div>
             </div>
