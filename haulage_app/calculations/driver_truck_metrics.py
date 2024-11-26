@@ -59,6 +59,8 @@ def calculate_driver_metrics_week(driver, Day, Job, Payslip, start_date, end_dat
         Payslip.date >= start_date,
         Payslip.date <= end_date
         ).order_by(Payslip.date).all()
+    
+    
 
     total_earned, weekly_extras, gross_pay, total_overnight = calculate_driver_wages(day_entries, driver)
 

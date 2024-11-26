@@ -47,6 +47,14 @@ def weekly_analysis():
         start_date, end_date = get_start_end_of_week(
             selected_year, selected_week_number)
 
+    expenses = ExpenseOccurrence.query.filter(
+        db.or_(
+            ExpenseOccurrence.end_date >= start_date,
+            #checks if there is no end date
+            ExpenseOccurrence.end_date == None
+        ),
+        ExpenseOccurrence.start_date <= end_date).all()
+
     for driver in drivers:
 
         driver_data[driver.id] = calculate_driver_metrics_week(
@@ -56,14 +64,20 @@ def weekly_analysis():
 
         truck_data[truck.id] = calculate_truck_metrics_week(
             truck, Day, Fuel, start_date, end_date)
+        driver = Driver.query.filter_by(truck_id=truck.id).first()
+        if driver: #Check if a driver is assigned to this truck for the week
+            driver_data[driver.id].setdefault('total_fuel_cost', 0) #Sets to 0 if key doesn't exist
+            driver_data[driver.id].setdefault('profit', 0)
+            driver_data[driver.id]['total_fuel_cost'] = truck_data[truck.id]['total_fuel_cost']
+            total_earned = driver_data[driver.id]['total_earned']
+            total_fuel_cost = driver_data[driver.id]['total_fuel_cost']
+            total_cost_to_employer = driver_data[driver.id]['total_cost_to_employer']
+            total_expense = calculate_total_metric_list('cost', expenses)
 
-    expenses = ExpenseOccurrence.query.filter(
-        db.or_(
-            ExpenseOccurrence.end_date >= start_date,
-            #checks if there is no end date
-            ExpenseOccurrence.end_date == None
-        ),
-        ExpenseOccurrence.start_date <= end_date).all()
+            profit = total_earned - total_fuel_cost - total_cost_to_employer - total_expense
+
+            driver_data[driver.id]['profit'] = profit
+
 
     total_expenses = calculate_total_metric_list('cost', expenses)*3
     grand_total_earned = calculate_total_metric_dict('total_earned', driver_data)
