@@ -83,3 +83,18 @@ def get_weeks_for_period(day_query):
     available_weeks = sorted(set(week_numbers), reverse=True)
     return available_weeks
 
+# functions for ai_verification
+def query_to_dict(historical_context, Table):
+    set_name = Table.get_set_name()
+    
+    if historical_context.get(set_name) is None:
+        historical_context[set_name] = {}
+
+    for entry in Table.query.all():
+        data = {
+            column.name: getattr(entry, column.name)
+            for column in Table.__table__.columns
+        }
+        historical_context[set_name][entry.id] = data
+    return historical_context
+

@@ -15,32 +15,35 @@ def inject_notification():
     # def get_notification():
     #     return Notification.query.filter_by(is_read=False).order_by(Notification.timestamp.desc()).all()
     # return dict(notifications=get_notifications())
-    test_notifications = [
-        {
-            'id': 1,
-            'message': 'Driver John Smith has unusually high earnings of £2800',
-            'timestamp': datetime.now(),
-            'category': 'verification',
-            'is_read': False
-        },
-        {
-            'id': 2,
-            'message': 'Multiple drivers showing earnings below base wage this week',
-            'timestamp': datetime.now() - timedelta(hours=2),
-            'category': 'alert',
-            'is_read': False
-        },
-        {
-            'id': 3,
-            'message': 'New pattern detected: Weekend earnings 40% higher than weekday average',
-            'timestamp': datetime.now() - timedelta(days=1),
-            'category': 'insight',
-            'is_read': False
-        }
-    ]
-    # print('hello world'
-    # verifier = GeminiVerifier()
-    # test_notifications = verifier.verify_missing_payslip()
+
+    # test_notifications = [
+    #     {
+    #         'id': 1,
+    #         'message': 'Driver John Smith has unusually high earnings of £2800',
+    #         'timestamp': datetime.now(),
+    #         'category': 'verification',
+    #         'is_read': False
+    #     },
+    #     {
+    #         'id': 2,
+    #         'message': 'Multiple drivers showing earnings below base wage this week',
+    #         'timestamp': datetime.now() - timedelta(hours=2),
+    #         'category': 'alert',
+    #         'is_read': False
+    #     },
+    #     {
+    #         'id': 3,
+    #         'message': 'New pattern detected: Weekend earnings 40% higher than weekday average',
+    #         'timestamp': datetime.now() - timedelta(days=1),
+    #         'category': 'insight',
+    #         'is_read': False
+    #     }
+    # ]
+
+    test_notifications = []
+    # print(type(Payslip.query.all()))
+    verifier = GeminiVerifier()
+    test_notifications = verifier.find_fuel_entries()
 
     return {'notifications': [test_notifications]}
 

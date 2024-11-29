@@ -29,6 +29,10 @@ class Driver(db.Model):
         #represents itself in form of string
         return f"Driver: {self.first_name} {self.last_name}"
 
+    @classmethod
+    def get_set_name(cls):
+        return "drivers"
+
     @hybrid_property
     def full_name(self):
         return self.first_name + " " + self.last_name
@@ -144,6 +148,10 @@ class Truck (db.Model):
     #represents itself in form of string
         return f"{self.make} {self.model} with registration: {self.registration}"
 
+    @classmethod
+    def get_set_name(cls):
+        return "trucks"
+
     @validates('registration')
     def validate_names(self, key, registration):
         if not registration:
@@ -178,6 +186,10 @@ class Day(db.Model):
     def __repr__(self):
         #represents itself in form of string
         return f"Day entry: {self.driver.full_name} {display_date(self.date)}"
+
+    @classmethod
+    def get_set_name(cls):
+        return "day_data"
 
     def calculate_total_earned(self):
         """
@@ -295,6 +307,9 @@ class Job(db.Model):
     #represents itself in form of string
         return f"Job entry: {display_date(self.day.date)} {self.day.driver.full_name} - {fd_currency(self.earned)} "
 
+    @classmethod
+    def get_set_name(cls):
+        return "job_data"
 
     @validates('collection', 'delivery')
     def validate_names(self, key, field):
@@ -354,6 +369,10 @@ class Payslip(db.Model):
     #represents itself in form of string
         return f"Payslip for: {self.driver.full_name} on {self.date}"
 
+    @classmethod
+    def get_set_name(cls):
+        return "payslips"
+
     @validates('date')
     def validate_start_date(self, key, date):
         try:
@@ -389,6 +408,10 @@ class Fuel(db.Model):
     def __repr__(self): 
     #represents itself in form of string
         return f"Fuel entry for: {self.truck.registration} on {self.date}"
+
+    @classmethod
+    def get_set_name(cls):
+        return "fuel_invoices"
 
     @validates('date')
     def validate_start_date(self, key, date):

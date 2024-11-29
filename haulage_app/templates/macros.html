@@ -967,7 +967,7 @@ from datetime import datetime
                         Cost to Employer: {{ f.fd_currency(data.total_cost_to_employer) }}{{ '*' if data.estimated==True}}
                     </p><br>
                     <p class="wages-calc-card-text bold {{'italics' if data.estimated == True }}">
-                        Profit:{{f.fd_currency(data.profit)}}{{ '*' if data.estimated==True}}
+                        Profit: {{f.fd_currency(data.profit)}}{{ '*' if data.estimated==True}}
                     {% endif %}
                 </div>
             </div>

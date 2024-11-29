@@ -5,11 +5,13 @@ class AiResponse(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     raw_response = db.Column(db.Text, nullable=False)
+    historical_context = db.Column(db.Text)
+    response_favourable = db.Column(db.Boolean) ## This column will be ticked if formatting is successful, and user has verified each of the results as helpful.
 
     verification = db.relationship('Verification', backref='ai_response', lazy=True)
     formatted_anomaly = db.relationship('FormattedAnomaly', backref='ai_response', lazy=True)
 
-class VerificationFeedback(db.Model):
+class AiResponseFeedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     user_confirmed_anomaly = db.Column(db.Boolean)
@@ -30,10 +32,19 @@ class FormattedAnomaly(db.Model):
         'polymorphic_on': anomaly_type
     }
 
+class TableName(Enum):
+    DRIVER = 'driver'
+    TRUCK = 'truck'
+    DAY = 'day'
+    JOB = 'job'
+    FUEL = 'fuel'
+    PAYSLIP = 'payslip'
+
 class MissingAnomaly(FormattedAnomaly):
     anomaly_date = db.Column(db.Date)
     anomaly_driver_id = db.Column(db.Integer, db.ForeignKey('driver.id'))
     anomaly_truck_id = db.Column(db.Integer, db.ForeignKey('vehicle.id'))
+    table_name = db.Column(db.Enum(TableName), nullable=False)
 
     driver = db.relationship('Driver', lazy='joined', uselist=False)
     truck = db.relationship('Truck', lazy='joined', uselist=False)
