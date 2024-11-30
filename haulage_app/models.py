@@ -211,6 +211,8 @@ class Day(db.Model):
             return 0
 
     ############ validation
+
+
     
     @validates('date')
     def validate_start_date(self, key, date):
@@ -275,20 +277,20 @@ class Day(db.Model):
                 raise ValueError(f'Invalid value for {key}. Please use the selector.')
         return False
 
-
-    @db.event.listens_for(db.session, 'before_flush')
-    def validate_day_check_for_duplicate(session, flush_context, instances):
-        """
-        Validation checking driver and date have not already been entered. Cannot be performed with @valdiates
-        """
-        for instance in session.new:
-            if isinstance(instance, Day):
-                id = instance.id
-                date = instance.date
-                driver_id = instance.driver_id
-                database_entry = Day.query.filter(Day.date == date, Day.driver_id == driver_id).first()
-                if database_entry is not None and database_entry.id != id:
-                    raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
+###not needed
+    # @db.event.listens_for(db.session, 'before_flush')
+    # def validate_day_check_for_duplicate(session, flush_context, instances):
+    #     """
+    #     Validation checking driver and date have not already been entered. Cannot be performed with @valdiates
+    #     """
+    #     for instance in session.new:
+    #         if isinstance(instance, Day):
+    #             id = instance.id
+    #             date = instance.date
+    #             driver_id = instance.driver_id
+    #             database_entry = Day.query.filter(Day.date == date, Day.driver_id == driver_id).first()
+    #             if database_entry is not None and database_entry.id != id:
+    #                 raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
 
 
 class Job(db.Model):

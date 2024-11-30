@@ -6,7 +6,9 @@ class AiResponse(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     raw_response = db.Column(db.Text, nullable=False)
     historical_context = db.Column(db.Text)
-    response_favourable = db.Column(db.Boolean) ## This column will be ticked if formatting is successful, and user has verified each of the results as helpful.
+    format_successful = db.Column(db.Boolean) ## This column will be ticked if formatting is successful, and user has verified each of the results as helpful.
+    contains_repeat_suggestion = db.Column(db.Boolean)
+    all_helpful = db.Column(db.Boolean)
 
     verification = db.relationship('Verification', backref='ai_response', lazy=True)
     formatted_anomaly = db.relationship('FormattedAnomaly', backref='ai_response', lazy=True)

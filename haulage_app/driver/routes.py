@@ -22,7 +22,7 @@ def add_driver(item_id, tab):
                 weekly_bonus_percentage=request.form.get("weekly_bonus_percentage"),
                 overnight_value=request.form.get("overnight_value"),
                 truck_id=request.form.get("truck_id")
-                )    
+                )
             db.session.add(new_entry)
             db.session.commit()
         except ValueError as e:

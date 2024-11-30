@@ -42,8 +42,8 @@ def inject_notification():
 
     test_notifications = []
     # print(type(Payslip.query.all()))
-    verifier = GeminiVerifier()
-    test_notifications = verifier.find_fuel_entries()
+    # verifier = GeminiVerifier()
+    # test_notifications = verifier.find_fuel_entries()
 
     return {'notifications': [test_notifications]}
 

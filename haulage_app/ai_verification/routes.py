@@ -7,6 +7,7 @@ from haulage_app.models import Driver, Day, Fuel, Job, Payslip, Truck
 import json
 from pprint import pprint
 from haulage_app.functions import query_to_dict
+import logging
 
 
 class GeminiVerifier:
@@ -18,48 +19,81 @@ class GeminiVerifier:
         # for model in models:
         #     print(f"- {model.name}")
 
-    def process_llm_response(self, llm_response, ai_response_id):
+    def process_llm_missing_data_response(self, llm_response, historical_context, table_name):
+
         try:
-            # Parse the JSON response
-            anomalies = json.loads(llm_response.strip())
-            
-            # Validate it's a list
-            if not isinstance(anomalies, list):
-                raise ValueError("Response is not a list format")
-
-            test_results = []
-
-            # Process each anomaly
-            for anomaly in anomalies:
-                # Create new database entry
-                # new_anomaly = MissingAnomaly(
-                #     anomaly_date = db.Column(db.Date),
-                #     anomaly_driver_id = db.Column(db.Integer, db.ForeignKey('driver.id')),
-                #     ai_response_id = db.Column(db.Integer, db.ForeignKey('ai_response.id')),
-                # )
-                # db.session.add(new_anomaly)
-                
-            # db.session.commit()
-                test_result = {
-                    'anomaly_date': anomaly['anomaly_date'],
-                    'anomaly_driver_id': anomaly['anomaly_driver_id'],
-                    'ai_response_id': ai_response_id,
-                }
-                test_results.append(test_result)
-                print(test_results)
-            
-            return test_results
-            # return True
-            
-        except json.JSONDecodeError:
-            # Handle invalid JSON
-            return False
-        except KeyError:
-            # Handle missing expected fields
-            return False
+            ai_response_entry = AiResponse(
+                raw_response = llm_response,
+                historical_context = historical_context
+            )
+            db.session.add(ai_response_entry)
         except Exception as e:
-            # Handle any other unexpected errors
-            return False
+            logging.exception(
+                f"Error commiting to AiResponse: {e}, Response: {llm_response}, \
+                Historical context: {historical_context}"
+            )
+            print(
+               f"Error commiting to AiResponse: {e}, Response: {llm_response}, \
+                Historical context: {historical_context}"
+            )
+        else:
+            db.session.commit()
+            ai_response_entry_id = ai_response_entry.id
+            print(f"Successfully added response: {ai_response_entry_id} to AiResponse")
+
+            try:
+                # Parse the JSON response
+                anomalies = json.loads(llm_response.strip())
+                
+                # Validate it's a list
+                if not isinstance(anomalies, list):
+                    raise ValueError("Response is not a list format")
+
+                # Process each anomaly
+                for anomaly in anomalies:
+                    # Create new database entry
+                    new_anomaly = MissingAnomaly(
+                        ai_response_id = ai_response_entry.id,
+                        anomaly_date = ai_response_entry.date,
+                        anomaly_driver_id = ai_response_entry.driver_id,
+                        table_name = table_name
+                    )
+                    db.session.add(new_anomaly)
+
+            except json.JSONDecodeError:
+                logging.error(f"Invalid JSON received from LLM: {llm_response}, Historical context: {historical_context}")
+                print(f"Invalid JSON received from LLM: {llm_response}, Historical context: {historical_context}")
+                db.session.rollback()
+                ai_response_entry.format_successful = False
+                db.session.commit()
+                return False
+            except KeyError as e:
+                logging.error(f"Missing key in JSON response: {e}, Response: {llm_response}, Historical context: {historical_context}")
+                print(f"Missing key in JSON response: {e}, Response: {llm_response}, Historical context: {historical_context}")
+                db.session.rollback()
+                ai_response_entry.format_successful = False
+                db.session.commit()
+                return False
+            except ValueError as e:
+                logging.error(f"Invalid data format: {e}, Response: {llm_response}, Historical context: {historical_context}")
+                print(f"Invalid data format: {e}, Response: {llm_response}, Historical context: {historical_context}")
+                db.session.rollback()
+                ai_response_entry.format_successful = False
+                db.session.commit()
+                return False
+            except Exception as e:
+                logging.exception(f"An unexpected error occurred: {e}, Response: {llm_response}, Historical context: {historical_context}")
+                print(f"An unexpected error occurred: {e}, Response: {llm_response}, Historical context: {historical_context}")
+                db.session.rollback()
+                ai_response_entry.format_successful = False
+                db.session.commit()
+                return False
+            else:
+                ai_response_entry.format_successful = True
+                db.session.commit()
+                print("Successfully added raw ai response.")
+                return True
+
 
     def llm_check_missing_payslips(self):
 
@@ -87,7 +121,7 @@ class GeminiVerifier:
             """
         )
         
-        return llm_response
+        return llm_response, historical_context, 'payslip'
 
 
     def verify_missing_payslip(self):

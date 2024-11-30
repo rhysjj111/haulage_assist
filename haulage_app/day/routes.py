@@ -35,12 +35,12 @@ def add_day(item_id, tab):
     day = {}
     if request.method == "POST":
         try:
+            print('before add')
             new_entry = Day(
                 date = request.form.get("date"),
                 driver_id = request.form.get("driver_id"),
                 status = request.form.get("status"),
             )
-            print(request.form.get("status"))
             if request.form.get("status") == "working":
                 new_entry.truck_id = request.form.get("truck_id")
                 new_entry.overnight = request.form.get("overnight")
@@ -56,9 +56,10 @@ def add_day(item_id, tab):
             flash(str(e), 'error-msg')
             #retrieve previous answers
             day = request.form
+            return redirect(url_for("day.add_day", item_id=0, tab='entry'))
         else:
             flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
-            return redirect(url_for("day.add_day", tab='entry', item_id=0))
+            return redirect(url_for("day.add_day", item_id=0, tab='entry'))
     return render_template(
         "add_day.html",
         components=components,
@@ -89,7 +90,6 @@ def edit_day(item_id):
 
     entry = Day.query.get_or_404(item_id)
     referrer = request.referrer
-    print(referrer)
     is_week_page = '/week/' in referrer
 
     try:
@@ -113,8 +113,6 @@ def edit_day(item_id):
             entry.end_mileage = None
             entry.additional_earned = None
             entry.additional_wages = None
-
-        db.session.commit()
     except ValueError as e:
         if request.args.get('weekly'):
             flash(str(e), 'error-msg-modal')
@@ -126,6 +124,7 @@ def edit_day(item_id):
             flash(str(e), 'error-msg-modal')
             return redirect(url_for("day.add_day", item_id=item_id, tab='edit'))
     else:
+        db.session.commit()
         if request.args.get('weekly'):
             flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg-modal")
             return redirect(url_for("day.add_day", item_id=0, tab='edit', weekly=True))
