@@ -47,10 +47,10 @@ class MissingAnomaly(FormattedAnomaly):
     anomaly_driver_id = db.Column(db.Integer, db.ForeignKey('driver.id'))
     anomaly_truck_id = db.Column(db.Integer, db.ForeignKey('vehicle.id'))
     table_name = db.Column(db.Enum(TableName), nullable=False)
+    not_missing = db.Column(db.Boolean, default=False)
 
     driver = db.relationship('Driver', lazy='joined', uselist=False)
     truck = db.relationship('Truck', lazy='joined', uselist=False)
-
 
     __mapper_args__ = {'polymorphic_identity': 'missing_anomaly'}
 

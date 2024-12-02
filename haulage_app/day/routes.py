@@ -35,7 +35,6 @@ def add_day(item_id, tab):
     day = {}
     if request.method == "POST":
         try:
-            print('before add')
             new_entry = Day(
                 date = request.form.get("date"),
                 driver_id = request.form.get("driver_id"),
@@ -113,6 +112,7 @@ def edit_day(item_id):
             entry.end_mileage = None
             entry.additional_earned = None
             entry.additional_wages = None
+        db.session.commit()
     except ValueError as e:
         if request.args.get('weekly'):
             flash(str(e), 'error-msg-modal')
@@ -124,7 +124,6 @@ def edit_day(item_id):
             flash(str(e), 'error-msg-modal')
             return redirect(url_for("day.add_day", item_id=item_id, tab='edit'))
     else:
-        db.session.commit()
         if request.args.get('weekly'):
             flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg-modal")
             return redirect(url_for("day.add_day", item_id=0, tab='edit', weekly=True))

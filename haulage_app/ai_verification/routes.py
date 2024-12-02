@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 from haulage_app.models import Driver, Day, Fuel, Job, Payslip, Truck
 import json
 from pprint import pprint
-from haulage_app.functions import query_to_dict
+from haulage_app import db
+from haulage_app.functions import query_to_dict, date_to_db
 import logging
 
 
@@ -19,14 +20,16 @@ class GeminiVerifier:
         # for model in models:
         #     print(f"- {model.name}")
 
-    def process_llm_missing_data_response(self, llm_response, historical_context, table_name):
+    def process_llm_missing_data_response(self, llm_response, historical_context, Table):
 
         try:
-            ai_response_entry = AiResponse(
-                raw_response = llm_response,
-                historical_context = historical_context
-            )
-            db.session.add(ai_response_entry)
+            pass
+            # ai_response_entry = AiResponse(
+            #     raw_response = llm_response,
+            #     historical_context = historical_context
+            # )
+            # db.session.add(ai_response_entry)
+            # db.session.commit()
         except Exception as e:
             logging.exception(
                 f"Error commiting to AiResponse: {e}, Response: {llm_response}, \
@@ -35,31 +38,50 @@ class GeminiVerifier:
             print(
                f"Error commiting to AiResponse: {e}, Response: {llm_response}, \
                 Historical context: {historical_context}"
+                
             )
         else:
-            db.session.commit()
-            ai_response_entry_id = ai_response_entry.id
+            # ai_response_entry_id = ai_response_entry.id
+            ai_response_entry_id = 1
+
             print(f"Successfully added response: {ai_response_entry_id} to AiResponse")
 
             try:
                 # Parse the JSON response
                 anomalies = json.loads(llm_response.strip())
-                
+
                 # Validate it's a list
                 if not isinstance(anomalies, list):
                     raise ValueError("Response is not a list format")
+
+            
 
                 # Process each anomaly
                 for anomaly in anomalies:
                     # Create new database entry
                     new_anomaly = MissingAnomaly(
                         ai_response_id = ai_response_entry.id,
-                        anomaly_date = ai_response_entry.date,
-                        anomaly_driver_id = ai_response_entry.driver_id,
-                        table_name = table_name
+                        anomaly_date = date_to_db(anomaly['anomaly_date']),
+                        table_name = TableName[Table.__name__.upper()]
                     )
+                    # Check if missing entry exists
+                    if Table == Payslip:
+                        new_anomaly.anomaly_driver_id = anomaly['anomaly_identifier_id']
+                        existing_record = Table.query.filter(
+                            Table.driver_id == anomaly['anomaly_identifier_id'],
+                            Table.date == date_to_db(anomaly['anomaly_date'])
+                        ).first()
+                    else:
+                        new_anomaly.anomaly_truck_id = anomaly['anomaly_identifier_id']
+                        existing_record = Table.query.filter(
+                            Table.truck_id == anomaly['anomaly_identifier_id'],
+                            Table.date == date_to_db(anomaly['anomaly_date'])
+                        ).first()
+                    if existing_record:
+                        new_anomaly.not_missing = True
                     db.session.add(new_anomaly)
-
+                db.session.commit()
+                    
             except json.JSONDecodeError:
                 logging.error(f"Invalid JSON received from LLM: {llm_response}, Historical context: {historical_context}")
                 print(f"Invalid JSON received from LLM: {llm_response}, Historical context: {historical_context}")
@@ -89,8 +111,7 @@ class GeminiVerifier:
                 db.session.commit()
                 return False
             else:
-                ai_response_entry.format_successful = True
-                db.session.commit()
+                # ai_response_entry.format_successful = True
                 print("Successfully added raw ai response.")
                 return True
 
@@ -112,16 +133,18 @@ class GeminiVerifier:
                 {{
                     "anomaly_date": "DD/MM/YYYY",
                     "day_of_week": "Monday",
-                    "anomaly_driver_name": "John Doe"
-                    "anomaly_explaination": Provide a brief, one line explation why you think this is missing.
+                    "anomaly_identifier": "John Doe",
+                    "anomaly_identifier_id: "1",
                 }}
             ]
             
             Return only the raw array. No code blocks, no explanations, no additional formatting.
             """
         )
+
+        pprint(llm_response.text)
         
-        return llm_response, historical_context, 'payslip'
+        return llm_response.text, historical_context, Payslip
 
 
     def verify_missing_payslip(self):

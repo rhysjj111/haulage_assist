@@ -28,10 +28,10 @@ class Driver(db.Model):
     def __repr__(self): 
         #represents itself in form of string
         return f"Driver: {self.first_name} {self.last_name}"
-
+    
     @classmethod
-    def get_set_name(cls):
-        return "drivers"
+    def get_name(cls):
+        return "driver"
 
     @hybrid_property
     def full_name(self):
@@ -149,8 +149,8 @@ class Truck (db.Model):
         return f"{self.make} {self.model} with registration: {self.registration}"
 
     @classmethod
-    def get_set_name(cls):
-        return "trucks"
+    def get_name(cls):
+        return "truck"
 
     @validates('registration')
     def validate_names(self, key, registration):
@@ -188,8 +188,8 @@ class Day(db.Model):
         return f"Day entry: {self.driver.full_name} {display_date(self.date)}"
 
     @classmethod
-    def get_set_name(cls):
-        return "day_data"
+    def get_name(cls):
+        return "day"
 
     def calculate_total_earned(self):
         """
@@ -198,6 +198,7 @@ class Day(db.Model):
         total_earned = 0
         for job in self.jobs:
             total_earned += job.earned
+        total_earned += self.additional_earned
         return total_earned
 
     def calculate_daily_bonus(self, driver):
@@ -206,14 +207,12 @@ class Day(db.Model):
         """
         daily_total_earned = self.calculate_total_earned()
         if daily_total_earned > driver.daily_bonus_threshold:
-            return int((daily_total_earned - driver.daily_bonus_threshold) * driver.daily_bonus_percentage)
+            daily_bonus = int(((daily_total_earned - driver.daily_bonus_threshold) * driver.daily_bonus_percentage) + self.additional_wages)
+            return daily_bonus
         else:
-            return 0
+            return 0 + self.additional_wages
 
     ############ validation
-
-
-    
     @validates('date')
     def validate_start_date(self, key, date):
         try:
@@ -310,8 +309,8 @@ class Job(db.Model):
         return f"Job entry: {display_date(self.day.date)} {self.day.driver.full_name} - {fd_currency(self.earned)} "
 
     @classmethod
-    def get_set_name(cls):
-        return "job_data"
+    def get_name(cls):
+        return "job"
 
     @validates('collection', 'delivery')
     def validate_names(self, key, field):
@@ -372,8 +371,8 @@ class Payslip(db.Model):
         return f"Payslip for: {self.driver.full_name} on {self.date}"
 
     @classmethod
-    def get_set_name(cls):
-        return "payslips"
+    def get_name(cls):
+        return "payslip"
 
     @validates('date')
     def validate_start_date(self, key, date):
@@ -412,8 +411,8 @@ class Fuel(db.Model):
         return f"Fuel entry for: {self.truck.registration} on {self.date}"
 
     @classmethod
-    def get_set_name(cls):
-        return "fuel_invoices"
+    def get_name(cls):
+        return "fuel"
 
     @validates('date')
     def validate_start_date(self, key, date):

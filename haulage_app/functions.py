@@ -85,7 +85,7 @@ def get_weeks_for_period(day_query):
 
 # functions for ai_verification
 def query_to_dict(historical_context, Table):
-    set_name = Table.get_set_name()
+    set_name = Table.get_name()+"_data"
     
     if historical_context.get(set_name) is None:
         historical_context[set_name] = {}
