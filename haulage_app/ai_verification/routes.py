@@ -45,21 +45,21 @@ class GeminiVerifier:
 
             try:
                 # Parse the JSON response
-                missing_entries = json.loads(llm_response.strip())
+                missing_data_predictions = json.loads(llm_response.strip())
 
                 # Validate it's a list
-                if not isinstance(missing_entries, list):
+                if not isinstance(missing_data_predictions, list):
                     raise ValueError("Response is not a list format")
 
-                new_entries = []
+                suggested_entries = []
                 # Process each missing_entry
-                for entry in missing_entries:
+                for entry in missing_data_predictions:
                     # Create new database entry
-                    new_entry = MissingEntry(
+                    suggested_entry = MissingEntry(
                         ai_response_id = ai_response_entry.id,
                         date = date_to_db(entry['anomaly_date']),
                         driver_id = entry['anomaly_identifier_id'],
-                        table_name = TableName[Table.__name__.upper()]
+                        table_name = TableName.PAYSLIP
                     )
                     # Check if missing entry exists
                     existing_record = Table.query.filter(
@@ -70,19 +70,13 @@ class GeminiVerifier:
                         MissingAnomaly.driver_id == entry['anomaly_identifier_id'],
                         MissingAnomaly.date == date_to_db(entry['anomaly_date'])
                     ).first()
-                    if existing_record:
-                        new_entry.suggestion_exists = True
+                    if existing_record or repeated_record:
+                        suggested_entry.suggestion_exists = True
                         ai_response_entry.all_suggestions_helpful = False
-                        db.session.add(ai_response_entry)
-                    if repeated_record:
-                        new_entry.suggestion_repeated = True
-                        ai_response_entry.all_suggestions_helpful = False
-                        db.session.add(ai_response_entry)
-                        
-                    new_entries.append(new_entry)
+                    suggested_entries.append(suggested_entry)
                     print('new entry appended')
                     # Add to database
-                db.session.add_all(new_entries)
+                db.session.add_all(suggested_entries)
                 db.session.commit()
                     
             except json.JSONDecodeError:

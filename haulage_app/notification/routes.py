@@ -44,7 +44,7 @@ def inject_notification():
     # print(type(Payslip.query.all()))
     # verifier = GeminiVerifier()
     # llm_response, historical_context, table = verifier.llm_detect_missing_payslips()
-    test_notifications = verifier.process_llm_missing_data_response(llm_response, historical_context, table)
+    # test_notifications = verifier.process_llm_missing_data_response(llm_response, historical_context, table)
 
     return {'notifications': [test_notifications]}
 
