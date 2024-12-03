@@ -21,102 +21,104 @@ class GeminiVerifier:
         #     print(f"- {model.name}")
 
     def process_llm_missing_data_response(self, llm_response, historical_context, Table):
-
         try:
-            pass
-            # ai_response_entry = AiResponse(
-            #     raw_response = llm_response,
-            #     historical_context = historical_context
-            # )
-            # db.session.add(ai_response_entry)
-            # db.session.commit()
+            ai_response_entry = RawResponse(
+                raw_response = llm_response,
+                historical_context = historical_context
+            )
+            db.session.add(ai_response_entry)
+            db.session.commit()
         except Exception as e:
             logging.exception(
                 f"Error commiting to AiResponse: {e}, Response: {llm_response}, \
                 Historical context: {historical_context}"
             )
             print(
-               f"Error commiting to AiResponse: {e}, Response: {llm_response}, \
-                Historical context: {historical_context}"
-                
+               f"Error commiting to AiResponse: {e}, Response:, \
+                Historical context: "
             )
+            db.session.rollback()
+            return False
         else:
-            # ai_response_entry_id = ai_response_entry.id
-            ai_response_entry_id = 1
-
+            ai_response_entry_id = ai_response_entry.id
             print(f"Successfully added response: {ai_response_entry_id} to AiResponse")
 
             try:
                 # Parse the JSON response
-                anomalies = json.loads(llm_response.strip())
+                missing_entries = json.loads(llm_response.strip())
 
                 # Validate it's a list
-                if not isinstance(anomalies, list):
+                if not isinstance(missing_entries, list):
                     raise ValueError("Response is not a list format")
 
-            
-
-                # Process each anomaly
-                for anomaly in anomalies:
+                new_entries = []
+                # Process each missing_entry
+                for entry in missing_entries:
                     # Create new database entry
-                    new_anomaly = MissingAnomaly(
+                    new_entry = MissingEntry(
                         ai_response_id = ai_response_entry.id,
-                        anomaly_date = date_to_db(anomaly['anomaly_date']),
+                        date = date_to_db(entry['anomaly_date']),
+                        driver_id = entry['anomaly_identifier_id'],
                         table_name = TableName[Table.__name__.upper()]
                     )
                     # Check if missing entry exists
-                    if Table == Payslip:
-                        new_anomaly.anomaly_driver_id = anomaly['anomaly_identifier_id']
-                        existing_record = Table.query.filter(
-                            Table.driver_id == anomaly['anomaly_identifier_id'],
-                            Table.date == date_to_db(anomaly['anomaly_date'])
-                        ).first()
-                    else:
-                        new_anomaly.anomaly_truck_id = anomaly['anomaly_identifier_id']
-                        existing_record = Table.query.filter(
-                            Table.truck_id == anomaly['anomaly_identifier_id'],
-                            Table.date == date_to_db(anomaly['anomaly_date'])
-                        ).first()
+                    existing_record = Table.query.filter(
+                        Table.driver_id == entry['anomaly_identifier_id'],
+                        Table.date == date_to_db(entry['anomaly_date'])
+                    ).first()
+                    repeated_record = MissingAnomaly.query.filter(
+                        MissingAnomaly.driver_id == entry['anomaly_identifier_id'],
+                        MissingAnomaly.date == date_to_db(entry['anomaly_date'])
+                    ).first()
                     if existing_record:
-                        new_anomaly.not_missing = True
-                    db.session.add(new_anomaly)
+                        new_entry.suggestion_exists = True
+                        ai_response_entry.all_suggestions_helpful = False
+                        db.session.add(ai_response_entry)
+                    if repeated_record:
+                        new_entry.suggestion_repeated = True
+                        ai_response_entry.all_suggestions_helpful = False
+                        db.session.add(ai_response_entry)
+                        
+                    new_entries.append(new_entry)
+                    print('new entry appended')
+                    # Add to database
+                db.session.add_all(new_entries)
                 db.session.commit()
                     
             except json.JSONDecodeError:
                 logging.error(f"Invalid JSON received from LLM: {llm_response}, Historical context: {historical_context}")
-                print(f"Invalid JSON received from LLM: {llm_response}, Historical context: {historical_context}")
+                print(f"Invalid JSON received from LLM:, Historical context: ")
                 db.session.rollback()
-                ai_response_entry.format_successful = False
+                ai_response_entry.processing_successful = False
                 db.session.commit()
                 return False
             except KeyError as e:
                 logging.error(f"Missing key in JSON response: {e}, Response: {llm_response}, Historical context: {historical_context}")
-                print(f"Missing key in JSON response: {e}, Response: {llm_response}, Historical context: {historical_context}")
+                print(f"Missing key in JSON response: {e}, Response:, Historical context: ")
                 db.session.rollback()
-                ai_response_entry.format_successful = False
+                ai_response_entry.processing_successful = False
                 db.session.commit()
                 return False
             except ValueError as e:
                 logging.error(f"Invalid data format: {e}, Response: {llm_response}, Historical context: {historical_context}")
-                print(f"Invalid data format: {e}, Response: {llm_response}, Historical context: {historical_context}")
+                print(f"Invalid data format: {e}, Response:, Historical context: ")
                 db.session.rollback()
-                ai_response_entry.format_successful = False
+                ai_response_entry.processing_successful = False
                 db.session.commit()
                 return False
             except Exception as e:
                 logging.exception(f"An unexpected error occurred: {e}, Response: {llm_response}, Historical context: {historical_context}")
-                print(f"An unexpected error occurred: {e}, Response: {llm_response}, Historical context: {historical_context}")
+                print(f"An unexpected error occurred: {e}, Response:, Historical context: ")
                 db.session.rollback()
-                ai_response_entry.format_successful = False
+                ai_response_entry.processing_successful = False
                 db.session.commit()
                 return False
             else:
-                # ai_response_entry.format_successful = True
                 print("Successfully added raw ai response.")
                 return True
 
 
-    def llm_check_missing_payslips(self):
+    def llm_detect_missing_payslips(self):
 
         historical_context = {}
         query_to_dict(historical_context, Driver)
