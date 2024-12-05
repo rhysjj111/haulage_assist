@@ -24,6 +24,8 @@ db = SQLAlchemy(app)
 
 migrate = Migrate(app, db)
 
+from .ai_verification.models import *
+
 from haulage_app.api import api_bp
 from haulage_app.driver import driver_bp
 from haulage_app.day import day_bp

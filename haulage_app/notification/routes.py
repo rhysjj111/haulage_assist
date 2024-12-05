@@ -1,8 +1,8 @@
 from flask import render_template, request, url_for, jsonify
 from haulage_app import db, app
 from haulage_app.models import (
-    Driver, Day, Job, Truck, Fuel, Expense, 
-    ExpenseOccurrence, Payslip)
+    Driver, Day, Job, Truck, Fuel,
+    Payslip, )
 # from haulage_app.ai_verification.models import VerificationFeedback
 from haulage_app.ai_verification.routes import GeminiVerifier
 from datetime import timedelta, date, datetime
@@ -41,10 +41,14 @@ def inject_notification():
     # ]
 
     test_notifications = []
-    # print(type(Payslip.query.all()))
-    # verifier = GeminiVerifier()
-    # llm_response, historical_context, table = verifier.llm_detect_missing_payslips()
-    # test_notifications = verifier.process_llm_missing_data_response(llm_response, historical_context, table)
+    verifier = GeminiVerifier()
+    llm_response, historical_context, table = verifier.llm_detect_missing_payslips()
+    process_response = verifier.process_llm_missing_data_response(llm_response, historical_context, table)
+    print(process_response)
+
+    responses = ProcessedResponse.query.all()
+    pprint(responses)
+
 
     return {'notifications': [test_notifications]}
 

@@ -70,8 +70,11 @@ class GeminiVerifier:
                         MissingAnomaly.driver_id == entry['anomaly_identifier_id'],
                         MissingAnomaly.date == date_to_db(entry['anomaly_date'])
                     ).first()
-                    if existing_record or repeated_record:
+                    if existing_record:
                         suggested_entry.suggestion_exists = True
+                    if repeated_record:
+                        suggested_entry.suggestion_repeated = True
+                    if repeated_record or existing_record:
                         ai_response_entry.all_suggestions_helpful = False
                     suggested_entries.append(suggested_entry)
                     print('new entry appended')
@@ -80,21 +83,21 @@ class GeminiVerifier:
                 db.session.commit()
                     
             except json.JSONDecodeError:
-                logging.error(f"Invalid JSON received from LLM: {llm_response}, Historical context: {historical_context}")
+                logging.exception(f"Invalid JSON received from LLM: {llm_response}, Historical context: {historical_context}")
                 print(f"Invalid JSON received from LLM:, Historical context: ")
                 db.session.rollback()
                 ai_response_entry.processing_successful = False
                 db.session.commit()
                 return False
             except KeyError as e:
-                logging.error(f"Missing key in JSON response: {e}, Response: {llm_response}, Historical context: {historical_context}")
+                logging.exception(f"Missing key in JSON response: {e}, Response: {llm_response}, Historical context: {historical_context}")
                 print(f"Missing key in JSON response: {e}, Response:, Historical context: ")
                 db.session.rollback()
                 ai_response_entry.processing_successful = False
                 db.session.commit()
                 return False
             except ValueError as e:
-                logging.error(f"Invalid data format: {e}, Response: {llm_response}, Historical context: {historical_context}")
+                logging.exception(f"Invalid data format: {e}, Response: {llm_response}, Historical context: {historical_context}")
                 print(f"Invalid data format: {e}, Response:, Historical context: ")
                 db.session.rollback()
                 ai_response_entry.processing_successful = False
@@ -122,7 +125,7 @@ class GeminiVerifier:
             f"""
             Analyze this historical data for missing payslips across ALL drivers: {historical_context}
 
-            Each driver gets paid every Friday.
+            Each driver gets paid at the end of the working week.
 
             Check every driver's payslip history systematically. For each missing payslip, provide:
             [
@@ -170,6 +173,8 @@ class GeminiVerifier:
                     "anomaly_driver_id": integer
                 }}
             ]
+
+            Only return a maximum of 4 results. If no anomalous data is found, return an empty list: `[]`
             
             Return only the raw array. No code blocks, no explanations, no additional formatting.
             """)
