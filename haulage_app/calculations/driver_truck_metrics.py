@@ -27,7 +27,7 @@ def calculate_driver_wages(day_entries, driver):
         total_weekly_bonus = (total_earned - driver.weekly_bonus_threshold) * driver.weekly_bonus_percentage
 
     # Calculate gross pay and weekly extras
-    if worked_days <= 3 or total_earned < 150000:
+    if worked_days <= 4 or total_earned < 150000:
         weekly_extras = total_daily_bonus + total_weekly_bonus
         total_overnight = (worked_days * 3000)
         gross_pay = weekly_extras + driver.basic_wage + total_overnight
