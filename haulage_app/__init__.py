@@ -1,11 +1,17 @@
 import os
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
 from haulage_app import functions as f
 from flask_migrate import Migrate
 
 if os.path.exists("env.py"):
     import env
+
+class Base(DeclarativeBase):
+    pass
+
+db = SQLAlchemy(model_class=Base)
 
 app = Flask(__name__)
 
@@ -20,7 +26,7 @@ else:
     app.config["SQLALCHEMY_DATABASE_URI"] = uri
 
 
-db = SQLAlchemy(app)
+db.init_app(app)
 
 migrate = Migrate(app, db)
 

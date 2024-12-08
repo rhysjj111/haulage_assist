@@ -3,6 +3,7 @@ from haulage_app import db, f
 from haulage_app.models import Driver, Day, Job, Truck
 from haulage_app.job import job_bp
 from datetime import datetime, timedelta
+from sqlalchemy.exc import NoResultFound
 
 
 @job_bp.route("/add_job/<int:item_id>/<tab>", methods=["GET", "POST"])
@@ -132,19 +133,26 @@ def add_job(item_id, tab):
 def edit_job(item_id):
     entry = Job.query.get_or_404(item_id)
     try:
-        entry.day_id = request.form.get("day_id")
+        date = request.form.get("date_cd")
+        driver_id = request.form.get("driver_id")
+        day = Day.query.filter(Day.date == f.date_to_db(date), Day.driver_id == driver_id).one()
+
+        entry.day_id = day.id
         entry.earned = request.form.get("earned")
         entry.collection = request.form.get("collection")
         entry.delivery = request.form.get("delivery")
         entry.notes = request.form.get("notes")
         entry.split = request.form.get("split")
         db.session.commit()
+    except NoResultFound as e:
+        flash(f"Entry not updated: Day entry for the date and driver selected not found. Please create a Day entry.", 'error-msg-modal')
+        return redirect(url_for("job.add_job", item_id=item_id, tab='history'))
     except ValueError as e:
         flash(str(e), 'error-msg-modal')
-        return redirect(url_for("job.add_job", item_id=item_id, tab='edit'))
+        return redirect(url_for("job.add_job", item_id=item_id, tab='history'))
     else:
         flash(f"Entry Updated: {entry.day.driver.full_name} - {f.display_date(entry.day.date)}", "success-msg")
-        return redirect(url_for("job.add_job", item_id=0, tab='edit'))
+        return redirect(url_for("job.add_job", item_id=0, tab='history'))
 
 
 @job_bp.route("/delete_job/<int:item_id>")

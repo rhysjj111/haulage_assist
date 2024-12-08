@@ -165,13 +165,11 @@
 {% block additional_content %}{% endblock %}    
 
 <!-- triggers edit-modal if invalid form submission -->
-{% block modal_triggers %}
-{% if weekly_modal_trigger %}
-<!-- a trigger for the weekly entries modal -->
-<div class="open-modal">modal_first</div>
-{% elif item_id is defined and item_id > 0 %}
+{% if item_id is defined and item_id > 0 %}
 <div class="open-modal">modal_edit_{{item_id}}</div>
 {% endif %}
+
+{% block modal_triggers %}
 {% endblock %}
 
 
