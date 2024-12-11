@@ -1,17 +1,12 @@
 import os
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
+from haulage_app.base import Base
 from haulage_app import functions as f
 from flask_migrate import Migrate
 
 if os.path.exists("env.py"):
     import env
-
-class Base(DeclarativeBase):
-    pass
-
-db = SQLAlchemy(model_class=Base)
 
 app = Flask(__name__)
 
@@ -25,12 +20,9 @@ else:
         uri = uri.replace("postgres://", "postgresql://", 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = uri
 
-
-db.init_app(app)
+db = SQLAlchemy(app, model_class=Base)
 
 migrate = Migrate(app, db)
-
-from .ai_verification.models import *
 
 from haulage_app.api import api_bp
 from haulage_app.driver import driver_bp

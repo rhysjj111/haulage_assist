@@ -33,7 +33,6 @@ def add_job(item_id, tab):
         split_job = request.form.get('split') == 'on'
         add_day = request.form.get('add_day')
 
-
         current_driver = Driver.query.filter(Driver.id == driver_id).first()
         if current_driver:
             preferred_truck_id = current_driver.truck_id

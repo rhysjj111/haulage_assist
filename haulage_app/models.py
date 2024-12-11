@@ -1,25 +1,37 @@
 import re
 from haulage_app import db
+from haulage_app.base import Base
 from haulage_app.functions import *
-from sqlalchemy.orm import validates
+from typing_extensions import Annotated
+from typing import List
+from typing import Optional
+from sqlalchemy.orm import validates, Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import String, ForeignKey, Integer
 from datetime import datetime
 
+str50 = Annotated[str, 50]
+
+Base.type_annotation_map = {
+    str50: String(50),
+}
+
+intpk = Annotated[int, mapped_column(primary_key=True)]
 
 class Driver(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    first_name = db.Column(db.String(50), nullable=False) 
-    last_name = db.Column(db.String(50), nullable=False) 
-    basic_wage = db.Column(db.Integer, nullable=False)
-    daily_bonus_threshold = db.Column(db.Integer, nullable=False)
-    daily_bonus_percentage = db.Column(db.Float, nullable=False)
-    weekly_bonus_threshold = db.Column(db.Integer, nullable=False)
-    weekly_bonus_percentage = db.Column(db.Float, nullable=False)
-    overnight_value = db.Column(db.Integer, nullable=False)
+    id: Mapped[intpk]
+    timestamp: Mapped[datetime] = mapped_column(default=datetime.now)
+    first_name: Mapped[str50] = mapped_column(nullable=False)
+    last_name: Mapped[str50] = mapped_column(nullable=False)
+    basic_wage: Mapped[int] = mapped_column(nullable=False)
+    daily_bonus_threshold: Mapped[int] = mapped_column(nullable=False)
+    daily_bonus_percentage = mapped_column(db.Float, nullable=False)
+    weekly_bonus_threshold: Mapped[int] = mapped_column(nullable=False)
+    weekly_bonus_percentage = mapped_column(db.Float, nullable=False)
+    overnight_value: Mapped[int] = mapped_column(nullable=False)
 
     __table_args__ = (db.UniqueConstraint('first_name', 'last_name', name='_full_name_uc'),)
-    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id"))
+    truck_id = mapped_column(db.Integer, db.ForeignKey("truck.id"))
     days = db.relationship("Day", back_populates="driver", cascade="all, delete", lazy=True)
     payslips = db.relationship("Payslip", back_populates="driver", cascade="all, delete", lazy=True)
 
@@ -28,7 +40,7 @@ class Driver(db.Model):
     def __repr__(self): 
         #represents itself in form of string
         return f"Driver: {self.first_name} {self.last_name}"
-    
+
     @classmethod
     def get_name(cls):
         return "driver"
@@ -133,11 +145,11 @@ class Driver(db.Model):
 
 
 class Truck (db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    registration = db.Column(db.String(8), nullable=False, unique=True, index=True)
-    make = db.Column(db.String(50), nullable=False)
-    model = db.Column(db.String(50), nullable=False)
+    id: Mapped[intpk]
+    timestamp = mapped_column(db.DateTime, default=datetime.now)
+    registration = mapped_column(db.String(8), nullable=False, unique=True, index=True)
+    make: Mapped[str50] = mapped_column(nullable=False)
+    model: Mapped[str50] = mapped_column(nullable=False)
 
     fuel_entries = db.relationship("Fuel", back_populates="truck", lazy=True)
     days = db.relationship("Day", back_populates="truck", cascade="all, delete", lazy=True)
@@ -165,18 +177,18 @@ class Truck (db.Model):
 
 
 class Day(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    date = db.Column(db.Date, nullable=False, index=True)
-    driver_id = db.Column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False, index=True)
-    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=True, index=True)  
-    status = db.Column(db.String(50), nullable=False, default="working")
-    overnight = db.Column(db.Boolean, nullable=False, default=False)
-    fuel = db.Column(db.Boolean, default=False)
-    start_mileage = db.Column(db.Integer, nullable=False, default=0)
-    end_mileage = db.Column(db.Integer, nullable=False, default=0)
-    additional_earned = db.Column(db.Integer, nullable=False, default=0)
-    additional_wages = db.Column(db.Integer, nullable=False, default=0)
+    id: Mapped[intpk]
+    timestamp = mapped_column(db.DateTime, default=datetime.now)
+    date = mapped_column(db.Date, nullable=False, index=True)
+    driver_id = mapped_column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False, index=True)
+    truck_id = mapped_column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=True, index=True)  
+    status: Mapped[str50] = mapped_column(nullable=False, default="working")
+    overnight = mapped_column(db.Boolean, nullable=False, default=False)
+    fuel = mapped_column(db.Boolean, default=False)
+    start_mileage: Mapped[int] = mapped_column(nullable=False, default=0)
+    end_mileage: Mapped[int] = mapped_column(nullable=False, default=0)
+    additional_earned: Mapped[int] = mapped_column(nullable=False, default=0)
+    additional_wages: Mapped[int] = mapped_column(nullable=False, default=0)
     
     __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_uc'),)
     driver = db.relationship("Driver", back_populates="days", lazy=True)
@@ -231,7 +243,7 @@ class Day(db.Model):
     def validate_select_driver(self, key, truck_id):
         if self.status == "working":
             if not (Truck.query.filter(Truck.id == truck_id).first()):
-                raise ValueError('Selection not available in database. Please select a truck')
+                raise ValueError('Please select a truck')
             return truck_id
         return None
     
@@ -293,14 +305,14 @@ class Day(db.Model):
 
 
 class Job(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    day_id = db.Column(db.Integer, db.ForeignKey("day.id", ondelete="CASCADE"), nullable=False, index=True)
-    earned = db.Column(db.Integer, nullable=False)
-    collection = db.Column(db.String(50), nullable=False) 
-    delivery = db.Column(db.String(50), nullable=False) 
-    notes = db.Column(db.String(50)) 
-    split = db.Column(db.Boolean, default=False)
+    id: Mapped[intpk]
+    timestamp = mapped_column(db.DateTime, default=datetime.now)
+    day_id = mapped_column(db.Integer, db.ForeignKey("day.id", ondelete="CASCADE"), nullable=False, index=True)
+    earned: Mapped[int] = mapped_column(nullable=False)
+    collection: Mapped[str50] = mapped_column(nullable=False) 
+    delivery: Mapped[str50] = mapped_column(nullable=False) 
+    notes: Mapped[Optional[str50]] = mapped_column() 
+    split = mapped_column(db.Boolean, default=False)
 
     day = db.relationship("Day", back_populates="jobs")
 
@@ -355,13 +367,13 @@ class Job(db.Model):
 
 
 class Payslip(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
+    id: Mapped[intpk]
+    timestamp = mapped_column(db.DateTime, default=datetime.now)
 
-    date = db.Column(db.Date, nullable=False, index=True)
-    driver_id = db.Column(db.Integer, db.ForeignKey("driver.id"), nullable=False, index=True)
-    total_wage = db.Column(db.Integer, nullable=False)
-    total_cost_to_employer = db.Column(db.Integer, nullable=False)
+    date = mapped_column(db.Date, nullable=False, index=True)
+    driver_id = mapped_column(db.Integer, db.ForeignKey("driver.id"), nullable=False, index=True)
+    total_wage: Mapped[int] = mapped_column(nullable=False)
+    total_cost_to_employer: Mapped[int] = mapped_column(nullable=False)
 
     driver = db.relationship("Driver", back_populates="payslips")
     __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_ps_uc'),)
@@ -396,13 +408,13 @@ class Payslip(db.Model):
 
 
 class Fuel(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    date = db.Column(db.Date, nullable=False, index=True)
-    truck_id = db.Column(db.Integer, db.ForeignKey("truck.id"), nullable=False, index=True)
-    fuel_card_name = db.Column(db.String(50), nullable=False, index=True)    
-    fuel_volume = db.Column(db.Integer, nullable=False)
-    fuel_cost = db.Column(db.Integer, nullable=False)
+    id: Mapped[intpk]
+    timestamp = mapped_column(db.DateTime, default=datetime.now)
+    date = mapped_column(db.Date, nullable=False, index=True)
+    truck_id = mapped_column(db.Integer, db.ForeignKey("truck.id"), nullable=False, index=True)
+    fuel_card_name: Mapped[str50] = mapped_column(nullable=False, index=True)    
+    fuel_volume: Mapped[int] = mapped_column(nullable=False)
+    fuel_cost: Mapped[int] = mapped_column(nullable=False)
 
     truck = db.relationship("Truck", back_populates="fuel_entries")
 
@@ -446,10 +458,10 @@ class Fuel(db.Model):
 
 
 class Expense(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    name = db.Column(db.String(50), nullable=False, index=True)
-    description = db.Column(db.String(200))
+    id: Mapped[intpk]
+    timestamp = mapped_column(db.DateTime, default=datetime.now)
+    name: Mapped[str50] = mapped_column(nullable=False, index=True)
+    description = mapped_column(db.String(200))
 
     occurrences = db.relationship("ExpenseOccurrence", back_populates="expense", cascade="all, delete-orphan")
 
@@ -458,12 +470,12 @@ class Expense(db.Model):
             return f"Expense: {self.name}"
 
 class ExpenseOccurrence(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    expense_id = db.Column(db.Integer, db.ForeignKey("expense.id", ondelete="CASCADE"), nullable=False, index=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    start_date = db.Column(db.Date, nullable=False, index=True)
-    end_date = db.Column(db.Date, index=True)
-    cost = db.Column(db.Integer, nullable=False)
+    id: Mapped[intpk]
+    expense_id = mapped_column(db.Integer, db.ForeignKey("expense.id", ondelete="CASCADE"), nullable=False, index=True)
+    timestamp = mapped_column(db.DateTime, default=datetime.now)
+    start_date = mapped_column(db.Date, nullable=False, index=True)
+    end_date = mapped_column(db.Date, index=True)
+    cost: Mapped[int] = mapped_column(nullable=False)
 
     expense = db.relationship("Expense", back_populates="occurrences")
 

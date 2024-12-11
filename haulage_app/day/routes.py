@@ -27,12 +27,17 @@ def add_day(item_id, tab):
             Day.date.asc()
         ).all()
     )
-
-    first_day_entry = day_entries[0]
-    weekly_modal_trigger = request.args.get('weekly')
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
-    day = {}
+    template_data = {  # Create a dictionary for template data
+        "components": components,
+        "list": day_entries,
+        "tab": tab,
+        "item_id": item_id,
+        "type": 'day',
+        "day": {}       # Initially an empty dictionary for form data
+    }
+
     if request.method == "POST":
         try:
             new_entry = Day(
@@ -54,21 +59,11 @@ def add_day(item_id, tab):
             db.session.rollback()
             flash(str(e), 'error-msg')
             #retrieve previous answers
-            day = request.form
-            return redirect(url_for("day.add_day", item_id=0, tab='entry'))
+            template_data["day"].update(request.form)
         else:
             flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
             return redirect(url_for("day.add_day", item_id=0, tab='entry'))
-    return render_template(
-        "add_day.html",
-        components=components,
-        list=day_entries,
-        first_entry=first_day_entry,
-        tab=tab,
-        day=day,
-        item_id=item_id,
-        type='day',
-        weekly_modal_trigger=weekly_modal_trigger)
+    return render_template("add_day.html", **template_data)
 
 @day_bp.route("/delete_day/<int:item_id>")
 def delete_day(item_id):

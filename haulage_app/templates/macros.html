@@ -225,7 +225,6 @@ from datetime import datetime
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
             <select name="status" id="status" class="validate" required>
                 {% if day != {} %}
-                
                 <option value="{{day.status}}" selected>{{day.status.capitalize()}}</option>
                 <option value="working" >Working</option>
                 <option value="holiday" >Holiday</option>
@@ -284,17 +283,14 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
             <select name="truck_id" id="truck_id" >
-                {% if day != {} %}
-                
+                {% if day != {}  and day.truck_id is defined %}
                     {% for truck in components.trucks %}
-                        {% if day.truck == truck %}
-                            <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
-                        {% elif day.truck_id|int == truck.id|int %}
+                       {% if day.truck_id|int == truck.id|int %}
                             <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
                         {% else %}
                             <option value="{{ truck.id }}">{{ truck.registration }}</option>
                         {% endif %}
-                        {% endfor %}        
+                    {% endfor %}        
                 {% else %}
                     <option value="" disabled selected>Please select</option>
                     {% for truck in components.trucks %}
