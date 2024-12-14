@@ -1,4 +1,5 @@
 # from haulage_app import db
+# from haulage_app.base import Base
 # from datetime import datetime
 # from enum import Enum
 # from haulage_app.functions import *
@@ -9,7 +10,7 @@
 #     timestamp = mapped_column(db.DateTime, default=datetime.utcnow)
 #     raw_response = mapped_column(db.Text, nullable=False)
 #     historical_context = mapped_column(db.Text)
-#     processing_successful = mapped_column(db.Boolean, default=True) ## This column will be ticked if formatting is successful, and user has verified each of the results as helpful.
+#     processing_successful = mapped_column(db.Boolean, default=True) # This column will be ticked if formatting is successful, and user has verified each of the results as helpful.
 #     all_suggestions_helpful = mapped_column(db.Boolean, default=True)
 
 #     ai_response_feedback = db.relationship(

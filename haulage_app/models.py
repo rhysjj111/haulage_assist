@@ -7,43 +7,44 @@ from typing import List
 from typing import Optional
 from sqlalchemy.orm import validates, Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy import String, ForeignKey, Integer
-from datetime import datetime
+from sqlalchemy import String, ForeignKey, Integer, DateTime, Date, func
+import datetime
 
-str50 = Annotated[str, 50]
-
-Base.type_annotation_map = {
-    str50: String(50),
-}
-
+str50 = Annotated[str, mapped_column(String(50))]
+date = Annotated[datetime.date, mapped_column(Date, index=True)]
+tstamp = Annotated[datetime.datetime, mapped_column(DateTime, default=func.now, nullable=False)]
 intpk = Annotated[int, mapped_column(primary_key=True)]
+driverfk = Annotated[int, mapped_column(ForeignKey("driver.id"), index=True)]
+driverfk_restrict = Annotated[int, mapped_column(ForeignKey("driver.id", ondelete="RESTRICT"), index=True)]
+truckfk = Annotated[int, mapped_column(ForeignKey("truck.id"), index=True)]
+truckfk_cascade = Annotated[int, mapped_column(ForeignKey("truck.id", ondelete="CASCADE"), index=True)]
+truckfk_restrict = Annotated[int, mapped_column(ForeignKey("truck.id", ondelete="RESTRICT"), index=True)]
+dayfk_cascade = Annotated[int, mapped_column(ForeignKey("day.id", ondelete="CASCADE"), index=True)]
+expensefk_cascade = Annotated[int, mapped_column(ForeignKey("expense.id", ondelete="CASCADE"), index=True)]
 
 class Driver(db.Model):
     id: Mapped[intpk]
-    timestamp: Mapped[datetime] = mapped_column(default=datetime.now)
-    first_name: Mapped[str50] = mapped_column(nullable=False)
-    last_name: Mapped[str50] = mapped_column(nullable=False)
-    basic_wage: Mapped[int] = mapped_column(nullable=False)
-    daily_bonus_threshold: Mapped[int] = mapped_column(nullable=False)
-    daily_bonus_percentage = mapped_column(db.Float, nullable=False)
-    weekly_bonus_threshold: Mapped[int] = mapped_column(nullable=False)
-    weekly_bonus_percentage = mapped_column(db.Float, nullable=False)
-    overnight_value: Mapped[int] = mapped_column(nullable=False)
+    timestamp: Mapped[tstamp]
+    first_name: Mapped[str50] 
+    last_name: Mapped[str50] 
+    basic_wage: Mapped[int]
+    daily_bonus_threshold: Mapped[int]
+    daily_bonus_percentage: Mapped[float]
+    weekly_bonus_threshold: Mapped[int]
+    weekly_bonus_percentage: Mapped[float]
+    overnight_value: Mapped[int]
+    truck_id: Mapped[Optional[truckfk]]
 
     __table_args__ = (db.UniqueConstraint('first_name', 'last_name', name='_full_name_uc'),)
-    truck_id = mapped_column(db.Integer, db.ForeignKey("truck.id"))
-    days = db.relationship("Day", back_populates="driver", cascade="all, delete", lazy=True)
-    payslips = db.relationship("Payslip", back_populates="driver", cascade="all, delete", lazy=True)
+
+    days: Mapped[List["Day"]] = relationship(back_populates="driver", cascade="all, delete", lazy=True)
+    payslips: Mapped[List["Payslip"]] = relationship(back_populates="driver", cascade="all, delete", lazy=True)
 
     # formatted_anomaly = db.relationship("FormattedAnomaly", back_populates="driver", uselist=False, lazy=True)
     
     def __repr__(self): 
         #represents itself in form of string
         return f"Driver: {self.first_name} {self.last_name}"
-
-    @classmethod
-    def get_name(cls):
-        return "driver"
 
     @hybrid_property
     def full_name(self):
@@ -146,23 +147,19 @@ class Driver(db.Model):
 
 class Truck (db.Model):
     id: Mapped[intpk]
-    timestamp = mapped_column(db.DateTime, default=datetime.now)
-    registration = mapped_column(db.String(8), nullable=False, unique=True, index=True)
-    make: Mapped[str50] = mapped_column(nullable=False)
-    model: Mapped[str50] = mapped_column(nullable=False)
+    timestamp: Mapped[tstamp]
+    registration: Mapped[str] = mapped_column(String(8), nullable=False, unique=True, index=True)
+    make: Mapped[str50]
+    model: Mapped[str50]
 
-    fuel_entries = db.relationship("Fuel", back_populates="truck", lazy=True)
-    days = db.relationship("Day", back_populates="truck", cascade="all, delete", lazy=True)
+    fuel_entries: Mapped[List["Fuel"]] = relationship(back_populates="truck", lazy=True)
+    days: Mapped[List["Day"]] = relationship(back_populates="truck", lazy=True)
 
     # formatted_anomaly = db.relationship("FormattedAnomaly", back_populates="truck", uselist=False, lazy=True)
 
     def __repr__(self): 
     #represents itself in form of string
         return f"{self.make} {self.model} with registration: {self.registration}"
-
-    @classmethod
-    def get_name(cls):
-        return "truck"
 
     @validates('registration')
     def validate_names(self, key, registration):
@@ -178,30 +175,26 @@ class Truck (db.Model):
 
 class Day(db.Model):
     id: Mapped[intpk]
-    timestamp = mapped_column(db.DateTime, default=datetime.now)
-    date = mapped_column(db.Date, nullable=False, index=True)
-    driver_id = mapped_column(db.Integer, db.ForeignKey("driver.id", ondelete="CASCADE"), nullable=False, index=True)
-    truck_id = mapped_column(db.Integer, db.ForeignKey("truck.id", ondelete="CASCADE"), nullable=True, index=True)  
+    timestamp: Mapped[tstamp]
+    date: Mapped[date]
+    driver_id: Mapped[driverfk_restrict]
+    truck_id: Mapped[Optional[truckfk_restrict]]
     status: Mapped[str50] = mapped_column(nullable=False, default="working")
-    overnight = mapped_column(db.Boolean, nullable=False, default=False)
-    fuel = mapped_column(db.Boolean, default=False)
-    start_mileage: Mapped[int] = mapped_column(nullable=False, default=0)
-    end_mileage: Mapped[int] = mapped_column(nullable=False, default=0)
-    additional_earned: Mapped[int] = mapped_column(nullable=False, default=0)
-    additional_wages: Mapped[int] = mapped_column(nullable=False, default=0)
+    overnight: Mapped[bool] = mapped_column(default=False)
+    fuel: Mapped[bool] = mapped_column(default=False)
+    start_mileage: Mapped[int] = mapped_column(default=0)
+    end_mileage: Mapped[int] = mapped_column(default=0)
+    additional_earned: Mapped[int] = mapped_column(default=0)
+    additional_wages: Mapped[int] = mapped_column(default=0)
     
     __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_uc'),)
-    driver = db.relationship("Driver", back_populates="days", lazy=True)
-    truck = db.relationship("Truck", back_populates="days")
-    jobs = db.relationship("Job", back_populates="day", cascade="all, delete", lazy=True)
+    driver: Mapped["Driver"] = relationship(back_populates="days")
+    truck: Mapped["Truck"] = relationship(back_populates="days")
+    jobs: Mapped[List["Job"]] = relationship(back_populates="day", cascade="all, delete", lazy=True)
 
     def __repr__(self):
         #represents itself in form of string
         return f"Day entry: {self.driver.full_name} {display_date(self.date)}"
-
-    @classmethod
-    def get_name(cls):
-        return "day"
 
     def calculate_total_earned(self):
         """
@@ -306,23 +299,19 @@ class Day(db.Model):
 
 class Job(db.Model):
     id: Mapped[intpk]
-    timestamp = mapped_column(db.DateTime, default=datetime.now)
-    day_id = mapped_column(db.Integer, db.ForeignKey("day.id", ondelete="CASCADE"), nullable=False, index=True)
-    earned: Mapped[int] = mapped_column(nullable=False)
-    collection: Mapped[str50] = mapped_column(nullable=False) 
-    delivery: Mapped[str50] = mapped_column(nullable=False) 
-    notes: Mapped[Optional[str50]] = mapped_column() 
-    split = mapped_column(db.Boolean, default=False)
+    timestamp: Mapped[tstamp]
+    day_id: Mapped[dayfk_cascade]
+    earned: Mapped[int]
+    collection: Mapped[str50] 
+    delivery: Mapped[str50] 
+    notes: Mapped[Optional[str50]]
+    split: Mapped[bool] = mapped_column(default=False)
 
-    day = db.relationship("Day", back_populates="jobs")
+    day: Mapped["Day"] = relationship(back_populates="jobs")
 
     def __repr__(self): 
     #represents itself in form of string
         return f"Job entry: {display_date(self.day.date)} {self.day.driver.full_name} - {fd_currency(self.earned)} "
-
-    @classmethod
-    def get_name(cls):
-        return "job"
 
     @validates('collection', 'delivery')
     def validate_names(self, key, field):
@@ -368,23 +357,19 @@ class Job(db.Model):
 
 class Payslip(db.Model):
     id: Mapped[intpk]
-    timestamp = mapped_column(db.DateTime, default=datetime.now)
+    timestamp: Mapped[tstamp]
+    date: Mapped[date]
+    driver_id: Mapped[driverfk]
+    total_wage: Mapped[int]
+    total_cost_to_employer: Mapped[int]
 
-    date = mapped_column(db.Date, nullable=False, index=True)
-    driver_id = mapped_column(db.Integer, db.ForeignKey("driver.id"), nullable=False, index=True)
-    total_wage: Mapped[int] = mapped_column(nullable=False)
-    total_cost_to_employer: Mapped[int] = mapped_column(nullable=False)
-
-    driver = db.relationship("Driver", back_populates="payslips")
     __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_ps_uc'),)
+
+    driver: Mapped["Driver"] = relationship(back_populates="payslips")
 
     def __repr__(self): 
     #represents itself in form of string
         return f"Payslip for: {self.driver.full_name} on {self.date}"
-
-    @classmethod
-    def get_name(cls):
-        return "payslip"
 
     @validates('date')
     def validate_start_date(self, key, date):
@@ -409,22 +394,18 @@ class Payslip(db.Model):
 
 class Fuel(db.Model):
     id: Mapped[intpk]
-    timestamp = mapped_column(db.DateTime, default=datetime.now)
-    date = mapped_column(db.Date, nullable=False, index=True)
-    truck_id = mapped_column(db.Integer, db.ForeignKey("truck.id"), nullable=False, index=True)
-    fuel_card_name: Mapped[str50] = mapped_column(nullable=False, index=True)    
-    fuel_volume: Mapped[int] = mapped_column(nullable=False)
-    fuel_cost: Mapped[int] = mapped_column(nullable=False)
+    timestamp: Mapped[tstamp]
+    date: Mapped[date]
+    truck_id: Mapped[truckfk]
+    fuel_card_name: Mapped[str50] = mapped_column(index=True)    
+    fuel_volume: Mapped[int]
+    fuel_cost: Mapped[int]
 
-    truck = db.relationship("Truck", back_populates="fuel_entries")
+    truck: Mapped["Truck"] = relationship(back_populates="fuel_entries")
 
     def __repr__(self): 
     #represents itself in form of string
         return f"Fuel entry for: {self.truck.registration} on {self.date}"
-
-    @classmethod
-    def get_name(cls):
-        return "fuel"
 
     @validates('date')
     def validate_start_date(self, key, date):
@@ -459,11 +440,11 @@ class Fuel(db.Model):
 
 class Expense(db.Model):
     id: Mapped[intpk]
-    timestamp = mapped_column(db.DateTime, default=datetime.now)
-    name: Mapped[str50] = mapped_column(nullable=False, index=True)
-    description = mapped_column(db.String(200))
+    timestamp: Mapped[tstamp]
+    name: Mapped[str50] = mapped_column(index=True)
+    description: Mapped[Optional[str]] = mapped_column(db.String(200))
 
-    occurrences = db.relationship("ExpenseOccurrence", back_populates="expense", cascade="all, delete-orphan")
+    occurrences: Mapped[List["ExpenseOccurrence"]] = relationship(back_populates="expense", cascade="all, delete", lazy=True)
 
     def __repr__(self):
         #represents itself in form of string
@@ -471,13 +452,13 @@ class Expense(db.Model):
 
 class ExpenseOccurrence(db.Model):
     id: Mapped[intpk]
-    expense_id = mapped_column(db.Integer, db.ForeignKey("expense.id", ondelete="CASCADE"), nullable=False, index=True)
-    timestamp = mapped_column(db.DateTime, default=datetime.now)
-    start_date = mapped_column(db.Date, nullable=False, index=True)
-    end_date = mapped_column(db.Date, index=True)
-    cost: Mapped[int] = mapped_column(nullable=False)
+    timestamp: Mapped[tstamp]
+    expense_id: Mapped[expensefk_cascade]
+    start_date: Mapped[date]
+    end_date: Mapped[Optional[date]]
+    cost: Mapped[int]
 
-    expense = db.relationship("Expense", back_populates="occurrences")
+    expense: Mapped["Expense"] = relationship(back_populates="occurrences")
 
     def __repr__(self):
         #represents itself in form of string
