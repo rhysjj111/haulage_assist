@@ -73,6 +73,21 @@
                 {% block collapsible_body scoped %}{% endblock %}
             </div>
 
+            {% if type == 'week' %}
+
+            <!-- Select week modal -->
+            <div id="modal_edit_{{ item.id }}" class="modal">
+                <div class="modal-content">
+                    <h4>Edit {{item}} entries?</h4>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ url_for('week.week', item_id=item.id, tab='entry')}}" class="btn green">Confirm</a>
+                    <a class="modal-close btn grey">Cancel</a>
+                </div>
+            </div>
+
+            {% else %}
+
             <!-- Delete entry modal -->
             <div id="modal_delete_{{ item.id }}" class="modal">
                 <div class="modal-content">
@@ -110,8 +125,8 @@
                 </div>
             </div>
         </li>
+        {% endif %}
         {% endfor %}
-        
         <!-- delete all collapsible  -->
         <!-- <li>
             <div class="collapsible-header delete-all-collapsible"><i class="material-icons">filter_drama</i>
