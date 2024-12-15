@@ -36,10 +36,6 @@ def add_job(item_id, tab):
         current_driver = Driver.query.filter(Driver.id == driver_id).first()
         if current_driver:
             preferred_truck_id = current_driver.truck_id
-        # if next_working_date and (current_date >= next_working_date):
-        #     flash('"Next working date" must be in the future', "error-msg")
-        #     job = request.form
-        # else:
         try:
             current_date = f.date_to_db(current_date_str)
             if split_job:
@@ -112,7 +108,8 @@ def add_job(item_id, tab):
                         continue
                     else:
                         flash(f"Entry Success: {new_entry.day.driver.full_name} - {f.display_date(new_entry.day.date)}", "success-msg")
-                        return redirect(url_for("job.add_job", tab='entry', item_id=0))
+                        job['driver_id'] = str(new_entry.day.driver_id)
+                        job['date_cd'] = f.display_date(new_entry.day.date)
                             
     return render_template(
         "add_job.html",

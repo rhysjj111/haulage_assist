@@ -9,15 +9,15 @@ document.addEventListener('DOMContentLoaded', function () {
         format: "dd/mm/yyyy",
         i18n: {done: "Select"},
         // disable all days apart from Monday for 'wages' page datepicker
-        disableDayFn: function(date){
-            if(document.querySelector('#wages_date') != null){
-                if(date.getDay() == 1){
-                return false;
-                } else {
-                return true;
-                };
-            }   
-        }
+        // disableDayFn: function(date){
+        //     if(document.querySelector('#wages_date') != null){
+        //         if(date.getDay() == 1){
+        //         return false;
+        //         } else {
+        //         return true;
+        //         };
+        //     }   
+        // }
     })
 
 
@@ -107,6 +107,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // Loading spinner Javascript
+    const preloaderBackground = document.querySelector('.preloader-background');
+    const preloaderWrapper = document.querySelector('.preloader-wrapper');
+    
+    preloaderBackground.style.opacity = 0; // Start fading out
+    preloaderBackground.style.transition = 'opacity 0.5s ease-in-out'; // Add a smooth transition
+
+    preloaderWrapper.style.opacity = 0;
+    preloaderWrapper.style.transition = 'opacity 0.5s ease-in-out';
+
+    setTimeout(() => {
+        preloaderBackground.style.display = 'none';
+        preloaderWrapper.style.display = 'none';
+    }, 500); // 500ms delay to ensure fade-out is complete
 
 })
 

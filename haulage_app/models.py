@@ -39,8 +39,6 @@ class Driver(db.Model):
 
     days: Mapped[List["Day"]] = relationship(back_populates="driver", cascade="all, delete", lazy=True)
     payslips: Mapped[List["Payslip"]] = relationship(back_populates="driver", cascade="all, delete", lazy=True)
-
-    # formatted_anomaly = db.relationship("FormattedAnomaly", back_populates="driver", uselist=False, lazy=True)
     
     def __repr__(self): 
         #represents itself in form of string
@@ -281,21 +279,6 @@ class Day(db.Model):
                 raise ValueError(f'Invalid value for {key}. Please use the selector.')
         return False
 
-###not needed
-    # @db.event.listens_for(db.session, 'before_flush')
-    # def validate_day_check_for_duplicate(session, flush_context, instances):
-    #     """
-    #     Validation checking driver and date have not already been entered. Cannot be performed with @valdiates
-    #     """
-    #     for instance in session.new:
-    #         if isinstance(instance, Day):
-    #             id = instance.id
-    #             date = instance.date
-    #             driver_id = instance.driver_id
-    #             database_entry = Day.query.filter(Day.date == date, Day.driver_id == driver_id).first()
-    #             if database_entry is not None and database_entry.id != id:
-    #                 raise ValueError('This date already has an entry for the driver selected. Edit the entry or select another date')
-
 
 class Job(db.Model):
     id: Mapped[intpk]
@@ -342,17 +325,6 @@ class Job(db.Model):
             return False
         else:
             raise ValueError(f'Invalid value for {key}. Please use the selector.')
-    # @validates('split')
-    # def validate_split(self, key, split):
-    #     if split == 'on':
-    #         split = True
-    #     elif split is None or split == "":
-    #         split = False
-    #     else:
-    #         raise ValueError('Please use the selector to indicate whether split is present')
-    #     return split
-    
-
 
 
 class Payslip(db.Model):

@@ -45,7 +45,6 @@
 <div class="col s12 l6 entry-history content-container {{ 'active' if (tab == 'history') else '' }}" id="entry_history">
     <!-- history title -->
     <h4>{% block entry_history_title %}Test history{% endblock %}</h4>
-    {#{% if first_entry %} <a href="#modal_first" class="btn modal-trigger">Weekly Entries</a> {% endif %}#}
     <!-- history content -->
     <ul class="collapsible">
         {% for item in list %}
@@ -72,30 +71,7 @@
             <!-- collapsible-body -->
             <div class="collapsible-body">
                 {% block collapsible_body scoped %}{% endblock %}
-                {# delete if necessary
-                <!-- buttons -->
-                <!-- <a href="#modal_edit_{{ item.id }}"
-                    class="btn green accent-4 modal-trigger {{'hide' if item.split is true}}">Edit</a> -->
-                {% if type != 'week' %}
-                <!-- <a href="#modal_delete_{{ item.id }}" class="btn red modal-trigger">Delete</a> -->
-                {% endif %}
-                #}
             </div>
-
-            {% if type == 'week' %}
-
-            <!-- Select week modal -->
-            <div id="modal_edit_{{ item.id }}" class="modal">
-                <div class="modal-content">
-                    <h4>Edit {{item}} entries?</h4>
-                </div>
-                <div class="modal-footer">
-                    <a href="{{ url_for('week.week', item_id=item.id, tab='entry')}}" class="btn green">Confirm</a>
-                    <a class="modal-close btn grey">Cancel</a>
-                </div>
-            </div>
-
-            {% else %}
 
             <!-- Delete entry modal -->
             <div id="modal_delete_{{ item.id }}" class="modal">
@@ -134,8 +110,8 @@
                 </div>
             </div>
         </li>
-        {% endif %}
         {% endfor %}
+        
         <!-- delete all collapsible  -->
         <!-- <li>
             <div class="collapsible-header delete-all-collapsible"><i class="material-icons">filter_drama</i>
