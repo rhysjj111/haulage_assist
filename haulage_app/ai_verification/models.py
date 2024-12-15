@@ -1,47 +1,46 @@
+# import datetime
+# import enum
 # from haulage_app import db
 # from haulage_app.base import Base
-# from datetime import datetime
-# from enum import Enum
 # from haulage_app.functions import *
+# from haulage_app.models import str50, tstamp, date, intpk, driverfk, truckfk
+# from typing_extensions import Annotated
+# from typing import List, Optional
+# from sqlalchemy.orm import validates, Mapped, mapped_column, relationship
 
+# text = Annotated[str, mapped_column(db.Text)]
 
 # class RawResponse(db.Model):
-#     id = mapped_column(db.Integer, primary_key=True)
-#     timestamp = mapped_column(db.DateTime, default=datetime.utcnow)
-#     raw_response = mapped_column(db.Text, nullable=False)
-#     historical_context = mapped_column(db.Text)
-#     processing_successful = mapped_column(db.Boolean, default=True) # This column will be ticked if formatting is successful, and user has verified each of the results as helpful.
-#     all_suggestions_helpful = mapped_column(db.Boolean, default=True)
+#     id: Mapped[intpk]
+#     timestamp: Mapped[tstamp]
+#     historical_context: Mapped[Optional[text]]
+#     raw_response: Mapped[text]
+#     processing_successful: Mapped[bool] = mapped_column(default=True) # This column will be ticked if formatting is successful, and user has verified each of the results as helpful.
+#     all_suggestions_helpful: Mapped[bool] = mapped_column(default=True)
 
-#     ai_response_feedback = db.relationship(
-#         'AiResponseUserFeedback', backref='raw_response', lazy=True
+#     processed_responses: Mapped[List["ProcessedResponse"]] = relationship(
+#         backref='raw_response', cascade='all, delete-orphan'
 #     )
-#     processed_response = db.relationship(
-#         'ProcessedResponse', backref='raw_response', lazy=True
+#     ai_response_feedback: Mapped[List["AiResponseUserFeedback"]] = relationship(
+#         backref='raw_response'
 #     )
-
-# class AiResponseUserFeedback(db.Model):
-#     id = mapped_column(db.Integer, primary_key=True)
-#     timestamp = mapped_column(db.DateTime, default=datetime.utcnow)
-#     directly_helpful = mapped_column(db.Boolean) # The suggestion was spot on.
-#     indirectly_helpful = mapped_column(db.Boolean) # The suggestion wasn't correct but led to a correction.
-
-#     ai_response_id = mapped_column(db.Integer, db.ForeignKey('raw_response.id'), nullable=False)
-#     processed_response_id = mapped_column(db.Integer, db.ForeignKey('processed_response.id'), nullable=False)
 
 # class ProcessedResponse(db.Model):
-#     id = mapped_column(db.Integer, primary_key=True)
-#     timestamp = mapped_column(db.DateTime, default=datetime.utcnow)
-    
-#     type = mapped_column(db.String(50), nullable=False)
+#     id: Mapped[intpk]
+#     timestamp: Mapped[tstamp]
+#     type: mapped[str50]
+#     explanation: Mapped[Optional[text]]
 
-#     raw_response_id = mapped_column(db.Integer, db.ForeignKey('raw_response.id'))
-#     ai_response_feedback = db.relationship(
-#         'AiResponseUserFeedback', backref='processed_response', uselist=False, lazy=True
+#     raw_response_id: Mapped[int] = mapped_column(ForeignKey('raw_response.id'), ondelete="CASCADE")
+#     ai_response_feedback: Mapped["AiResponseUserFeedback"] = relationship(
+#         backref='processed_response', 
+#         uselist=False, 
+#         cascade='all, delete-orphan',
+#         lazy='joined'
 #     )
 #     __mapper_args__ = {'polymorphic_on': type}
 
-# class TableName(Enum):
+# class TableName(enum.Enum):
 #     DRIVER = 'driver'
 #     TRUCK = 'truck'
 #     DAY = 'day'
@@ -49,46 +48,56 @@
 #     FUEL = 'fuel'
 #     PAYSLIP = 'payslip'
 
-#     # table_name_enum = db.Enum(TableName, name='table_name_enum')
-
 # class MissingEntry(ProcessedResponse):
-#     date = mapped_column(db.Date)
-#     driver_id = mapped_column(db.Integer, db.ForeignKey('driver.id'), nullable=True)
-#     truck_id = mapped_column(db.Integer, db.ForeignKey('truck.id'), nullable=True)
-#     table_name = mapped_column(db.Enum(TableName), nullable=False)
-#     # table_name = mapped_column(table_name_enum, nullable=False) 
-#     suggestion_exists = mapped_column(db.Boolean, default=False)
-#     suggestion_repeated = mapped_column(db.Boolean, default=False)
+#     date: Mapped[date]
+#     driver_id: Mapped[Optional[driverfk]]
+#     truck_id: Mapped[Optional[truckfk]]
+#     table_name: Mapped[TableName]
+#     suggestion_exists: Mapped[bool] = mapped_column(default=False) #
+#     suggestion_repeated: Mapped[bool] = mapped_column(default=False)
 
-#     driver = db.relationship('Driver', uselist=False, lazy='joined')
-#     truck = db.relationship('Truck', uselist=False, lazy='joined')
+#     driver: Mapped['Driver'] = relationship(uselist=False, lazy='joined')
+#     truck: Mapped['Truck'] = relationship(uselist=False, lazy='joined')
 
 #     __mapper_args__ = {'polymorphic_identity': 'missing_entry'}
 
-
 # class DayAnomaly(ProcessedResponse):
-#     day_id = mapped_column(db.Integer, db.ForeignKey('day.id'), nullable=False)
-#     day = db.relationship('Day', backref='anomalies', lazy='joined')
-#     explanation_message = mapped_column(db.Text)  # Explanation moved here
+#     day_id: Mapped[int] = mapped_column(ForeignKey('day.id'))
+
+#     day: Mapped['Day'] = relationship(backref='anomalies', lazy='joined')
+
 #     __mapper_args__ = {'polymorphic_identity': 'day_anomaly'}
 
 
 # class JobAnomaly(ProcessedResponse):
-#     job_id = mapped_column(db.Integer, db.ForeignKey('job.id'), nullable=False)
-#     job = db.relationship('Job', backref='anomalies', lazy='joined')
-#     explanation_message = mapped_column(db.Text)  # Explanation moved here
+#     job_id: Mapped[int] = mapped_column(ForeignKey('job.id'))
+
+#     job: Mapped['Job'] = relationship(backref='anomalies', lazy='joined')
+
 #     __mapper_args__ = {'polymorphic_identity': 'job_anomaly'}
 
 
 # class FuelAnomaly(ProcessedResponse):
-#     fuel_id = mapped_column(db.Integer, db.ForeignKey('fuel.id'), nullable=False)
-#     fuel = db.relationship('Fuel', backref='anomalies', lazy='joined')
-#     explanation_message = mapped_column(db.Text)  # Explanation moved here
+#     fuel_id: Mapped[int] = mapped_column(ForeignKey('fuel.id'))
+
+#     fuel: Mapped['Fuel'] = relationship(backref='anomalies', lazy='joined')
+
 #     __mapper_args__ = {'polymorphic_identity': 'fuel_anomaly'}
 
 
 # class PayslipAnomaly(ProcessedResponse):
-#     payslip_id = mapped_column(db.Integer, db.ForeignKey('payslip.id'), nullable=False)
-#     payslip = db.relationship('Payslip', backref='anomalies', lazy='joined')
-#     explanation_message = mapped_column(db.Text)  # Explanation moved here
+#     payslip_id: Mapped[int] = mapped_column(ForeignKey('payslip.id'))
+
+#     payslip: Mapped['Payslip'] = relationship(backref='anomalies', lazy='joined')
+
 #     __mapper_args__ = {'polymorphic_identity': 'payslip_anomaly'}
+
+
+# class AiResponseUserFeedback(db.Model):
+#     id: Mapped[intpk]
+#     timestamp: Mapped[tstamp]
+#     directly_helpful: Mapped[bool] # The suggestion was spot on.
+#     indirectly_helpful: Mapped[bool] # The suggestion wasn't correct but led to a correction.
+
+#     ai_response_id: Mapped[int] = mapped_column(ForeignKey('raw_response.id'), nullable=False)
+#     processed_response_id: Mapped[int] = mapped_column(ForeignKey('processed_response.id'), nullable=False)

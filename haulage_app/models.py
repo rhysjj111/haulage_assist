@@ -1,14 +1,13 @@
 import re
+import datetime
 from haulage_app import db
 from haulage_app.base import Base
 from haulage_app.functions import *
 from typing_extensions import Annotated
-from typing import List
-from typing import Optional
+from typing import List, Optional
 from sqlalchemy.orm import validates, Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import String, ForeignKey, Integer, DateTime, Date, func
-import datetime
 
 str50 = Annotated[str, mapped_column(String(50))]
 date = Annotated[datetime.date, mapped_column(Date, index=True)]
