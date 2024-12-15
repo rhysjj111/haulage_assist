@@ -45,6 +45,12 @@ blueprints = [expense_bp, api_bp, driver_bp, day_bp, truck_bp,
 for blueprint in blueprints:
     app.register_blueprint(blueprint)
 
+from haulage_app.ai_verification import models
+
+with app.app_context():
+    db.create_all()
+    print("Database tables created!")
+
 @app.route("/")
 def home():
     return render_template("entry_menu.html")

@@ -7,6 +7,9 @@ from haulage_app.models import str50, tstamp, date, intpk, driverfk, truckfk
 from typing_extensions import Annotated
 from typing import List, Optional
 from sqlalchemy.orm import validates, Mapped, mapped_column, relationship
+from sqlalchemy import String, ForeignKey, Integer, DateTime, Date, func
+from haulage_app.models import Driver, Truck, Day, Payslip, Job, Fuel
+
 
 text = Annotated[str, mapped_column(db.Text)]
 
@@ -28,10 +31,10 @@ class RawResponse(db.Model):
 class ProcessedResponse(db.Model):
     id: Mapped[intpk]
     timestamp: Mapped[tstamp]
-    type: mapped[str50]
+    type: Mapped[str50] = mapped_column(nullable=False)
     explanation: Mapped[Optional[text]]
 
-    raw_response_id: Mapped[int] = mapped_column(ForeignKey('raw_response.id'), ondelete="CASCADE")
+    raw_response_id: Mapped[int] = mapped_column(ForeignKey('raw_response.id', ondelete="CASCADE"))
     ai_response_feedback: Mapped["AiResponseUserFeedback"] = relationship(
         backref='processed_response', 
         uselist=False, 
@@ -98,12 +101,14 @@ class AiResponseUserFeedback(db.Model):
     db.CheckConstraint(
         'NOT (directly_helpful = TRUE AND indirectly_helpful = True)',
         name='helpful_constraint'  # Give the constraint a descriptive name
-    ),
-    )
-    processed_response_id: Mapped[int] = mapped_column(ForeignKey('processed_response.id'), primary_key=True)
+    ),)
+    id: Mapped[intpk]
     timestamp: Mapped[tstamp]
     directly_helpful: Mapped[bool] # The suggestion was spot on.
     indirectly_helpful: Mapped[bool] # The suggestion wasn't correct but led to a correction.
 
+    processed_response_id: Mapped[int] = mapped_column(ForeignKey(
+        'processed_response.id', ondelete="CASCADE"
+    ))
 
 
