@@ -2,7 +2,7 @@ from flask import render_template, request, redirect, url_for, flash
 from haulage_app import db
 from haulage_app.models import Truck
 from haulage_app.truck import truck_bp
-
+from sqlalchemy.exc import IntegrityError
 
 @truck_bp.route("/add_truck/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_truck(item_id, tab):
@@ -18,7 +18,12 @@ def add_truck(item_id, tab):
                 )    
             db.session.add(new_entry)
             db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            flash("Truck already exists in the database, please choose another name or edit/delete current truck to replace.", 'error-msg')
+            truck = request.form
         except ValueError as e:
+            db.session.rollback()
             flash(str(e), 'error-msg')
             #retrieve previous answers
             truck = request.form

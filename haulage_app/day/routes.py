@@ -3,7 +3,7 @@ from haulage_app import db, f
 from haulage_app.models import Driver, Day, Truck
 from haulage_app.day import day_bp
 from pprint import pprint
-
+from sqlalchemy.exc import IntegrityError
 
 @day_bp.route("/add_day/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_day(item_id, tab):
@@ -55,6 +55,10 @@ def add_day(item_id, tab):
                 new_entry.additional_wages = request.form.get("additional_wages")
             db.session.add(new_entry)
             db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            flash("Entry already exists with the same driver and date you dull pr*ck.", 'error-msg')
+            template_data["day"].update(request.form)
         except ValueError as e:
             db.session.rollback()
             flash(str(e), 'error-msg')

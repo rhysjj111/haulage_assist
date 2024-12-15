@@ -2,6 +2,7 @@ from flask import render_template, request, redirect, url_for, flash
 from haulage_app import db
 from haulage_app.models import Driver, Truck
 from haulage_app.driver import driver_bp
+from sqlalchemy.exc import IntegrityError
 
 
 @driver_bp.route("/add_driver/<int:item_id>/<tab>", methods=["GET", "POST"])
@@ -25,6 +26,10 @@ def add_driver(item_id, tab):
                 )
             db.session.add(new_entry)
             db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            flash("Driver already exists in the database, please choose another name or edit/delete current driver to replace.", 'error-msg')
+            driver = request.form
         except ValueError as e:
             db.session.rollback()
             flash(str(e), 'error-msg')

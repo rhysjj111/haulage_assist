@@ -2,7 +2,7 @@ from flask import render_template, request, redirect, url_for, flash
 from haulage_app import db, f
 from haulage_app.models import Driver, Payslip 
 from haulage_app.payslip import payslip_bp
-
+from sqlalchemy.exc import IntegrityError
 
 @payslip_bp.route("/add_payslip/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_payslip(item_id, tab):
@@ -21,6 +21,10 @@ def add_payslip(item_id, tab):
             )
             db.session.add(new_entry)
             db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            flash("Entry already exists with the same driver and date you dull pr*ck.", 'error-msg')
+            payslip = request.form
         except ValueError as e:
             flash(str(e), 'error-msg')
             #retrieve previous answers
