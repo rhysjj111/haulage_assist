@@ -12,7 +12,7 @@ import datetime
 
 str50 = Annotated[str, mapped_column(String(50))]
 date = Annotated[datetime.date, mapped_column(Date, index=True)]
-tstamp = Annotated[datetime.datetime, mapped_column(DateTime, default=func.now, nullable=False)]
+tstamp = Annotated[datetime.datetime, mapped_column(DateTime, server_default=func.now(), nullable=True)]
 intpk = Annotated[int, mapped_column(primary_key=True)]
 driverfk = Annotated[int, mapped_column(ForeignKey("driver.id"), index=True)]
 driverfk_restrict = Annotated[int, mapped_column(ForeignKey("driver.id", ondelete="RESTRICT"), index=True)]
