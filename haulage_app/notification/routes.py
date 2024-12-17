@@ -41,9 +41,9 @@ def inject_notification():
     # ]
 
     test_notifications = []
-    verifier = GeminiVerifier()
-    llm_response, historical_context, table = verifier.llm_detect_missing_payslips()
-    process_response = verifier.process_llm_missing_data_response(llm_response, historical_context, table)
+    # verifier = GeminiVerifier()
+    # llm_response, historical_context, table = verifier.llm_detect_missing_payslips()
+    # process_response = verifier.process_llm_missing_data_response(llm_response, historical_context, table)
 
     return {'notifications': [test_notifications]}
 
