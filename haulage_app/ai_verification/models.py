@@ -16,10 +16,8 @@ text = Annotated[str, mapped_column(db.Text)]
 class RawResponse(db.Model):
     id: Mapped[intpk]
     timestamp: Mapped[tstamp]
-    historical_context: Mapped[Optional[text]]
     raw_response: Mapped[text]
     processing_successful: Mapped[bool] = mapped_column(default=True) # This column will be ticked if formatting is successful, and user has verified each of the results as helpful.
-    all_suggestions_helpful: Mapped[bool] = mapped_column(default=True)
 
     processed_responses: Mapped[List["ProcessedResponse"]] = relationship(
         backref='raw_response', cascade='all, delete-orphan'
@@ -27,6 +25,34 @@ class RawResponse(db.Model):
     # ai_response_feedback: Mapped[List["AiResponseUserFeedback"]] = relationship(
     #     backref='raw_response'
     # )
+
+    def has_processed_responses(self):
+        """Checks if any processed responses exist for this RawResponse."""
+        return self.processed_responses.count() > 0
+
+    def check_missing_suggestions_valid(self):
+        """
+        Checks all related MissingEntry instances for False values in either
+        record_missing or suggestion_repeated fields.  Also returns False
+        if there are no related MissingEntry instances.
+
+        Returns:
+            bool: False if any related MissingEntry instance has either
+                record_missing or suggestion_repeated set to False, or
+                if there are no related MissingEntry instances.
+                True otherwise.
+        """
+
+        missing_entries = [entry for entry in self.processed_responses if isinstance(entry, MissingEntry)]
+        
+        if not missing_entries:
+            return False
+
+        for missing_entry in missing_entries:
+            if not missing_entry.record_missing or not missing_entry.suggestion_repeated:
+                return False
+        return True
+
 
 class ProcessedResponse(db.Model):
     id: Mapped[intpk]
@@ -42,6 +68,10 @@ class ProcessedResponse(db.Model):
         lazy='joined'
     )
     __mapper_args__ = {'polymorphic_on': type}
+
+    @classmethod
+    def get_processed_response_count(cls):
+        return cls.query.count()   
 
 class TableName(enum.Enum):
     DRIVER = 'driver'
@@ -59,10 +89,9 @@ class MissingEntry(ProcessedResponse):
     record_missing: Mapped[bool] = mapped_column(default=False) #True if the suggested missing record is missing
     suggestion_repeated: Mapped[bool] = mapped_column(default=False) #True if the record has previously been suggested by ai.
 
+    __mapper_args__ = {'polymorphic_identity': 'missing_entry'}
     driver: Mapped['Driver'] = relationship(uselist=False, lazy='joined')
     truck: Mapped['Truck'] = relationship(uselist=False, lazy='joined')
-
-    __mapper_args__ = {'polymorphic_identity': 'missing_entry'}
 
 class DayAnomaly(ProcessedResponse):
     day_id: Mapped[int] = mapped_column(ForeignKey('day.id'))

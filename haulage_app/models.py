@@ -185,10 +185,11 @@ class Day(db.Model):
     additional_wages: Mapped[int] = mapped_column(default=0)
     
     __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_uc'),)
+
     driver: Mapped["Driver"] = relationship(back_populates="days")
     truck: Mapped["Truck"] = relationship(back_populates="days")
     jobs: Mapped[List["Job"]] = relationship(back_populates="day", cascade="all, delete", lazy=True)
-
+    
     def __repr__(self):
         #represents itself in form of string
         return f"Day entry: {self.driver.full_name} {display_date(self.date)}"

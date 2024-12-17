@@ -47,9 +47,9 @@ for blueprint in blueprints:
 
 from haulage_app.ai_verification import models
 
-with app.app_context():
-    db.create_all()
-    print("Database tables created!")
+# with app.app_context():
+#     db.create_all()
+#     print("Database tables created!")
 
 @app.route("/")
 def home():

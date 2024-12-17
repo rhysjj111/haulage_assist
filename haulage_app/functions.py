@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 
 #functions format to db
@@ -84,17 +85,73 @@ def get_weeks_for_period(day_query):
     return available_weeks
 
 # functions for ai_verification
-def query_to_dict(historical_context, Table):
-    set_name = Table.get_name()+"_data"
+# functions for ai_verification
+# def query_to_dict(historical_context, Table):
+#     set_name = Table.__tablename__+"_data"
     
+#     if historical_context.get(set_name) is None:
+#         historical_context[set_name] = {}
+
+#     data_list = []
+#     for entry in Table.query.all():
+#         data = {
+#             column.name: getattr(entry, column.name)
+#             for column in Table.__table__.columns
+#         }
+#         data_list.append(data)
+#     historical_context[set_name] = data_list
+#     return historical_context
+
+def query_to_dict(historical_context, Table, filter_criteria=None, limit=5000, relevant_attributes=None):
+    """
+    Fetches and serializes data from a SQLAlchemy table to a dictionary.
+
+    Args:
+        historical_context: The dictionary to store the data.
+        Table: The SQLAlchemy table model.
+        filter_criteria: Optional SQLAlchemy filter criteria (e.g., Table.id > 10).
+        limit: The maximum number of rows to fetch (to avoid excessive data).
+        relevant_attributes: Optional list of attribute names to include in the dictionary.
+
+    Returns:
+        The updated historical_context dictionary.  Returns None on error.
+    """
+    set_name = Table.__tablename__ + "_data"
     if historical_context.get(set_name) is None:
-        historical_context[set_name] = {}
+        historical_context[set_name] = []
 
-    for entry in Table.query.all():
-        data = {
-            column.name: getattr(entry, column.name)
-            for column in Table.__table__.columns
-        }
-        historical_context[set_name][entry.id] = data
-    return historical_context
+    try:
+        query = Table.query
+        print(query.count())
+        if filter_criteria:
+            query = query.filter(filter_criteria)
+        if hasattr(Table, 'date'): #Check if 'date' column exists
+            query = query.order_by(Table.date.desc()) #Order by date if it exists.
+        query = query.limit(limit)  # Limit to avoid large data
 
+        for entry in query.all():
+            data = {}
+            if relevant_attributes is None:
+                attributes_to_include = [col.name for col in Table.__table__.columns]
+            else:
+                attributes_to_include = relevant_attributes
+            
+            for col_name in attributes_to_include:
+                try:
+                    value = getattr(entry, col_name)
+                    if isinstance(value, (str, int, float, bool, type(None))):
+                        data[col_name] = value
+                    elif isinstance(value, datetime.date):
+                        data[col_name] = value.isoformat()
+                    elif isinstance(value, datetime.datetime):
+                        data[col_name] = value.isoformat() #Serialize datetime objects as ISO strings
+                except AttributeError:
+                    logging.exception(f"Warning: Attribute '{col_name}' not found in table '{Table.__tablename__}'.")
+                    return None
+
+            historical_context[set_name].append(data)
+        return historical_context
+
+    except Exception as e:
+        logging.exception(f"Error in query_to_dict: {e}")
+        return None

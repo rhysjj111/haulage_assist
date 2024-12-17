@@ -1,9 +1,11 @@
 import os
+import json
 import google.generativeai as genai
 # from haulage_app.notification.models import Notification
 # from haulage_app.ai_verification.models import VerificationFeedback
 from datetime import datetime, timedelta
 from haulage_app.models import Driver, Day, Fuel, Job, Payslip, Truck
+from haulage_app.ai_verification.models import RawResponse, MissingEntry
 import json
 from pprint import pprint
 from haulage_app import db
@@ -22,20 +24,18 @@ class GeminiVerifier:
 
     def process_llm_missing_data_response(self, llm_response, historical_context, Table):
         try:
+            historical_context_json = json.dumps(historical_context)
             ai_response_entry = RawResponse(
-                raw_response = llm_response,
-                historical_context = historical_context
+                raw_response = llm_response
             )
             db.session.add(ai_response_entry)
             db.session.commit()
         except Exception as e:
             logging.exception(
-                f"Error commiting to AiResponse: {e}, Response: {llm_response}, \
-                Historical context: {historical_context}"
-            )
-            print(
-               f"Error commiting to AiResponse: {e}, Response:, \
-                Historical context: "
+                f"Error commiting to AiResponse: {e},"
+                #      Response: {llm_response}, \
+                # Historical context: {historical_context}"
+                
             )
             db.session.rollback()
             return False
@@ -70,12 +70,10 @@ class GeminiVerifier:
                         MissingAnomaly.driver_id == entry['anomaly_identifier_id'],
                         MissingAnomaly.date == date_to_db(entry['anomaly_date'])
                     ).first()
-                    if existing_record:
-                        suggested_entry.suggestion_exists = True
-                    if repeated_record:
+                    if not existing_record:
+                        suggested_entry.record_missing = True
+                    if not repeated_record:
                         suggested_entry.suggestion_repeated = True
-                    if repeated_record or existing_record:
-                        ai_response_entry.all_suggestions_helpful = False
                     suggested_entries.append(suggested_entry)
                     print('new entry appended')
                     # Add to database
@@ -83,29 +81,29 @@ class GeminiVerifier:
                 db.session.commit()
                     
             except json.JSONDecodeError:
-                logging.exception(f"Invalid JSON received from LLM: {llm_response}, Historical context: {historical_context}")
-                print(f"Invalid JSON received from LLM:, Historical context: ")
+                logging.exception(f"Invalid JSON received from LLM: \
+                    {llm_response}, Historical context: {historical_context}")
                 db.session.rollback()
                 ai_response_entry.processing_successful = False
                 db.session.commit()
                 return False
             except KeyError as e:
-                logging.exception(f"Missing key in JSON response: {e}, Response: {llm_response}, Historical context: {historical_context}")
-                print(f"Missing key in JSON response: {e}, Response:, Historical context: ")
+                logging.exception(f"Missing key in JSON response: {e}, Response: \
+                    {llm_response}, Historical context: {historical_context}")
                 db.session.rollback()
                 ai_response_entry.processing_successful = False
                 db.session.commit()
                 return False
             except ValueError as e:
-                logging.exception(f"Invalid data format: {e}, Response: {llm_response}, Historical context: {historical_context}")
-                print(f"Invalid data format: {e}, Response:, Historical context: ")
+                logging.exception(f"Invalid data format: {e}, Response: \
+                    {llm_response}, Historical context: {historical_context}")
                 db.session.rollback()
                 ai_response_entry.processing_successful = False
                 db.session.commit()
                 return False
             except Exception as e:
-                logging.exception(f"An unexpected error occurred: {e}, Response: {llm_response}, Historical context: {historical_context}")
-                print(f"An unexpected error occurred: {e}, Response:, Historical context: ")
+                logging.exception(f"An unexpected error occurred: {e}, Response: \
+                    {llm_response}, Historical context: {historical_context}")
                 db.session.rollback()
                 ai_response_entry.processing_successful = False
                 db.session.commit()
@@ -118,16 +116,25 @@ class GeminiVerifier:
     def llm_detect_missing_payslips(self):
 
         historical_context = {}
-        query_to_dict(historical_context, Driver)
+        query_to_dict(historical_context, Driver, relevant_attributes=['id', 'first_name', 'last_name'])
         query_to_dict(historical_context, Payslip)
+        print(historical_context)
 
         llm_response = self.model.generate_content(
             f"""
-            Analyze this historical data for missing payslips across ALL drivers: {historical_context}
+            Analyze this historical data for missing payslips across ALL drivers: 
+            
+            {historical_context}
 
             Each driver gets paid at the end of the working week.
 
-            Check every driver's payslip history systematically. For each missing payslip, provide:
+            Check every driver's payslip history systematically.
+
+            Return only the raw array. No code blocks, no explanations, no additional formatting.
+
+            Return only a maximum of  results 3, high quality results. If no missing data is found, return an empty list: `[]`
+
+            For each missing payslip, provide:
             [
                 {{
                     "anomaly_date": "DD/MM/YYYY",
@@ -137,7 +144,6 @@ class GeminiVerifier:
                 }}
             ]
             
-            Return only the raw array. No code blocks, no explanations, no additional formatting.
             """
         )
 
@@ -174,7 +180,7 @@ class GeminiVerifier:
                 }}
             ]
 
-            Only return a maximum of 4 results. If no anomalous data is found, return an empty list: `[]`
+            Only return a maximum of  results 3, high quality results. If no anomalous data is found, return an empty list: `[]`
             
             Return only the raw array. No code blocks, no explanations, no additional formatting.
             """)
