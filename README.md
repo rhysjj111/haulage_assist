@@ -157,6 +157,17 @@ from wages_calc import db, app
   with app.app_context():
     db.create_all()
 ```
+#### Exporting data from Heroku to development environment
+- Make sure that you have an empty database.
+- Below is an example where the development database name is postgres.
+- Run these commands from the CLI, ensure you do not have data you want to keep in a database called 'postgres'. You can substitute postgres for any name.
+```
+dropdb postgres
+createdb postgres
+PGPASSWORD=<DATABASE PASSWORD> pg_dump -h c3l5o0rb2a6o4l.cluster-czz5s0kz4scl.eu-west-1.rds.amazonaws.com -U u1gn7p79ue8ef3 dau2n8i4dqe30h | psql -h localhost -U user postgres
+'''
+- Insert DATABASE PASSWORD into the command above. I have left all other details such as host name etc. of my current database.
+
 #### Migrating database from Gitpod environment to Heroku
 ##### Login to Heroku via CLI
 - Obtain Heroku api key from Heroku dashboard. Run:

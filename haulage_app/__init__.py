@@ -36,16 +36,16 @@ from haulage_app.analysis import analysis_bp
 from haulage_app.expense import expense_bp
 from haulage_app.week import week_bp
 from haulage_app.notification import notification_bp
-from haulage_app.ai_verification import ai_verification_bp
+from haulage_app.verification import verification_bp
 
 blueprints = [expense_bp, api_bp, driver_bp, day_bp, truck_bp, 
               job_bp, fuel_bp, payslip_bp, wages_calculator_bp,
-              analysis_bp, week_bp, notification_bp, ai_verification_bp]
+              analysis_bp, week_bp, notification_bp, verification_bp]
 
 for blueprint in blueprints:
     app.register_blueprint(blueprint)
 
-from haulage_app.ai_verification import models
+from haulage_app.verification import models
 
 # with app.app_context():
 #     db.create_all()

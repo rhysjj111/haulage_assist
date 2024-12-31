@@ -3,12 +3,13 @@ from haulage_app import db, app
 from haulage_app.models import (
     Driver, Day, Job, Truck, Fuel,
     Payslip, )
-# from haulage_app.ai_verification.models import VerificationFeedback
-from haulage_app.ai_verification.routes import GeminiVerifier
+# from haulage_app.verification.models import VerificationFeedback
+from haulage_app.verification.verify_utils import GeminiVerifier
 from datetime import timedelta, date, datetime
 from haulage_app.notification import notification_bp
 # from haulage_app.notification.models import TimeframeEnum, ErrorTypeEnum, FaultAreaEnum, Notification
 from pprint import pprint
+from haulage_app.config import DATA_BEGIN_DATE as start_date
 
 @app.context_processor
 def inject_notification():
@@ -16,36 +17,41 @@ def inject_notification():
     #     return Notification.query.filter_by(is_read=False).order_by(Notification.timestamp.desc()).all()
     # return dict(notifications=get_notifications())
 
-    # test_notifications = [
-    #     {
-    #         'id': 1,
-    #         'message': 'Driver John Smith has unusually high earnings of £2800',
-    #         'timestamp': datetime.now(),
-    #         'category': 'verification',
-    #         'is_read': False
-    #     },
-    #     {
-    #         'id': 2,
-    #         'message': 'Multiple drivers showing earnings below base wage this week',
-    #         'timestamp': datetime.now() - timedelta(hours=2),
-    #         'category': 'alert',
-    #         'is_read': False
-    #     },
-    #     {
-    #         'id': 3,
-    #         'message': 'New pattern detected: Weekend earnings 40% higher than weekday average',
-    #         'timestamp': datetime.now() - timedelta(days=1),
-    #         'category': 'insight',
-    #         'is_read': False
-    #     }
-    # ]
 
     test_notifications = []
-    # verifier = GeminiVerifier()
-    # llm_response, historical_context, table = verifier.llm_detect_missing_payslips()
-    # process_response = verifier.process_llm_missing_data_response(llm_response, historical_context, table)
+
+    end_date = "2024-12-20"
+    verifier = GeminiVerifier()
+    # llm_response, historical_context = verifier.llm_detect_missing_payslips(start_date, end_date)
+    # process_response = verifier.process_llm_missing_data(llm_response, historical_context)
+
 
     return {'notifications': [test_notifications]}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @notification_bp.route("/", methods=["GET"])
 def notification():

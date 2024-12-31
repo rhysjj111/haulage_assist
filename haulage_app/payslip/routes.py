@@ -23,7 +23,7 @@ def add_payslip(item_id, tab):
             db.session.commit()
         except IntegrityError as e:
             db.session.rollback()
-            flash("Entry already exists with the same driver and date you dull pr*ck.", 'error-msg')
+            flash("Payslip entry already exists for this week(Sat to Fri), edit or delete current one.", 'error-msg')
             payslip = request.form
         except ValueError as e:
             flash(str(e), 'error-msg')
@@ -31,8 +31,7 @@ def add_payslip(item_id, tab):
             payslip = request.form
         else:
             flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
-            return redirect(url_for("payslip.add_payslip", drivers=drivers, payslips=payslips, 
-                            tab='entry', item_id=0))
+            return redirect(url_for("payslip.add_payslip", tab='entry', item_id=0))
     return render_template("add_payslip.html", drivers=drivers, list=payslips, tab=tab, 
                            payslip=payslip, item_id=item_id, type='payslip')
 
@@ -53,9 +52,14 @@ def edit_payslip(item_id):
         entry.total_wage = request.form.get("total_wage")
         entry.total_cost_to_employer = request.form.get("total_cost_to_employer")
         db.session.commit()
+    except IntegrityError as e:
+        db.session.rollback()
+        flash("Payslip entry already exists for this week(Sat to Fri), edit or delete current one.", 'error-msg-modal')
+        return redirect(url_for("payslip.add_payslip", item_id=item_id, tab='edit'))
     except ValueError as e:
+        db.session.rollback()
         flash(str(e), 'error-msg-modal')
         return redirect(url_for("payslip.add_payslip", item_id=item_id, tab='edit'))
     else:
-        flash("Success", "success-msg")
+        flash(f"Entry Success: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg")
         return redirect(url_for("payslip.add_payslip", item_id=0, tab='edit'))

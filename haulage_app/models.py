@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 from typing import List, Optional
 from sqlalchemy.orm import validates, Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy import String, ForeignKey, Integer, DateTime, Date, func
+from sqlalchemy import String, ForeignKey, Integer, DateTime, Date, func, Computed
 
 str50 = Annotated[str, mapped_column(String(50))]
 tstamp = Annotated[datetime.datetime, mapped_column(DateTime, server_default=func.now(), nullable=True)]
@@ -20,6 +20,11 @@ truckfk_cascade = Annotated[int, mapped_column(ForeignKey("truck.id", ondelete="
 truckfk_restrict = Annotated[int, mapped_column(ForeignKey("truck.id", ondelete="RESTRICT"), index=True)]
 dayfk_cascade = Annotated[int, mapped_column(ForeignKey("day.id", ondelete="CASCADE"), index=True)]
 expensefk_cascade = Annotated[int, mapped_column(ForeignKey("expense.id", ondelete="CASCADE"), index=True)]
+week_number_computed = Annotated[int, mapped_column(
+    Computed("((EXTRACT(DOW FROM date) + EXTRACT(week FROM date) * 7 - 6) / 7)::integer"),
+    index=True
+)]
+
 
 class Driver(db.Model):
     id: Mapped[intpk]
@@ -183,6 +188,7 @@ class Day(db.Model):
     end_mileage: Mapped[int] = mapped_column(default=0)
     additional_earned: Mapped[int] = mapped_column(default=0)
     additional_wages: Mapped[int] = mapped_column(default=0)
+    week_number: Mapped[week_number_computed]
     
     __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_uc'),)
 
@@ -334,8 +340,15 @@ class Payslip(db.Model):
     driver_id: Mapped[driverfk]
     total_wage: Mapped[int]
     total_cost_to_employer: Mapped[int]
+    week_number: Mapped[week_number_computed]
 
-    __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_ps_uc'),)
+    __table_args__ = (
+        db.UniqueConstraint(
+            'driver_id',
+            'week_number',
+            name='_driver_week_payslip_uc'
+        ),
+    )
 
     driver: Mapped["Driver"] = relationship(back_populates="payslips")
 
@@ -372,6 +385,7 @@ class Fuel(db.Model):
     fuel_card_name: Mapped[str50] = mapped_column(index=True)    
     fuel_volume: Mapped[int]
     fuel_cost: Mapped[int]
+    week_number: Mapped[week_number_computed]
 
     truck: Mapped["Truck"] = relationship(back_populates="fuel_entries")
 

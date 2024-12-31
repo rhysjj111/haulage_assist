@@ -28,8 +28,7 @@ def add_fuel(item_id, tab):
             fuel = request.form
         else:
             flash(f"Entry Success: {new_entry.truck.registration} - {f.display_date(new_entry.date)}", "success-msg")
-            return redirect(url_for("fuel.add_fuel", trucks=trucks, fuel_entries=fuel_entries, 
-                            tab='entry', item_id=0))
+            return redirect(url_for("fuel.add_fuel", tab='entry', item_id=0))
     return render_template("add_fuel.html", trucks=trucks, list=fuel_entries, tab=tab, fuel=fuel, item_id=item_id, type='fuel')
 
 @fuel_bp.route("/delete_fuel/<int:item_id>")

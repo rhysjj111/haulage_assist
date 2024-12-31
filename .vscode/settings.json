@@ -1,5 +1,5 @@
 {
-   "python.terminal.activateEnvironment": false,
+   "python.terminal.activateEnvironment": true,
    "files.exclude": {
       "**/.DS_Store": true,
       "**/.git": true,
@@ -14,11 +14,12 @@
       "**/CVS": true
    },
    "files.autoSave": "off",
-   "workbench.colorTheme": "Visual Studio Dark",
    "terminal.integrated.gpuAcceleration": "canvas",
-   "editor.defaultFormatter": "HookyQR.beautify",
    "IDX.aI.enableInlineCompletion": true,
    "IDX.aI.enableCodebaseIndexing": true,
    "workbench.editor.enablePreview": false,
-   "autoOpenPreviewPanel.extensionEnabled": false
+   "autoOpenPreviewPanel.extensionEnabled": false,
+   "editor.fontLigatures": false,
+   "python.terminal.activateEnvInCurrentTerminal": true,
+   "IDX.corgiMode": true,
 }
