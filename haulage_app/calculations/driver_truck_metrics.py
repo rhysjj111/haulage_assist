@@ -1,5 +1,8 @@
 from haulage_app.config import *
 from haulage_app.functions import *
+from haulage_app.models import (
+    Driver, Day, Job, Truck, Fuel, Expense,
+    ExpenseOccurrence, Payslip)
 
 # DRIVER METRICS
 
@@ -37,7 +40,7 @@ def calculate_driver_wages(day_entries, driver):
     return total_earned, weekly_extras, gross_pay, total_overnight
 
 
-def calculate_driver_metrics_week(driver, Day, Job, Payslip, start_date, end_date):
+def calculate_driver_metrics_week(driver, start_date, end_date):
 
     estimated = False
     
@@ -108,7 +111,7 @@ def calculate_total_mileage(day_entries):
     return sum((day.end_mileage - day.start_mileage) for day in day_entries)
 
 
-def calculate_truck_metrics_week(truck, Day, Fuel, start_date, end_date):
+def calculate_truck_metrics_week(truck, start_date, end_date):
 
     estimated = False
 

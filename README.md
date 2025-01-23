@@ -165,7 +165,7 @@ from wages_calc import db, app
 dropdb postgres
 createdb postgres
 PGPASSWORD=<DATABASE PASSWORD> pg_dump -h c3l5o0rb2a6o4l.cluster-czz5s0kz4scl.eu-west-1.rds.amazonaws.com -U u1gn7p79ue8ef3 dau2n8i4dqe30h | psql -h localhost -U user postgres
-'''
+```
 - Insert DATABASE PASSWORD into the command above. I have left all other details such as host name etc. of my current database.
 
 #### Migrating database from Gitpod environment to Heroku

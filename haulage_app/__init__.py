@@ -45,6 +45,8 @@ blueprints = [expense_bp, api_bp, driver_bp, day_bp, truck_bp,
 for blueprint in blueprints:
     app.register_blueprint(blueprint)
 
+from haulage_app.verification.scheduler import init_scheduler
+
 from haulage_app.verification import models
 
 # with app.app_context():

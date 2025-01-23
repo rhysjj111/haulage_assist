@@ -4,7 +4,8 @@ from haulage_app.models import (
     Driver, Day, Job, Truck, Fuel,
     Payslip, )
 # from haulage_app.verification.models import VerificationFeedback
-from haulage_app.verification.verify_utils import GeminiVerifier
+# from haulage_app.verification.verify_gemini_utils import GeminiVerifier
+# from haulage_app.verification.programatic_verification import find_missing_payslips
 from datetime import timedelta, date, datetime
 from haulage_app.notification import notification_bp
 # from haulage_app.notification.models import TimeframeEnum, ErrorTypeEnum, FaultAreaEnum, Notification
@@ -20,9 +21,12 @@ def inject_notification():
 
     test_notifications = []
 
+    # find_missing_payslips()
     end_date = "2024-12-20"
-    verifier = GeminiVerifier()
-    # llm_response, historical_context = verifier.llm_detect_missing_payslips(start_date, end_date)
+    # verifier = GeminiVerifier()
+    # verifier.llm_detect_anomalous_mileage()
+    # verifier.llm_detect_missing_fuel_invoices()
+    # verifier.llm_detect_missing_payslips()
     # process_response = verifier.process_llm_missing_data(llm_response, historical_context)
 
 

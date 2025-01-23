@@ -1,5 +1,6 @@
 import datetime
 import logging
+import json
 
 
 #functions format to db
@@ -47,6 +48,10 @@ def display_float(amount):
     """ Converts a number from integer to float ready to display to user """
     return float(amount/100)
 
+def display_int(amount):
+    """ Converts a number from db integer to integer ready to display to user """
+    return int(amount/100)
+
 def display_percentage(percentage):
     """ To be used to convert floats to percentages to store in the database """
     return float((percentage*100))
@@ -67,7 +72,7 @@ def get_week_number_sat_to_fri(date):
     week = adjusted_date.isocalendar().week
     return (year, week)
 
-def get_saturday_to_friday_week_number(date):
+def get_saturday_to_friday_week_number_string(date):
     day_of_week = date.weekday()  # 0 for Monday, 6 for Sunday
     adjusted_date = date + datetime.timedelta(days=(day_of_week + 2) % 7)
     return int(adjusted_date.strftime('%W'))
@@ -109,7 +114,7 @@ def query_to_dict(historical_context, Table, filter_criteria=None, limit=5000, r
     Args:
         historical_context: The dictionary to store the data.
         Table: The SQLAlchemy table model.
-        filter_criteria: Optional SQLAlchemy filter criteria (e.g., Table.id > 10).
+        filter_criteria: Optional SQLAlchemy filter criteria (e.g., (Table.id > 10,)), must be a tuple.
         limit: The maximum number of rows to fetch (to avoid excessive data).
         relevant_attributes: Optional list of attribute names to include in the dictionary.
 
@@ -123,7 +128,7 @@ def query_to_dict(historical_context, Table, filter_criteria=None, limit=5000, r
     try:
         query = Table.query
         if filter_criteria is not None:
-            query = query.filter(filter_criteria)
+            query = query.filter(*filter_criteria)
         if hasattr(Table, 'date'): #Check if 'date' column exists
             query = query.order_by(Table.date.desc()) #Order by date if it exists.
         query = query.limit(limit)  # Limit to avoid large data
@@ -145,6 +150,8 @@ def query_to_dict(historical_context, Table, filter_criteria=None, limit=5000, r
                         elif col_name == 'fuel':
                             # Distinguish fuel field in day from fuel_data.
                             data["fuel_flag"] = value
+                        elif col_name in ['start_mileage', 'end_mileage']:
+                            data[col_name] = display_int(value)
                         else:
                             data[col_name] = value
                     elif isinstance(value, datetime.date):
@@ -156,7 +163,7 @@ def query_to_dict(historical_context, Table, filter_criteria=None, limit=5000, r
                     return None
 
             historical_context[set_name].append(data)
-        return historical_context
+        return json.loads(json.dumps(historical_context))
 
     except Exception as e:
         logging.exception(f"Error in query_to_dict: {e}")

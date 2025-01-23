@@ -3,12 +3,12 @@ from haulage_app import db
 from haulage_app.verification.models import (
     AiRawResponse,
     AiProcessedResponse,
-    MissingEntrySuggestion,
-    DayAnomalySuggestion,
-    JobAnomalySuggestion,
-    FuelAnomalySuggestion,
-    PayslipAnomalySuggestion,
+    # MissingEntrySuggestion,
     AiResponseUserFeedback,
+    # DayAnomalySuggestion,
+    # JobAnomalySuggestion,
+    # FuelAnomalySuggestion,
+    # PayslipAnomalySuggestion,
 )
 
 def drop_tables():
@@ -17,14 +17,14 @@ def drop_tables():
     """
     try:
         # Drop the tables in the correct order to avoid foreign key constraint issues
-        AiResponseUserFeedback.__table__.drop(db.engine)
-        MissingEntrySuggestion.__table__.drop(db.engine)
-        DayAnomalySuggestion.__table__.drop(db.engine)
-        JobAnomalySuggestion.__table__.drop(db.engine)
-        FuelAnomalySuggestion.__table__.drop(db.engine)
-        PayslipAnomalySuggestion.__table__.drop(db.engine)
+        # AiResponseUserFeedback.__table__.drop(db.engine)
+        # MissingEntrySuggestion.__table__.drop(db.engine)
         AiProcessedResponse.__table__.drop(db.engine)
         AiRawResponse.__table__.drop(db.engine)
+        # DayAnomalySuggestion.__table__.drop(db.engine)
+        # JobAnomalySuggestion.__table__.drop(db.engine)
+        # FuelAnomalySuggestion.__table__.drop(db.engine)
+        # PayslipAnomalySuggestion.__table__.drop(db.engine)
 
         db.session.commit()
         print("Tables dropped successfully.")

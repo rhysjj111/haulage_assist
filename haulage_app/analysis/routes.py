@@ -58,12 +58,12 @@ def weekly_analysis():
     for driver in drivers:
 
         driver_data[driver.id] = calculate_driver_metrics_week(
-            driver, Day, Job, Payslip, start_date, end_date)
+            driver, start_date, end_date)
 
     for truck in trucks:
 
         truck_data[truck.id] = calculate_truck_metrics_week(
-            truck, Day, Fuel, start_date, end_date)
+            truck, start_date, end_date)
         driver = Driver.query.filter_by(truck_id=truck.id).first()
         if driver: #Check if a driver is assigned to this truck for the week
             driver_data[driver.id].setdefault('total_fuel_cost', 0) #Sets to 0 if key doesn't exist
