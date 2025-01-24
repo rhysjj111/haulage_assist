@@ -22,13 +22,25 @@ from haulage_app.functions import(
 def weekly_analysis():
 
     # Get all days in the database
-    all_days = Day.query.all()
+    all_days = Day.query.order_by(Day.week_number).with_entities(Day.week_number).distinct().all()
+    payslips = Payslip.query.order_by(Payslip.week_number).with_entities(Payslip.week_number).distinct().all()
+    print(len(all_days))
+    print(len(payslips))
+
+
+    for payslip in payslips:
+        print(payslip.week_number)
+    print('alksjdflkasjdflkasj')
     # Get all drivers and trucks
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())
+    for day in all_days:
+        print(day.week_number)
 
     # Get a list of available weeks
-    available_weeks = get_weeks_for_period(all_days)
+    # available_weeks = get_weeks_for_period(all_days)
+    # print(available_weeks)
+
 
     driver_data = {}
     truck_data = {}
@@ -132,8 +144,7 @@ def weekly_analysis():
         'analysis/weekly_analysis.html',
         selected_week_number=selected_week_number,
         selected_year=selected_year,
-        # airesponse=response.text,
-        available_weeks=available_weeks, 
+        # available_weeks=available_weeks, 
         drivers=drivers, 
         driver_data=driver_data,
         truck_data=truck_data,

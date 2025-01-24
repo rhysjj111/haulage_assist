@@ -22,6 +22,6 @@ def wages_calculator():
     for driver in drivers:
 
         driver_data[driver.id] = calculate_driver_metrics_week(
-            driver, Day, Job, Payslip, start_date, end_date)
+            driver, start_date, end_date)
 
     return render_template("wages_calculator.html", driver_data=driver_data, drivers=drivers, start_date=start_date, end_date=end_date)
