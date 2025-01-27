@@ -15,49 +15,47 @@ from haulage_app.calculations.driver_truck_metrics import (
 from haulage_app.functions import(
     get_week_number_sat_to_fri,
     get_start_of_week,
-    get_start_end_of_week,
-    get_weeks_for_period,)
+    get_start_and_end_of_week,
+    get_weeks_for_period,
+    format_unique_week_numbers_and_years,
+    )
+from sqlalchemy import cast, Integer
 
 @analysis_bp.route("/weekly_analysis", methods=["GET"])
 def weekly_analysis():
 
-    # Get all days in the database
-    all_days = Day.query.order_by(Day.week_number).with_entities(Day.week_number).distinct().all()
-    payslips = Payslip.query.order_by(Payslip.week_number).with_entities(Payslip.week_number).distinct().all()
-    print(len(all_days))
-    print(len(payslips))
-
-
-    for payslip in payslips:
-        print(payslip.week_number)
-    print('alksjdflkasjdflkasj')
     # Get all drivers and trucks
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())
-    for day in all_days:
-        print(day.week_number)
 
-    # Get a list of available weeks
-    # available_weeks = get_weeks_for_period(all_days)
-    # print(available_weeks)
-
-
+    # Initialize variables
     driver_data = {}
     truck_data = {}
     grand_total_data = {}
     selected_year = None
     selected_week_number = None
+    waiting_on_fuel_data = False
+    estimated = False
 
-    # Get today's year and week number
-    today_year, today_week = get_week_number_sat_to_fri(date.today())
-    # Use these values to get the start and end dates of the week
-    start_date, end_date = get_start_end_of_week(today_year, today_week)
+    # Get week numbers (with year) from Payslip table
+    list_of_week_numbers = Payslip.query.with_entities(
+        cast(db.extract('year', Payslip.date), Integer).label('year'),
+        Payslip.week_number
+        ).distinct().order_by(
+            db.desc('year'), db.desc(Payslip.week_number)).all()
+
+    # Get a list of available weeks and years
+    formatted_list_of_week_numbers = format_unique_week_numbers_and_years(list_of_week_numbers)
 
     if request.args.get('week_select'):
+        # Convert selected week number to start and end date
         selected_week = request.args.get('week_select')
         selected_year, selected_week_number = map(int, selected_week.split('-'))
-        start_date, end_date = get_start_end_of_week(
+        start_date, end_date = get_start_and_end_of_week(
             selected_year, selected_week_number)
+    else:
+        # Convert latest week number to start and end date
+        start_date, end_date = get_start_and_end_of_week(formatted_list_of_week_numbers[0]['year'], formatted_list_of_week_numbers[0]['week_number']) 
 
     expenses = ExpenseOccurrence.query.filter(
         db.or_(
@@ -71,25 +69,37 @@ def weekly_analysis():
 
         driver_data[driver.id] = calculate_driver_metrics_week(
             driver, start_date, end_date)
+        
+        # Initialize truck data for each driver
+        driver_data[driver.id]['truck_data'] = None
+        driver_data[driver.id].setdefault('profit', 0)
 
-    for truck in trucks:
+        # Loop through trucks, calculate data and asign it to relevant driver
+        for truck in trucks:
+            if driver_data[driver.id]['truck'] is not None and driver_data[driver.id]['truck'].id == truck.id:
+                driver_data[driver.id]['truck_data'] = calculate_truck_metrics_week(
+                    truck, start_date, end_date
+                )
+                if driver_data[driver.id]['truck_data']['total_fuel_cost'] == 0:
+                    waiting_on_fuel_data = True
+                if driver_data[driver.id]['estimated'] == True or driver_data[driver.id]['truck_data']['estimated'] == True:
+                    estimated = True
 
-        truck_data[truck.id] = calculate_truck_metrics_week(
-            truck, start_date, end_date)
-        driver = Driver.query.filter_by(truck_id=truck.id).first()
-        if driver: #Check if a driver is assigned to this truck for the week
-            driver_data[driver.id].setdefault('total_fuel_cost', 0) #Sets to 0 if key doesn't exist
-            driver_data[driver.id].setdefault('profit', 0)
-            driver_data[driver.id]['total_fuel_cost'] = truck_data[truck.id]['total_fuel_cost']
-            total_earned = driver_data[driver.id]['total_earned']
-            total_fuel_cost = driver_data[driver.id]['total_fuel_cost']
-            total_cost_to_employer = driver_data[driver.id]['total_cost_to_employer']
-            total_expense = calculate_total_metric_list('cost', expenses)
+            truck_data[truck.id] = calculate_truck_metrics_week(
+                truck, start_date, end_date
+            )
 
-            profit = total_earned - total_fuel_cost - total_cost_to_employer - total_expense
+        total_earned = driver_data[driver.id]['total_earned']
+        if driver_data[driver.id]['truck_data'] is not None:
+            total_fuel_cost = driver_data[driver.id]['truck_data']['total_fuel_cost']
+        else:
+            total_fuel_cost = 0
+        total_cost_to_employer = driver_data[driver.id]['total_cost_to_employer']
+        total_expense = calculate_total_metric_list('cost', expenses)
 
-            driver_data[driver.id]['profit'] = profit
+        profit = total_earned - total_fuel_cost - total_cost_to_employer - total_expense
 
+        driver_data[driver.id]['profit'] = profit
 
     total_expenses = calculate_total_metric_list('cost', expenses)*3
     grand_total_earned = calculate_total_metric_dict('total_earned', driver_data)
@@ -97,7 +107,6 @@ def weekly_analysis():
     grand_total_fuel_volume = calculate_total_metric_dict('total_fuel_volume', truck_data)
     grand_total_fuel_cost = calculate_total_metric_dict('total_fuel_cost', truck_data)
     profit = grand_total_earned - grand_total_wages - total_expenses - grand_total_fuel_cost
-
 
     grand_total_data = {
         'grand_total_earned': grand_total_earned,
@@ -107,6 +116,22 @@ def weekly_analysis():
         'grand_total_fuel_cost': grand_total_fuel_cost,
         'profit': profit,
     }
+    
+    return render_template(
+        'analysis/weekly_analysis.html',
+        waiting_on_fuel_data=waiting_on_fuel_data,
+        selected_week_number=selected_week_number,
+        selected_year=selected_year,
+        available_weeks=formatted_list_of_week_numbers, 
+        drivers=drivers, 
+        driver_data=driver_data,
+        truck_data=truck_data,
+        start_date=start_date,
+        grand_total_data=grand_total_data,
+        estimated=estimated
+    )
+
+
 
     # drivers_ai = Driver.query.options(
     #     db.joinedload(Driver.days),
@@ -138,19 +163,4 @@ def weekly_analysis():
     # response = ai.generate_content(driver_analysis_prompt)
 
     # print(response.text)
-
-    
-    return render_template(
-        'analysis/weekly_analysis.html',
-        selected_week_number=selected_week_number,
-        selected_year=selected_year,
-        # available_weeks=available_weeks, 
-        drivers=drivers, 
-        driver_data=driver_data,
-        truck_data=truck_data,
-        start_date=start_date,
-        grand_total_data=grand_total_data,
-    )
-
-
 

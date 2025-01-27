@@ -15,7 +15,8 @@ def add_job(item_id, tab):
         Job.id.desc(),
         Day.date.desc(),
         Driver.first_name,
-        Driver.last_name).all())
+        Driver.last_name).limit(50).all()
+    )
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     components = {'drivers': drivers, 'days': days, 'jobs': jobs}
@@ -109,7 +110,7 @@ def add_job(item_id, tab):
                     else:
                         flash(f"Entry Success: {new_entry.day.driver.full_name} - {f.display_date(new_entry.day.date)}", "success-msg")
                         job['driver_id'] = str(new_entry.day.driver_id)
-                        job['date_cd'] = f.display_date(new_entry.day.date)
+                        job['date_cd'] = new_entry.day.date
                             
     return render_template(
         "add_job.html",

@@ -3,6 +3,8 @@ from haulage_app.functions import *
 from haulage_app.models import (
     Driver, Day, Job, Truck, Fuel, Expense,
     ExpenseOccurrence, Payslip)
+from collections import Counter
+
 
 # DRIVER METRICS
 
@@ -40,6 +42,23 @@ def calculate_driver_wages(day_entries, driver):
     return total_earned, weekly_extras, gross_pay, total_overnight
 
 
+def most_frequent_truck_id(day_data):
+  """
+  Finds the truck_id that appears most often in a list of dictionaries.
+
+  Args:
+    truck_data: A list of dictionaries, where each dictionary 
+                 has a 'truck_id' key.
+
+  Returns:
+    The truck_id that appears most frequently.
+  """
+  truck_ids = [day.truck_id for day in day_data]
+  id_counts = Counter(truck_ids)
+
+  return id_counts.most_common(1)[0][0]
+
+
 def calculate_driver_metrics_week(driver, start_date, end_date):
 
     estimated = False
@@ -62,8 +81,6 @@ def calculate_driver_metrics_week(driver, start_date, end_date):
         Payslip.date <= end_date
         ).order_by(Payslip.date).all()
     
-    
-
     total_earned, weekly_extras, gross_pay, total_overnight = calculate_driver_wages(day_entries, driver)
 
     if payslip_entries:
@@ -74,6 +91,12 @@ def calculate_driver_metrics_week(driver, start_date, end_date):
         total_cost_to_employer = gross_pay * TAX_NI_MULTIPLIER
     else:
         total_cost_to_employer = 0
+    
+    if day_entries:
+        truck_id = most_frequent_truck_id(day_entries)
+    else:
+        truck_id = None
+    truck = Truck.query.get(truck_id)
 
     return {
         'estimated': estimated,
@@ -86,7 +109,8 @@ def calculate_driver_metrics_week(driver, start_date, end_date):
         'total_cost_to_employer': total_cost_to_employer,
         'weekly_extras': weekly_extras,
         'start_date': start_date,
-        'end_date': end_date
+        'end_date': end_date,
+        'truck': truck,
     }
 
 

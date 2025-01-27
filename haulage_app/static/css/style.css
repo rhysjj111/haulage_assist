@@ -20,7 +20,7 @@ h1{
 }
 
 .bold{
-    font-weight: 600;
+    font-weight: 600 !important;
 }
 
 .header-row{
@@ -196,6 +196,9 @@ footer, nav{
     max-height: 90% !important;
     padding: 2rem 10% ;
 }
+.datepicker-modal{
+    padding: 0 !important; /* Or set the specific padding you want*/
+  }
 .open-modal{
     display: none;
 }

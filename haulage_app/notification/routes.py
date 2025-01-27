@@ -4,8 +4,8 @@ from haulage_app.models import (
     Driver, Day, Job, Truck, Fuel,
     Payslip, )
 # from haulage_app.verification.models import VerificationFeedback
-# from haulage_app.verification.verify_gemini_utils import GeminiVerifier
-# from haulage_app.verification.programatic_verification import find_missing_payslips
+from haulage_app.utilities.verify_gemini_utils import GeminiVerifier
+from haulage_app.verification.checks.verification_functions import find_missing_payslips
 from datetime import timedelta, date, datetime
 from haulage_app.notification import notification_bp
 # from haulage_app.notification.models import TimeframeEnum, ErrorTypeEnum, FaultAreaEnum, Notification

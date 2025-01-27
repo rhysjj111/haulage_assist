@@ -4,7 +4,7 @@ from haulage_app import db
 from haulage_app.utilities.gemini_utils import Gemini, genai
 import typing_extensions as typing
 from typing import Literal
-from haulage_app.verification.models import AiRawResponse, MissingEntrySuggestion, TableName, DayAnomalySuggestion
+# from haulage_app.verification.models import AiRawResponse, MissingEntrySuggestion, TableName, DayAnomalySuggestion
 from haulage_app.models import Driver, Day, Fuel, Job, Payslip, Truck
 from haulage_app.functions import query_to_dict, date_to_db, is_within_acceptable_date_range
 from pprint import pprint

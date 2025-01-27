@@ -61,12 +61,12 @@ def find_missing_payslips():
         missing_dates = []
         # Find the first and last Friday based on existing payslips for the driver
         first_payslip_date = (
-            db.session.query(func.min(Payslip.date))
+            Payslip.query.with_entities(func.min(Payslip.date))
             .filter_by(driver_id=driver.id)
             .scalar()
         )
         last_payslip_date = (
-            db.session.query(func.max(Payslip.date))
+            Payslip.query.with_entities(func.max(Payslip.date))
             .filter_by(driver_id=driver.id)
             .scalar()
         )

@@ -64,6 +64,17 @@ def fd_percentage(percentage):
 
 #functions for calculations
 
+def format_unique_week_numbers_and_years(query):
+    """
+    Queries the table to get a list of all available unique week numbers and their corresponding years.
+    Returns the data as a list of dictionaries, where each dictionary has keys 'year' and 'week_number'.
+    """
+    results = []
+    for year, week_number in query:
+        week_start_date = get_start_of_week(year, week_number)
+        results.append({'year': year, 'week_number': week_number, 'week_start_date': week_start_date})
+    return results
+
 def get_week_number_sat_to_fri(date):
     """Returns the week number with Saturday as the start of the week."""
     """Returns a tuple of (year, week_number) with Saturday as week start."""
@@ -89,7 +100,7 @@ def get_start_of_week(year, week_number):
     start_date = year_start + datetime.timedelta(days=week_offset - saturday_offset)
     return start_date
 
-def get_start_end_of_week(year, week_number):
+def get_start_and_end_of_week(year, week_number):
     """Returns the start and end dates of the week."""
     # Calculate the start date of the week
     start_date = get_start_of_week(year, week_number)

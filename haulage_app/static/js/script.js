@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function () {
     M.Datepicker.init(datepicker, {
         format: "dd/mm/yyyy",
         i18n: {done: "Select"},
+        setDefaultDate: true,
         // disable all days apart from Monday for 'wages' page datepicker
         // disableDayFn: function(date){
         //     if(document.querySelector('#wages_date') != null){

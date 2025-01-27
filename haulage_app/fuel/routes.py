@@ -7,7 +7,7 @@ from haulage_app.fuel import fuel_bp
 @fuel_bp.route("/add_fuel/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_fuel(item_id, tab):
     trucks = list(Truck.query.order_by(Truck.registration).all())
-    fuel_entries = list(Fuel.query.order_by(Fuel.date).all())
+    fuel_entries = list(Fuel.query.order_by(Fuel.date.desc()).all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     fuel = {}
@@ -28,7 +28,7 @@ def add_fuel(item_id, tab):
             fuel = request.form
         else:
             flash(f"Entry Success: {new_entry.truck.registration} - {f.display_date(new_entry.date)}", "success-msg")
-            return redirect(url_for("fuel.add_fuel", tab='entry', item_id=0))
+            fuel['fuel_card_name'] = new_entry.fuel_card_name
     return render_template("add_fuel.html", trucks=trucks, list=fuel_entries, tab=tab, fuel=fuel, item_id=item_id, type='fuel')
 
 @fuel_bp.route("/delete_fuel/<int:item_id>")

@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 @payslip_bp.route("/add_payslip/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_payslip(item_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
-    payslips = list(Payslip.query.order_by(Payslip.date).all())
+    payslips = list(Payslip.query.order_by(Payslip.date.desc()).all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     payslip = {}
@@ -31,7 +31,7 @@ def add_payslip(item_id, tab):
             payslip = request.form
         else:
             flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
-            return redirect(url_for("payslip.add_payslip", tab='entry', item_id=0))
+            payslip['date'] = new_entry.date
     return render_template("add_payslip.html", drivers=drivers, list=payslips, tab=tab, 
                            payslip=payslip, item_id=item_id, type='payslip')
 
