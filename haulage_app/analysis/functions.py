@@ -228,7 +228,6 @@ def calculate_weekly_metrics(
         total_expense = calculate_total_metric_list('cost', expenses)
 
         profit = total_earned - total_fuel_cost - total_cost_to_employer - total_expense
-        print(total_expense)
         driver_data[driver.id]['expense'] = total_expense
         driver_data[driver.id]['profit'] = profit
 
@@ -308,10 +307,6 @@ def calculate_monthly_metrics(weeks_data: list, drivers: list, trucks: list, tar
                                             week['week_start_date'], 
                                             week['week_end_date'])
 
-        # if month_weeks[0]:
-        #     pprint(weekly_metrics)
-
-        # pprint(weekly_metrics)
         grand_total_data = weekly_metrics['grand_total_data']
         driver_data = weekly_metrics['driver_data']
         truck_data = weekly_metrics['truck_data']
@@ -347,7 +342,6 @@ def calculate_monthly_metrics(weeks_data: list, drivers: list, trucks: list, tar
             
             if data.get('estimated', False):
                 driver_data['estimated'] = True
-
 
     return monthly_totals
 

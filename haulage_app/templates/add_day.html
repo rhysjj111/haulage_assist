@@ -18,7 +18,7 @@
 
         {% block collapsible_body %}
             <p>
-                Date: {{ f.display_date(item.date) }}<br>
+                Date: {{ f.display_date(item.date) }} -- {{item.date}}<br>
                 Driver: {{ item.driver.full_name }}<br>
                 {% if item.status == 'working' %}
                 Truck: {{ item.truck.registration }}<br>

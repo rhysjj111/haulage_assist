@@ -48,8 +48,8 @@ main {
     min-height: calc(100vh - 5.5rem - 58px);       /* Ensure main takes up full viewport height */
 }
 
-.full-height{
-    min-height: calc(100vh - 5.5rem - 58px);
+.min-height-container{
+    min-height: calc(100vh - 25vh);
 }
 
 .back-link{

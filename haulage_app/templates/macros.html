@@ -245,7 +245,7 @@ from datetime import datetime
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
             <input id="date" name="date"  type="text" class="datepicker" required
                 {% if day is defined and type == 'edit' %} 
-                    value="{{ f.display_date(day.date) }}" 
+                    value="{{ day.date }}" 
                 {% elif day is defined %}
                     value="{{ day.date }}"
                 {% endif %}
@@ -534,7 +534,7 @@ from datetime import datetime
                 {% if job is defined and type == 'edit' %} 
                     {% for day in components.days %}
                         {% if job.day_id == day.id %}
-                            value="{{ f.display_date(day.date) }}"
+                            value="{{ day.date }}"
                         {% endif %}
                     {% endfor %}
                 {% elif job is defined %}
@@ -703,7 +703,7 @@ from datetime import datetime
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
             <input id="date" name="date"  type="text" class="datepicker" required
                 {% if payslip is defined and type == 'edit' %} 
-                    value="{{ f.display_date(payslip.date) }}" 
+                    value="{{ payslip.date }}" 
                 {% elif payslip is defined %}
                     value="{{ payslip.date}}"
                 {% endif %}
@@ -785,7 +785,7 @@ from datetime import datetime
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
             <input id="date" name="date" type="text" class="datepicker" required
                 {% if fuel is defined and type == 'edit' %} 
-                    value="{{ f.display_date(fuel.date) }}" 
+                    value="{{ fuel.date }}" 
                 {% elif fuel is defined %}
                     value="{{ fuel.date}}"
                 {% endif %}
@@ -897,7 +897,7 @@ from datetime import datetime
             <!-- <i class="fas fa-pencil-alt prefix light-blue-text text-darken-4"></i> -->
             <input id="description" name="description" type="text" required
             {% if expense.description is defined %} 
-            value="{{ expense.description}}" 
+            value="{{ expense.description }}" 
             {% endif %}
             >
             <label for="name">Description:</label>
@@ -910,7 +910,7 @@ from datetime import datetime
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
             <input id="date" name="start_date"  type="text" class="datepicker" required
                 {% if expense is defined and type == 'edit' %} 
-                    value="{{ f.display_date(expense.start_date) }}" 
+                    value="{{ expense.start_date }}" 
                 {% elif expense is defined %}
                     value="{{ expense.start_date }}"
                 {% endif %}
@@ -999,7 +999,7 @@ from datetime import datetime
             <span class="card-title wages-calc-card-text activator {{'italics' if estimated}}
             {{'green-text bold' if f.display_float(data.profit) > 500}}">
                 {% if data.truck_data.total_fuel_cost == 0 %}
-                    <p class="wages-calc-card-text bold">Waiting on fuel data.</p>
+                Waiting on fuel data.
                     {% else %}
                 Profit: {{f.fd_currency_rd(data.profit)}}{{ '*' if estimated}}<i class="material-icons right">more_vert</i>
                 {% endif %}
