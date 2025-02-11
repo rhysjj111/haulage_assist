@@ -4,10 +4,12 @@ from haulage_app.models import Driver, Day, Job, Payslip
 from datetime import timedelta, date, datetime
 from haulage_app.wages_calculator import wages_calculator_bp
 from haulage_app.calculations.driver_truck_metrics import (
-    calculate_driver_metrics_week,)
-from haulage_app.functions import (
-        get_week_number_sat_to_fri,
-        get_start_and_end_of_week)
+    calculate_driver_metrics_week,
+)
+from haulage_app.analysis.functions import (
+    get_week_number_sat_to_fri,
+    get_start_and_end_of_week,
+)
 from pprint import pprint
 
 @wages_calculator_bp.route("/wages_calculator", methods=["GET"])

@@ -3,23 +3,52 @@ document.addEventListener('DOMContentLoaded', function () {
     const collapsibles = document.querySelectorAll('.collapsible');
     M.Collapsible.init(collapsibles);
 
-    // datepicker initialization
-    let datepicker = document.querySelectorAll('.datepicker');
-    M.Datepicker.init(datepicker, {
+    const weekSelectOptions = {
         format: "dd/mm/yyyy",
         i18n: {done: "Select"},
         setDefaultDate: true,
-        // disable all days apart from Monday for 'wages' page datepicker
-        // disableDayFn: function(date){
-        //     if(document.querySelector('#wages_date') != null){
-        //         if(date.getDay() == 1){
-        //         return false;
-        //         } else {
-        //         return true;
-        //         };
-        //     }   
-        // }
-    })
+        autoClose: true,
+        disableDayFn: function(date){
+            if(date.getDay() == 6){
+            return false;
+            } else {
+            return true;
+            };
+        },
+        firstDay: 6,
+        yearRange: 2,
+        onSelect: function(date){
+        // Set the input value explicitly
+        this.el.value = M.Datepicker.getInstance(this.el).toString();
+        // Submit the form
+        this.el.closest('form').submit();
+        },
+        maxDate: new Date(),
+
+
+    }
+
+    const defaultOptions = {
+        format: "dd/mm/yyyy",
+        i18n: {done: "Select"},
+        setDefaultDate: true,
+        autoClose: true,
+    }
+
+    // datepicker initialization
+    let datepickers = document.querySelectorAll('.datepicker');
+    datepickers.forEach(picker => {
+        if (picker.id === 'week_select') {
+            M.Datepicker.init(picker, weekSelectOptions);
+            const dateTrigger = document.querySelector('#date-trigger');
+            dateTrigger.addEventListener('click', () => {
+                M.Datepicker.getInstance(picker).open();
+            });
+        } else {
+            M.Datepicker.init(picker, defaultOptions);
+        }
+    });
+
 
 
     // sidenav initialization

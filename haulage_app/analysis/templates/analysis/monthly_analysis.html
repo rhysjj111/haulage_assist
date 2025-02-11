@@ -1,0 +1,127 @@
+{% extends "std_template.html" %}
+
+
+{% block standard_title %}MONTHLY ANALYSIS{% endblock %}
+
+{% block standard_content %} 
+
+{% set positive %}<i class="material-icons green-text tiny bold">add</i>{% endset %}
+{% set negative %}<i class="material-icons red-text tiny bold">remove</i>{% endset %}
+
+<div class="row">
+    
+    <div class="col s12 m6">
+        <form method="GET"> 
+            <label for="month_select">Select Month:</label>
+            <select name="month_select" id="month_select" onchange="this.form.submit()">
+                {% for month_data in available_months %}
+                    {% if selected_month_number == month_data.month_number and selected_year == month_data.year %}
+                        <option value="{{ month_data.year }}-{{ month_data.month_number }}" selected>
+                            Month: {{ month_data.month_number }} ({{ month_data.year }})
+                        </option>
+                    {% else %}
+                        <option value="{{ month_data.year }}-{{ month_data.month_number }}">
+                            Month: {{ month_data.month_number }} ({{ month_data.year }})
+                        </option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </form>
+
+        <div class="col m6">
+            <h6>Including weeks:</h6>
+            {% for week in weeks_for_month %}
+                <p>Week: {{week.week_number}}<br>
+                    {{f.display_date(week.week_start_date)}} - {{f.display_date(week.week_end_date)}}
+                </p>
+            {% endfor %}
+        </div>
+        <div class="col m6">
+            <h6 class="{{'red-text bold' if monthly_metrics.weeks_count < expected_weeks.total_weeks}}">
+                Total weeks: {{ monthly_metrics.weeks_count }}/{{expected_weeks.total_weeks}}
+            </h6>
+            
+        </div>
+    </div>
+    
+    {% if waiting_on_mileage_data %}
+    <div class="col s12 center-align">
+        <h5>Waiting on fuel data</h5>
+    </div>
+    {% else %}
+    
+    <div class="col s12 m6">
+        <!-- totals card -->
+        <h5>TOTALS</h5>
+        <div class="divider"></div>
+        <div class="col s12">
+            <div class="card wages-card small">
+                <div class="card-content">
+                    <span class="card-title activator"><h5 class="medium-bold">{{month}}</h5>
+                        <!-- <i class="material-icons right">more_vert</i> -->
+                        <div class="divider"></div>
+                    </span>
+                    <br>
+                    <p class="wages-calc-card-text">
+                        {% if monthly_metrics.grand_total_data.grand_total_earned > 0 %}
+                        {{positive}} Earned: {{ f.fd_currency_rd(monthly_metrics.grand_total_data.grand_total_earned) }}<br>
+                        {{negative}} Overheads: {{ f.fd_currency_rd(monthly_metrics.grand_total_data.grand_total_expenses) }} <br>
+                        {{negative}} Wages: {{ f.fd_currency_rd(monthly_metrics.grand_total_data.grand_total_wages) }} <br>
+                        {{negative}} Fuel: {{ f.fd_currency_rd(monthly_metrics.grand_total_data.grand_total_fuel_cost) }} <br>
+                    <!-- <p class="small-text italics grey-text">
+                        (Total Fuel Used: {{ f.display_float(monthly_metrics.grand_total_data.grand_total_fuel_volume) }} L)
+                    </p> -->
+                    <br>
+                    </p>
+                    <p class="wages-calc-card-text bold">
+                        Profit: {{ f.fd_currency_rd(monthly_metrics.grand_total_data.profit) }}{{ '*' if monthly_metrics.estimated}} <br>
+                        {% else %}
+                        <p class="wages-calc-card-text">No data available.</p>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div> 
+</div>
+
+<br>
+
+
+<!-- drivers card -->
+<h5>DRIVERS</h5>
+<div class="divider"></div>
+<div class="row">
+    {% for driver_id, data in monthly_metrics.driver_data.items() %}
+    
+    {{ macros.driver_card(driver_id, data, f) }}
+    
+    {% if loop.index % 3 == 0 %}
+</div>
+<div class="row">
+    {% endif %}
+    
+    {% endfor %}
+</div>
+<p class="italics grey-text">* Value has been estimated.</p>
+{% endif %}
+
+
+
+
+{% endblock %}
+<!-- trucks card -->
+<!-- <h5>TRUCKS</h5>
+    <div class="divider"></div>
+    <div class="row">
+        {# for truck_id, data in monthly_metrics.truck_data.items() #}
+        
+        {{ macros.truck_card(truck_id, data, f) }}
+        
+        {# if loop.index % 3 == 0 #}
+    </div>
+    <div class="row">
+        {# endif #}
+        
+        {# endfor #}
+    </div> -->

@@ -94,9 +94,9 @@ def calculate_driver_metrics_week(driver, start_date, end_date):
     
     if day_entries:
         truck_id = most_frequent_truck_id(day_entries)
+        truck = Truck.query.filter_by(id=truck_id).first()
     else:
-        truck_id = None
-    truck = Truck.query.get(truck_id)
+        truck = None
 
     return {
         'estimated': estimated,

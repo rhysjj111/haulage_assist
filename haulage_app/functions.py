@@ -32,13 +32,25 @@ def display_date(date):
     """ Formats a date to a string for display to the user """
     return datetime.datetime.strftime(date, "%d/%m/%Y")
 
+def display_date_pretty(date):
+    """Formats a date object to a string in DD MMM YYYY format for display."""
+    return datetime.datetime.strftime(date, "%d-%b-%Y")
+
 def display_date_iso(date):
     """Formats a date object to a string in YYYY-MM-DD format for display."""
     return datetime.datetime.strftime(date, "%Y-%m-%d")
     
 def format_currency(amount, currency="£"):
     """ Formats a number to '£x.xx' from 'x.xx' ready to display to user """
-    return f"{currency}{amount:.2f}"
+    return f"{currency}{amount:,.2f}"
+
+def format_currency_rd(amount, currency="£"):
+    """ Formats a number to '£x' from 'x' ready to display to user """
+    return f"{currency}{amount:,.0f}"
+
+def format_currency_k(amount, currency="£"):
+    """ Formats a number to '£xk' from 'x' ready to display to user """
+    return f"{currency}{amount/1000:,.0f}k"
 
 def format_percentage(percentage):
     """ Formats a number from 'xx.xx%' to 'x.xx' ready to display to user """
@@ -59,6 +71,12 @@ def display_percentage(percentage):
 def fd_currency(amount):
     return format_currency(display_float(amount))
 
+def fd_currency_rd(amount):
+    return format_currency_rd(display_int(amount))
+
+def fd_currency_k(amount):
+    return format_currency_k(display_int(amount))
+
 def fd_percentage(percentage):
     return format_percentage(display_percentage(percentage))
 
@@ -74,47 +92,6 @@ def format_unique_week_numbers_and_years(query):
         week_start_date = get_start_of_week(year, week_number)
         results.append({'year': year, 'week_number': week_number, 'week_start_date': week_start_date})
     return results
-
-def get_week_number_sat_to_fri(date):
-    """Returns the week number with Saturday as the start of the week."""
-    """Returns a tuple of (year, week_number) with Saturday as week start."""
-    adjusted_date = date - datetime.timedelta(days=2)
-    year = adjusted_date.year
-    week = adjusted_date.isocalendar().week
-    return (year, week)
-
-def get_saturday_to_friday_week_number_string(date):
-    day_of_week = date.weekday()  # 0 for Monday, 6 for Sunday
-    adjusted_date = date + datetime.timedelta(days=(day_of_week + 2) % 7)
-    return int(adjusted_date.strftime('%W'))
-
-def get_start_of_week(year, week_number):
-    """Returns the start date of the week."""
-    # Get January 1st of selected year
-    year_start = datetime.date(year, 1, 1)
-    # Calculate offset to previous Saturday
-    saturday_offset = (year_start.weekday() + 2) % 7
-    # Calculate days to add for desired week
-    week_offset = (week_number - 1) * 7
-    # Calculate final start date
-    start_date = year_start + datetime.timedelta(days=week_offset - saturday_offset)
-    return start_date
-
-def get_start_and_end_of_week(year, week_number):
-    """Returns the start and end dates of the week."""
-    # Calculate the start date of the week
-    start_date = get_start_of_week(year, week_number)
-    # Calculate the end date of the week
-    end_date = start_date + datetime.timedelta(days=6)
-    return start_date, end_date
-
-def get_weeks_for_period(day_query):
-    """Returns a list of week numbers for the given period."""
-    # Calculate week numbers for each day
-    week_numbers = [get_week_number_sat_to_fri(day.date) for day in day_query]
-    # Get unique week numbers
-    available_weeks = sorted(set(week_numbers), reverse=True)
-    return available_weeks
 
 # functions for verification
 

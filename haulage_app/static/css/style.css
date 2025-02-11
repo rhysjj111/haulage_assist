@@ -19,8 +19,17 @@ h1{
     font-style: italic;
 }
 
+td:not(.is-disabled) > .datepicker-day-button {
+    color: rgb(209, 0, 0) !important; /* Change to your preferred color */
+    font-weight: 600;
+}
+
 .bold{
     font-weight: 600 !important;
+}
+
+.medium-bold{
+    font-weight: 400 !important;
 }
 
 .header-row{
@@ -37,6 +46,10 @@ main {
     flex-direction: column; /* Arrange items vertically */
     justify-content: center; /* Center vertically */
     min-height: calc(100vh - 5.5rem - 58px);       /* Ensure main takes up full viewport height */
+}
+
+.full-height{
+    min-height: calc(100vh - 5.5rem - 58px);
 }
 
 .back-link{
