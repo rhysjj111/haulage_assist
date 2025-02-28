@@ -96,7 +96,8 @@ document.addEventListener('DOMContentLoaded', function () {
      M.Dropdown.init(notification_dropdown, {
         alignment: 'left',
         coverTrigger: false,
-        constrainWidth: false
+        constrainWidth: false,
+        closeOnClick: false,
     });
     
     //flash feedback timeout and remove container after a time interval

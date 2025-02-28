@@ -14,17 +14,17 @@ def add_day(item_id, tab):
     day_entries = list(
         Day.query.join(Driver)
         .order_by(
-            db.case(
-                *(
-                    (db.and_(Day.status == 'working', Day.start_mileage == 0), 0),
-                    (db.and_(Day.status == 'working', Day.end_mileage == 0), 0),
-                ),
-                else_=1
-            ).asc(),
-            Day.driver_id,
-            Driver.first_name,
-            Driver.last_name,
-            Day.date.asc()
+            # db.case(
+            #     *(
+            #         (db.and_(Day.status == 'working', Day.start_mileage == 0), 0),
+            #         (db.and_(Day.status == 'working', Day.end_mileage == 0), 0),
+            #     ),
+            #     else_=1
+            # ).asc(),
+            # Day.driver_id,
+            # Driver.first_name,
+            # Driver.last_name,
+            Day.date.desc()
         ).all()
     )
     #empty dictionary to be filled with users previous answers if there

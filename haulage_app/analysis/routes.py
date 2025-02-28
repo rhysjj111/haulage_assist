@@ -16,9 +16,9 @@ from haulage_app.calculations.driver_truck_metrics import (
 )
 from haulage_app.functions import(
     date_to_db,
+    get_week_number_sat_to_fri,
 )
 from haulage_app.analysis.functions import (
-    get_week_number_sat_to_fri,
     get_start_of_week,
     get_formatted_payslip_weeks,
     get_start_and_end_of_week,
@@ -28,9 +28,8 @@ from haulage_app.analysis.functions import (
     is_complete_month,
     calculate_monthly_metrics,
     get_expected_weeks_in_month,
-    get_year_and_month_of_week,
+    get_month_from_week,
     get_available_months,
-
 )
 from sqlalchemy import cast, Integer
 
@@ -56,8 +55,9 @@ def monthly_analysis():
     else:
         selected_month_number = available_months[0]['month_number']
         selected_year = available_months[0]['year']
-    
 
+    # print(available_weeks)
+    
     weeks_for_month = get_weeks_for_month(available_weeks, selected_year, selected_month_number)
 
     complete_month = is_complete_month(weeks_for_month, selected_year, selected_month_number)
@@ -120,7 +120,7 @@ def weekly_analysis():
     weekly_metrics = calculate_weekly_metrics(
         drivers, trucks, start_date, end_date)
 
-    month_number = get_year_and_month_of_week(selected_year, selected_week_number)[1]
+    month_number = get_month_from_week(selected_year, selected_week_number)
     month_name = MONTH_NAMES[month_number]
 
     return render_template(

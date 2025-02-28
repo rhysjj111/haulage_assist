@@ -6,8 +6,10 @@ from haulage_app.wages_calculator import wages_calculator_bp
 from haulage_app.calculations.driver_truck_metrics import (
     calculate_driver_metrics_week,
 )
-from haulage_app.analysis.functions import (
+from haulage_app.functions import(
     get_week_number_sat_to_fri,
+)
+from haulage_app.analysis.functions import (
     get_start_and_end_of_week,
 )
 from pprint import pprint
@@ -17,7 +19,9 @@ def wages_calculator():
     drivers = list(Driver.query.order_by(Driver.first_name).all())
 
     today_year, today_week = get_week_number_sat_to_fri(date.today())
+    print(today_year, today_week)
     start_date, end_date = get_start_and_end_of_week(today_year, today_week)
+    print(start_date, end_date)
 
     driver_data = {}
 

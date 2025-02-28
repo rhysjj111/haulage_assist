@@ -271,18 +271,48 @@ footer, nav{
     margin-bottom: 7px;
 }
 
-/* notification button  */
+/* notification  */
+
+.notification-item-content{
+    min-height: 40px;
+    display: flex;
+    align-items: center; /* Vertically center content */
+    justify-content: space-between; /* Distribute space between span and button */
+}
 
 .dropdown-content {
-    width: 750px !important;  /* Adjust width as needed */
-    max-height: 500px !important;  /* Optional: control max height */
+    min-width: 60vw;
+    /* width: 750px !important;  */
+    max-height: 500px !important; 
+}
+
+.notification-details {
+    display: flex;
+    flex-direction: column;
+}
+/* 
+.notification-meta {
+    font-size: 0.8rem; 
+    color: #757575; 
+    margin-bottom: 4px; 
+} */
+
+.notification-description {
+    font-size: 0.9rem; /* Slightly smaller description font */
+    margin: 0; /* Remove default paragraph margins */
+    overflow: hidden; /* prevent content from overflowing */
+    text-overflow: ellipsis; /* add "..." if overflows */
+    white-space: nowrap; /* prevent the description from wrapping */
+}
+
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 40px;
+    z-index: 1000;
 }
 
 .notification-icon {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
     cursor: pointer;
     padding: 10px;
     min-width: 40px;
@@ -290,31 +320,27 @@ footer, nav{
     display: flex;
     align-items: center;
     justify-content: center;
-}
 
-.notification-icon i {
-    font-size: 24px;
 }
 
 .notification-badge {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: #333a56;
-    color: #f7f5e6;
-    border-radius: 50%;
-    padding: 2px 6px;
-    font-size: 12px;
+    margin-left: 4px !important;
+    /* position: absolute;
+    top: 0px; 
+    right: -20px;
+    font-size: 0.8rem;
+    padding: 2px 4px;
+    z-index: 0; */
+}
+
+.notification-icon i {
+    font-size: 25px;
+    z-index: 1;
 }
 
 .notification-item {
     padding: 15px;
     border-bottom: 1px solid #e8e8e8;
-}
-
-.notification-time {
-    font-size: 12px;
-    color: #52658f;
 }
 
 .preloader-background {

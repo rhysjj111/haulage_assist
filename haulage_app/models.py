@@ -18,6 +18,7 @@ driverfk_restrict = Annotated[int, mapped_column(ForeignKey("driver.id", ondelet
 truckfk = Annotated[int, mapped_column(ForeignKey("truck.id"), index=True)]
 truckfk_cascade = Annotated[int, mapped_column(ForeignKey("truck.id", ondelete="CASCADE"), index=True)]
 truckfk_restrict = Annotated[int, mapped_column(ForeignKey("truck.id", ondelete="RESTRICT"), index=True)]
+dayfk = Annotated[int, mapped_column(ForeignKey("day.id"), index=True)]
 dayfk_cascade = Annotated[int, mapped_column(ForeignKey("day.id", ondelete="CASCADE"), index=True)]
 expensefk_cascade = Annotated[int, mapped_column(ForeignKey("expense.id", ondelete="CASCADE"), index=True)]
 week_number_computed = Annotated[int, mapped_column(
@@ -188,7 +189,6 @@ class Day(db.Model):
     end_mileage: Mapped[int] = mapped_column(default=0)
     additional_earned: Mapped[int] = mapped_column(default=0)
     additional_wages: Mapped[int] = mapped_column(default=0)
-    week_number: Mapped[week_number_computed]
     
     __table_args__ = (db.UniqueConstraint('driver_id', 'date', name='_driver_date_uc'),)
 
@@ -199,6 +199,10 @@ class Day(db.Model):
     def __repr__(self):
         #represents itself in form of string
         return f"Day entry: {self.driver.full_name} {display_date(self.date)}"
+
+    @hybrid_property
+    def get_week_number(self):
+        return get_week_number_sat_to_fri(self.date)
 
     def calculate_total_earned(self):
         """
@@ -340,12 +344,12 @@ class Payslip(db.Model):
     driver_id: Mapped[driverfk]
     total_wage: Mapped[int]
     total_cost_to_employer: Mapped[int]
-    week_number: Mapped[week_number_computed]
+    week_number_mtf: Mapped[week_number_computed]
 
     __table_args__ = (
         db.UniqueConstraint(
             'driver_id',
-            'week_number',
+            'week_number_mtf',
             name='_driver_week_payslip_uc'
         ),
     )
@@ -355,6 +359,11 @@ class Payslip(db.Model):
     def __repr__(self): 
     #represents itself in form of string
         return f"Payslip for: {self.driver.full_name} on {self.date}"
+
+    @hybrid_property
+    def get_week_number(self):
+        """Returns year and week number of the date in a tuple"""
+        return get_week_number_sat_to_fri(self.date)
 
     @validates('date')
     def validate_start_date(self, key, date):
@@ -385,13 +394,16 @@ class Fuel(db.Model):
     fuel_card_name: Mapped[str50] = mapped_column(index=True)    
     fuel_volume: Mapped[int]
     fuel_cost: Mapped[int]
-    week_number: Mapped[week_number_computed]
 
     truck: Mapped["Truck"] = relationship(back_populates="fuel_entries")
 
     def __repr__(self): 
     #represents itself in form of string
         return f"Fuel entry for: {self.truck.registration} on {self.date}"
+
+    @hybrid_property
+    def get_week_number(self):
+        return get_week_number_sat_to_fri(self.date)
 
     @validates('date')
     def validate_start_date(self, key, date):

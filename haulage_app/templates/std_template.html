@@ -6,6 +6,22 @@
 
 {% block main %}
 
+<!-- error messages -->
+{% set err_msg = get_flashed_messages(category_filter=["error-msg"]) %}
+{% set scc_msg = get_flashed_messages(category_filter=["success-msg"]) %}
+{% with messages = err_msg if err_msg else scc_msg %}
+{% if messages %}
+<div class="messages-container s12 {{'err-msg' if err_msg else 'scc-msg'}} ">
+    {% for message in messages %}
+    <ul>
+        <li> {{ message }}</li>
+    </ul>
+    {% endfor %}            
+    <button class="close-messages white-text btn-flat btn-small" aria-label="Close Messages"><i class="material-icons">close</i></button>
+</div>
+{% endif %}
+{% endwith %}
+
     {% block standard_content%}
     {% endblock %}
     

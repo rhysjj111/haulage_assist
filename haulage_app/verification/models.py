@@ -3,7 +3,7 @@ import enum
 from haulage_app import db
 from haulage_app.base import Base
 from haulage_app.functions import *
-from haulage_app.models import str50, tstamp, date, intpk, driverfk, truckfk
+from haulage_app.models import str50, tstamp, date, intpk, driverfk, truckfk, dayfk
 from typing_extensions import Annotated
 from typing import List, Optional
 from sqlalchemy.orm import validates, Mapped, mapped_column, relationship
@@ -13,20 +13,52 @@ from haulage_app.models import Driver, Truck, Day, Payslip, Job, Fuel
 
 text = Annotated[str, mapped_column(db.Text)]
 
+class TableName(enum.Enum):
+    DRIVER = 'driver'
+    TRUCK = 'truck'
+    DAY = 'day'
+    JOB = 'job'
+    FUEL = 'fuel'
+    PAYSLIP = 'payslip'
+
+class UserFeedback(db.Model):
+    id: Mapped[intpk]
+    timestamp: Mapped[tstamp]
+    anomaly_id: Mapped[int] = mapped_column(ForeignKey("anomaly.id", ondelete="CASCADE"))
+    anomaly_invalid: Mapped[bool] = mapped_column(default=False)
+    anomaly_rectified: Mapped[bool] = mapped_column(default=False)
+    user_comment: Mapped[Optional[text]]
+
 class Anomaly(db.Model):
     id: Mapped[intpk]
     timestamp: Mapped[tstamp]
-    date: Mapped[Optional[date]]
-    week_number: Mapped[Optional[int]]
-    year: Mapped[Optional[int]]
-    explanation: Mapped[text]
+    description: Mapped[Optional[text]]
+    is_read: Mapped[bool] = mapped_column(default=False)
+    is_recurring: Mapped[bool] = mapped_column(default=False)
+    type: Mapped[str50] = mapped_column(nullable=False)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'anomaly',
+        'polymorphic_on': type
+    }
+
+    user_feedbacks: Mapped[List["UserFeedback"]] = relationship(
+        backref='anomaly', cascade='all, delete-orphan'
+    )
+
+class MissingEntryAnomaly(Anomaly):
+    id: Mapped[int] = mapped_column(ForeignKey("anomaly.id", ondelete="CASCADE"), primary_key=True)
+    date: Mapped[date]
     driver_id: Mapped[Optional[driverfk]]
     truck_id: Mapped[Optional[truckfk]]
-    is_read: Mapped[bool] = mapped_column(default=False)
-    is_repeated: Mapped[bool] = mapped_column(default=False)
+    day_id: Mapped[Optional[dayfk]]
+    table_name: Mapped[TableName]
+
+    __mapper_args__ = {'polymorphic_identity': 'missing_entry_anomaly'}
 
     driver: Mapped[Optional["Driver"]] = relationship(backref='anomalies')
     truck: Mapped[Optional["Truck"]] = relationship(backref='anomalies')
+
 
 # class AiRawResponse(db.Model):
 #     id: Mapped[intpk]
@@ -161,7 +193,7 @@ class Anomaly(db.Model):
 #     ai_raw_response_id: Mapped[int] = mapped_column(ForeignKey('ai_raw_response.id', ondelete="CASCADE"))
 #     ai_response_feedback: Mapped["AiResponseUserFeedback"] = relationship(
 #         backref='ai_processed_response', 
-#         uselist=False, 
+#         uselist=False,
 #         cascade='all, delete-orphan',
 #         lazy='joined'
 #     )
@@ -172,7 +204,7 @@ class Anomaly(db.Model):
 
 #     @classmethod
 #     def get_processed_response_count(cls):
-#         return cls.query.count()   
+#         return cls.query.count()
 
 # class TableName(enum.Enum):
 #     DRIVER = 'driver'
@@ -181,6 +213,7 @@ class Anomaly(db.Model):
 #     JOB = 'job'
 #     FUEL = 'fuel'
 #     PAYSLIP = 'payslip'
+#     table_name: Mapped[TableName]
 
 # class MissingEntrySuggestion(AiProcessedResponse):
 #     id: Mapped[int] = mapped_column(ForeignKey("ai_processed_response.id", ondelete="CASCADE"), primary_key=True)

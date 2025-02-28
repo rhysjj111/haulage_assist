@@ -1,15 +1,21 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from haulage_app.verification.checks import verification_functions
+from haulage_app.verification.checks import verification_manager
+from flask import current_app
 
 def init_scheduler(app):
     scheduler = BackgroundScheduler()
     
-    # Schedule verification check every Wednesday at 12pm
+    def run_verification():
+        with app.app_context():
+            verification_manager.payslip_check()
+            verification_manager.day_check()
+            verification_manager.fuel_check()
+    
     scheduler.add_job(
-        func=verification_functions.test,
-        trigger=CronTrigger(day_of_week='wed', hour=12),
-        # trigger=CronTrigger(minute='*/1'),
+        func=run_verification,
+        trigger=CronTrigger(day_of_week='fri', hour=11,minute=27),
+        # trigger=CronTrigger(second='*/30'),
         id='weekly_verification',
         name='Run weekly verification checks',
         replace_existing=True

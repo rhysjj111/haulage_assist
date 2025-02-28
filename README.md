@@ -164,22 +164,54 @@ from wages_calc import db, app
 ```
 dropdb postgres
 createdb postgres
-PGPASSWORD=<DATABASE PASSWORD> pg_dump -h c3l5o0rb2a6o4l.cluster-czz5s0kz4scl.eu-west-1.rds.amazonaws.com -U u1gn7p79ue8ef3 dau2n8i4dqe30h | psql -h localhost -U user postgres
+PGPASSWORD=pe30b956095b85dbcc858ca8a88003bb1687004d3bfb5a855fa3780ae5904c238 pg_dump -h c3l5o0rb2a6o4l.cluster-czz5s0kz4scl.eu-west-1.rds.amazonaws.com -U u1gn7p79ue8ef3 dau2n8i4dqe30h | psql -h localhost -U user postgres
 ```
 - Insert DATABASE PASSWORD into the command above. I have left all other details such as host name etc. of my current database.
+
+##### Handling the development environment postgres connection issues
+- When trying to connect to the postgres database and you encounter:
+```
+(.venv) haulageassist-4970329:~/haulage_assist{main}$ psql
+psql: error: connection to server on socket "/tmp/postgres/.s.PGSQL.5432" failed: No such file or directory
+Is the server running locally and accepting connections on that socket?
+```
+- Enter the following commands:
+```
+initdb -D /workspace/postgres_data
+pg_ctl -D /workspace/postgres_data -o "-k /tmp/postgres" start
+```
+<!-- rm -rf /workspace/postgres_data
+```
+```
+initdb -D /workspace/postgres_data
+
+```
+```
+initdb -D /workspace/postgres_data
+```
+```
+pg_ctl -D /workspace/postgres_data start
+```
+```
+mkdir -p /tmp/postgres
+```
+```
+pg_ctl -D /workspace/postgres_data -o "-k /tmp/postgres" start
+``` -->
 
 #### Migrating database from Gitpod environment to Heroku
 ##### Login to Heroku via CLI
 - Obtain Heroku api key from Heroku dashboard. Run:
 - `heroku login -i`
 - Follow instructions.
-##### Migrating databases from Gitpod to Heroku
+##### Upgrading Heroku database
 - Run these commands in the Gitpod terminal:
 - `flask db migrate -m "Description."`
 - `flask db upgrade`
 - Check migrations are ok within development environment.
 - Push changes to GitHub. Run following command:
 - `heroku run -a jjcalc flask db upgrade`
+
 #### Deploy locally
 ##### Fork the repository (creating a copy)
 - Create a Github account & login.

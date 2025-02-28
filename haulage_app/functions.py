@@ -93,6 +93,46 @@ def format_unique_week_numbers_and_years(query):
         results.append({'year': year, 'week_number': week_number, 'week_start_date': week_start_date})
     return results
 
+def find_previous_saturday(date):
+    """
+    Finds the previous Saturday before a given date.
+    """
+    days_to_subtract = (date.weekday() + 2) % 7  # 0 for Saturday, 1 for Sunday, ...
+    return date - datetime.timedelta(days=days_to_subtract)
+
+def get_week_number_sat_to_fri(date_obj):
+    """
+    Returns the week number for a given date, using Saturday to Friday as the week period,
+    with week 1 starting from the first Tuesday of the year.
+    
+    Args:
+        date: datetime.date object
+    Returns:
+        tuple: (year, week_number)
+    """
+    year = date_obj.year
+    first_tuesday = datetime.date(year, 1, 1)
+    
+    # Find first Tuesday of the year
+    while first_tuesday.weekday() != 1:  # 1 represents Tuesday
+        first_tuesday += datetime.timedelta(days=1)
+
+    first_saturday = first_tuesday - datetime.timedelta(days=3) 
+        
+    # Adjust date back to the Saturday that starts its week
+    adjusted_date = find_previous_saturday(date_obj)
+    
+    # Calculate days between first Tuesday and adjusted date
+    days_since_first_saturday = (adjusted_date - first_saturday).days
+    
+    # Calculate week number, accounting for partial first week
+    if days_since_first_saturday < 0:
+        # Date falls in previous year's last week
+        return get_week_number_sat_to_fri(datetime.date(year-1, 12, 31))
+    
+    week_number = (days_since_first_saturday // 7) + 1
+    return (year, week_number)
+
 # functions for verification
 
 def query_to_dict(historical_context, Table, filter_criteria=None, limit=5000, relevant_attributes=None):

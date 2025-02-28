@@ -4,19 +4,58 @@
     {% set notif_count = 0 %}
 {% endif %}
 
-<div class="notification-icon ">
-    <i class="material-icons dropdown-trigger" data-target="notifications-dropdown">notifications</i>
-    <span class="notification-badge {{'red' if notif_count > 0}}">{{ notif_count }}</span>
+<div class="notification-container">
+    <a class="notification-icon hide-on-med-and-down dropdown-trigger" data-target="notifications-dropdown" href="#" >
+        <i class="material-icons grey-text text-darken-3">notifications</i>
+        <!-- <span class="notification-badge {{'red' if notif_count > 0}}">{{ notif_count }}</span> -->
+        <span class="new badge notification-badge {{'grey lighten-1' if notif_count == 0 else 'red darken-2'}}" data-badge-caption="">{{ notif_count }}</span>
+    </a>
 </div>
 
 <ul id="notifications-dropdown" class="dropdown-content">
-    {% for notification in notifications %}
-    <li class="notification-item">
-        <span class="notification-text">{{ notification }}</span>
-        <span class="notification-time">{{ notification.timestamp }}</span>
-    </li>
-    {% endfor %}
-    {% if not notifications %}
-    <li class="notification-item">No new notifications</li>
+    {% if notifications %}
+        {% for notification in notifications %}
+            <li class="notification-item ">
+                <div class="notification-item-content">
+                    <div class="notification-details">
+                        <!-- <div class="notification-meta"> 
+                            <span class="">{{ f.display_date(notification.date) }} - </span>
+                            <span class="">{{ notification.driver_id }} - </span> 
+                            <span class="">{{ notification.table_name.value }}</span>
+                        </div> -->
+                        <p class="notification-description">{{ notification.details }} {{notification.id}}</p>
+                    </div>
+                    <a class="btn-small btn-flat modal-trigger white" href="#notification-modal-{{notification.id}}">Dismiss</a>
+                </div>
+            </li>
+
+        {% endfor %}
+    {% else %}
+        <li class="notification-item">
+            <div class="notification-item-content">
+                <span>No notifications</span>
+            </div>
+        </li>
     {% endif %}
 </ul>
+
+{% if notifications %}
+{% for notification in notifications %}
+    <!-- Modal Structure -->
+    <div id="notification-modal-{{notification.id}}" class="modal">
+        <div class="modal-content">
+            <h4>{{notification.id}}</h4>
+            <p>Have you checked for the suggested anomaly and rectified it or confirmed it is not there?</p>
+        </div>
+        <div class="modal-footer">
+            <form method="POST" action="{{ url_for('verification.handle_user_feedback', anomaly_id=notification.id) }}">
+                <input type="hidden" name="anomaly_id" value="{{ notification.id }}">
+                <button type="submit" name="feedback" value="no_fault_found" class="modal-close waves-effect waves-green grey darken-3 white-text btn-flat">No fault found</button>
+                <button type="submit" name="feedback" value="fault_rectified" class="modal-close waves-effect white-text green waves-green btn-flat">Fault rectified</button>
+            </form>
+        </div>
+    </div>
+{% endfor %}
+{% endif %}
+
+

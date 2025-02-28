@@ -1,6 +1,10 @@
 from sqlalchemy import cast, Integer
 from haulage_app.models import ExpenseOccurrence, Payslip, db, Driver, Truck, Day, Fuel
 from datetime import datetime, timedelta, date
+from haulage_app.functions import(
+    find_previous_saturday,
+    get_week_number_sat_to_fri,
+)
 from haulage_app.calculations.driver_truck_metrics import (
     calculate_driver_metrics_week,
     calculate_truck_metrics_week,
@@ -18,21 +22,16 @@ def get_formatted_payslip_weeks():
     Returns:
         list: List of dicts with format [{'week_number': int, 'year': int}, ...]
     """
-    week_numbers = Payslip.query.with_entities(
-        cast(db.extract('year', Payslip.date), Integer).label('year'),
-        Payslip.week_number
-    ).distinct().order_by(
-        db.desc('year'), 
-        db.desc(Payslip.week_number)
-    ).all()
-    # query = Fuel.query.order_by(Fuel.date).all()
-    # for qu in query:
-    #     print(qu.date, qu.week_number)
-
     formatted_weeks = []
-    for year, week_number in week_numbers:
+    unique_week_year = set()
+    payslips = Payslip.query.all()
+    for payslip in payslips:
+        week_number_and_year = payslip.get_week_number
+        unique_week_year.add(week_number_and_year)
+    
+    for year, week_number in unique_week_year:
         week_start_date, week_end_date = get_start_and_end_of_week(year, week_number)
-        year, month = get_year_and_month_of_week(year, week_number)
+        month = get_month_from_week(year, week_number)
         formatted_weeks.append({
             'year': year,
             'week_number': week_number,
@@ -40,15 +39,10 @@ def get_formatted_payslip_weeks():
             'week_end_date': week_end_date,
             'month': month,
         })
+
+    formatted_weeks.sort(key=lambda x: (x['year'], x['week_number']), reverse=True)
     
     return formatted_weeks
-
-def find_previous_saturday(date):
-    """
-    Finds the previous Saturday before a given date.
-    """
-    days_to_subtract = (date.weekday() + 2) % 7  # 0 for Saturday, 1 for Sunday, ...
-    return date - timedelta(days=days_to_subtract)
 
 def get_start_of_week(year, week_number):
     """Calculates the date (Saturday) corresponding to a given week number.
@@ -63,40 +57,7 @@ def get_start_of_week(year, week_number):
     week_start_date = first_sat + timedelta(weeks=(week_number - 1))
     return week_start_date
 
-def get_week_number_sat_to_fri(date_obj):
-    """
-    Returns the week number for a given date, using Saturday to Friday as the week period,
-    with week 1 starting from the first Tuesday of the year.
-    
-    Args:
-        date: datetime.date object
-    Returns:
-        tuple: (year, week_number)
-    """
-    year = date_obj.year
-    first_tuesday = date(year, 1, 1)
-    
-    # Find first Tuesday of the year
-    while first_tuesday.weekday() != 1:  # 1 represents Tuesday
-        first_tuesday += timedelta(days=1)
-
-    first_saturday = first_tuesday - timedelta(days=3) 
-        
-    # Adjust date back to the Saturday that starts its week
-    adjusted_date = find_previous_saturday(date_obj)
-    
-    # Calculate days between first Tuesday and adjusted date
-    days_since_first_saturday = (adjusted_date - first_saturday).days
-    
-    # Calculate week number, accounting for partial first week
-    if days_since_first_saturday < 0:
-        # Date falls in previous year's last week
-        return get_week_number_sat_to_fri(date(year-1, 12, 31))
-    
-    week_number = (days_since_first_saturday // 7) + 1
-    return (year, week_number)
-
-def get_year_and_month_of_week(year: int, week_number: int) -> int:
+def get_month_from_week(year: int, week_number: int) -> int:
     """
     Returns the month number (1-12) for a given week number and year.
     Uses the date 4 days after the start of the week (Wednesday) to determine the month.
@@ -111,7 +72,7 @@ def get_year_and_month_of_week(year: int, week_number: int) -> int:
     start_date = get_start_of_week(year, week_number)
     # print(year, week_number)
     target_date = start_date + timedelta(days=3) # Tuesday
-    return target_date.year, target_date.month
+    return target_date.month
 
 def get_available_months(available_weeks):
     """

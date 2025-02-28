@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, request, session
 from flask_sqlalchemy import SQLAlchemy
 from haulage_app.base import Base
 from haulage_app import functions as f
@@ -47,6 +47,8 @@ for blueprint in blueprints:
 
 from haulage_app.verification.scheduler import init_scheduler
 
+init_scheduler(app)
+
 from haulage_app.verification import models
 
 # with app.app_context():
@@ -61,5 +63,11 @@ def home():
 @app.context_processor
 def context_processor():
     return dict(f=f)
+
+# stores the previous url in the session before each request
+@app.before_request
+def before_request():
+    if not request.path.startswith('/static/') and request.endpoint != 'verification.handle_user_feedback':
+        session['previous_url'] = request.url
 
 
