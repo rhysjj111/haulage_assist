@@ -1,8 +1,0 @@
-2025-02-27 08:02:12.167 UTC [9023] LOG:  starting PostgreSQL 16.6 on x86_64-pc-linux-gnu, compiled by clang version 17.0.6, 64-bit
-2025-02-27 08:02:12.168 UTC [9023] LOG:  listening on IPv4 address "127.0.0.1", port 5432
-2025-02-27 08:02:12.168 UTC [9023] FATAL:  could not create lock file "/run/postgresql/.s.PGSQL.5432.lock": No such file or directory
-2025-02-27 08:02:12.173 UTC [9023] LOG:  database system is shut down
-2025-02-27 08:03:17.155 UTC [9372] LOG:  starting PostgreSQL 16.6 on x86_64-pc-linux-gnu, compiled by clang version 17.0.6, 64-bit
-2025-02-27 08:03:17.155 UTC [9372] LOG:  listening on IPv4 address "127.0.0.1", port 5432
-2025-02-27 08:03:17.155 UTC [9372] FATAL:  could not create lock file "/run/postgresql/.s.PGSQL.5432.lock": No such file or directory
-2025-02-27 08:03:17.165 UTC [9372] LOG:  database system is shut down

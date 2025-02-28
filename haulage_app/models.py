@@ -20,6 +20,7 @@ truckfk_cascade = Annotated[int, mapped_column(ForeignKey("truck.id", ondelete="
 truckfk_restrict = Annotated[int, mapped_column(ForeignKey("truck.id", ondelete="RESTRICT"), index=True)]
 dayfk = Annotated[int, mapped_column(ForeignKey("day.id"), index=True)]
 dayfk_cascade = Annotated[int, mapped_column(ForeignKey("day.id", ondelete="CASCADE"), index=True)]
+dayfk_restrict = Annotated[int, mapped_column(ForeignKey("day.id", ondelete="RESTRICT"), index=True)]
 expensefk_cascade = Annotated[int, mapped_column(ForeignKey("expense.id", ondelete="CASCADE"), index=True)]
 week_number_computed = Annotated[int, mapped_column(
     Computed("((EXTRACT(DOW FROM date) + EXTRACT(week FROM date) * 7 - 6) / 7)::integer"),
@@ -42,8 +43,8 @@ class Driver(db.Model):
 
     __table_args__ = (db.UniqueConstraint('first_name', 'last_name', name='_full_name_uc'),)
 
-    days: Mapped[List["Day"]] = relationship(back_populates="driver", cascade="all, delete", lazy=True)
-    payslips: Mapped[List["Payslip"]] = relationship(back_populates="driver", cascade="all, delete", lazy=True)
+    days: Mapped[List["Day"]] = relationship(back_populates="driver", lazy=True)
+    payslips: Mapped[List["Payslip"]] = relationship(back_populates="driver", lazy=True)
     
     def __repr__(self): 
         #represents itself in form of string
@@ -194,7 +195,7 @@ class Day(db.Model):
 
     driver: Mapped["Driver"] = relationship(back_populates="days")
     truck: Mapped["Truck"] = relationship(back_populates="days")
-    jobs: Mapped[List["Job"]] = relationship(back_populates="day", cascade="all, delete", lazy=True)
+    jobs: Mapped[List["Job"]] = relationship(back_populates="day", lazy=True)
     
     def __repr__(self):
         #represents itself in form of string
@@ -293,7 +294,7 @@ class Day(db.Model):
 class Job(db.Model):
     id: Mapped[intpk]
     timestamp: Mapped[tstamp]
-    day_id: Mapped[dayfk_cascade]
+    day_id: Mapped[dayfk_restrict]
     earned: Mapped[int]
     collection: Mapped[str50] 
     delivery: Mapped[str50] 
