@@ -78,9 +78,15 @@ def delete_day(item_id):
         flash("All entries deleted", "success-msg")
     else:
         entry = Day.query.get_or_404(item_id)
-        db.session.delete(entry)
-        db.session.commit()
-        flash("Entry deleted", "success-msg")
+        try:
+            db.session.delete(entry)
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            flash('Entry cannot be deleted as it is associated with Job entries.', "error-msg")
+
+        else:
+            flash("Entry deleted", "success-msg")
     return redirect(url_for("day.add_day", item_id=0, tab='history'))
 
 @day_bp.route("/edit_day/<int:item_id>", methods=["POST"])
