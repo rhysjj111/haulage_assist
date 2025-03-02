@@ -30,7 +30,9 @@
                         </div>
                     </a>
                 </div>
-                <div class="col s12 xl6 data-entry-button-container">
+                <!-- SPACER CONTAINER -->
+                <div class="col s0 xl2"></div>
+                <div class="col s12 xl4  data-entry-button-container">
                     <a href="{{ url_for('fuel.add_fuel', item_id=0, tab='entry') }}">
                         <div class="card-panel indigo darken-2 white-text">
                             <i class="large material-icons data-entry-icon row-2">local_gas_station</i>
@@ -38,7 +40,7 @@
                         </div>
                     </a>
                 </div>
-                <div class="col s12 xl6 data-entry-button-container">
+                <div class="col s12 xl4 data-entry-button-container">
                     <a href="{{ url_for('payslip.add_payslip', item_id=0, tab='entry') }}">
                         <div class="card-panel indigo darken-2 white-text">
                             <i class="large material-icons data-entry-icon row-2">attach_money</i>

@@ -175,29 +175,10 @@ PGPASSWORD=pe30b956095b85dbcc858ca8a88003bb1687004d3bfb5a855fa3780ae5904c238 pg_
 psql: error: connection to server on socket "/tmp/postgres/.s.PGSQL.5432" failed: No such file or directory
 Is the server running locally and accepting connections on that socket?
 ```
-- Enter the following commands:
+- Enter the following command to restart the database:
 ```
-initdb -D /workspace/postgres_data
-pg_ctl -D /workspace/postgres_data -o "-k /tmp/postgres" start
+pg_ctl -D /home/user/haulage_assist/.idx/.data/postgres -o "-k /tmp/postgres" start
 ```
-<!-- rm -rf /workspace/postgres_data
-```
-```
-initdb -D /workspace/postgres_data
-
-```
-```
-initdb -D /workspace/postgres_data
-```
-```
-pg_ctl -D /workspace/postgres_data start
-```
-```
-mkdir -p /tmp/postgres
-```
-```
-pg_ctl -D /workspace/postgres_data -o "-k /tmp/postgres" start
-``` -->
 
 #### Migrating database from Gitpod environment to Heroku
 ##### Login to Heroku via CLI

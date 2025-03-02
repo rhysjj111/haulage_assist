@@ -1186,8 +1186,21 @@ from datetime import datetime
         <li><div class="divider"></div></li>
         <li><a class="subheader">Tools</a></li>
         <li><a href="{{ url_for('wages_calculator.wages_calculator') }}"><i class="material-icons">attach_money</i>Wages Calculator</a></li>
-        <li><a href="{{ url_for('analysis.weekly_analysis') }}"><i class="material-icons">show_chart</i>Weekly Analysis</a></li>
-        <li><a href="{{ url_for('analysis.monthly_analysis') }}"><i class="material-icons">show_chart</i>Monthly Analysis</a></li>
+        <li class="">
+            <ul class="collapsible collapsible-accordion">
+                <li>
+                    <a class="collapsible-header"><i class="material-icons">arrow_drop_down</i>Analysis</a>
+                    <div class="collapsible-body">
+                        <ul>
+                            <li><a href="{{ url_for('analysis.weekly_analysis') }}"><i
+                                class="material-icons">show_chart</i>Weekly Analysis</a></li>
+                            <li><a href="{{ url_for('analysis.monthly_analysis') }}"><i
+                                class="material-icons">event</i>Monthly Analysis</a></li>
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </li>
 
     </ul>
     <a href="#" data-target="slide-out" class="sidenav-trigger material-icons "><i class="small material-icons black-text">menu</i></a>

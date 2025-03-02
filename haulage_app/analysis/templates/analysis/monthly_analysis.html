@@ -8,10 +8,10 @@
 {% set positive %}<i class="material-icons green-text tiny bold">add</i>{% endset %}
 {% set negative %}<i class="material-icons red-text tiny bold">remove</i>{% endset %}
 
-<div class="row min-height-container">
+<div class="row">
     
     <div class="col s12 m6">
-        <form method="GET"> 
+        <form method="GET">
             <label for="month_select">Select Month:</label>
             <select name="month_select" id="month_select" onchange="this.form.submit()">
                 {% for month_data in available_months %}
