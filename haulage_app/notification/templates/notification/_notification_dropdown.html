@@ -19,11 +19,11 @@
                 <div class="notification-item-content">
                     <div class="notification-details">
                         <!-- <div class="notification-meta"> 
-                            <span class="">{{ f.display_date(notification.date) }} - </span>
-                            <span class="">{{ notification.driver_id }} - </span> 
-                            <span class="">{{ notification.table_name.value }}</span>
+                            <span class="">{# f.display_date(notification.date) #} - </span>
+                            <span class="">{# notification.driver_id #} - </span> 
+                            <span class="">{# notification.table_name.value #}</span>
                         </div> -->
-                        <p class="notification-description">{{ notification.details }} {{notification.id}}</p>
+                        <p class="notification-description">{{ notification.details | safe}}</p>
                     </div>
                     <a class="btn-small btn-flat modal-trigger white" href="#notification-modal-{{notification.id}}">Dismiss</a>
                 </div>

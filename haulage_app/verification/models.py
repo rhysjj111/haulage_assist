@@ -9,6 +9,7 @@ from typing import List, Optional
 from sqlalchemy.orm import validates, Mapped, mapped_column, relationship
 from sqlalchemy import String, ForeignKey, Integer, DateTime, Date, func
 from haulage_app.models import Driver, Truck, Day, Payslip, Job, Fuel
+from sqlalchemy.dialects.postgresql import JSONB
 
 
 text = Annotated[str, mapped_column(db.Text)]
@@ -36,6 +37,8 @@ class Anomaly(db.Model):
     is_read: Mapped[bool] = mapped_column(default=False)
     is_recurring: Mapped[bool] = mapped_column(default=False)
     type: Mapped[str50] = mapped_column(nullable=False)
+    week_number: Mapped[Optional[int]]
+    year: Mapped[Optional[int]]
 
     __mapper_args__ = {
         'polymorphic_identity': 'anomaly',
@@ -54,10 +57,26 @@ class MissingEntryAnomaly(Anomaly):
     day_id: Mapped[Optional[dayfk]]
     table_name: Mapped[TableName]
 
-    __mapper_args__ = {'polymorphic_identity': 'missing_entry_anomaly'}
+    __mapper_args__ = {'polymorphic_identity': 'missing_entry'}
 
     driver: Mapped[Optional["Driver"]] = relationship(backref='anomalies')
     truck: Mapped[Optional["Truck"]] = relationship(backref='anomalies')
+
+class IncorrectMileage(Anomaly):
+    id: Mapped[int] = mapped_column(ForeignKey("anomaly.id", ondelete="CASCADE"), primary_key=True)
+    previous_date: Mapped[date]
+    next_date: Mapped[date]
+    previous_end_mileage: Mapped[float]
+    next_start_mileage: Mapped[float]
+    truck_id: Mapped[Optional[truckfk]]
+    previous_day_id: Mapped[Optional[int]] = mapped_column(ForeignKey("day.id"))
+    next_day_id: Mapped[Optional[int]] = mapped_column(ForeignKey("day.id"))
+
+    __mapper_args__ = {'polymorphic_identity': 'incorrect_mileage'}
+
+    truck: Mapped[Optional["Truck"]] = relationship(backref='incorrect_mileages')
+    previous_day: Mapped[Optional["Day"]] = relationship(foreign_keys=[previous_day_id], backref='incorrect_mileages')
+    next_day: Mapped[Optional["Day"]] = relationship(foreign_keys=[next_day_id], backref='next_day_incorrect_mileages')
 
 
 # class AiRawResponse(db.Model):

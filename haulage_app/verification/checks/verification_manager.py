@@ -5,6 +5,8 @@ from haulage_app.verification.checks.verification_functions import(
     process_missing_fuel_data,
     check_all_missing_day_entries,
     process_missing_day_entries,
+    process_incorrect_mileages,
+    check_all_incorrect_mileages,
 )
 
 def payslip_check():
@@ -27,3 +29,10 @@ def day_check():
         process_missing_day_entries(missing_days)
     else:
         print('no missing days')
+
+def mileage_check():
+    incorrect_mileage = check_all_incorrect_mileages()
+    if incorrect_mileage != []:
+        process_incorrect_mileages(incorrect_mileage)
+    else:
+        print('no missing mileage')

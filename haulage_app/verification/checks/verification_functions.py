@@ -7,7 +7,7 @@ from haulage_app.models import (
     Truck,
     Fuel,
 )
-from haulage_app.verification.models import MissingEntryAnomaly, TableName
+from haulage_app.verification.models import MissingEntryAnomaly, TableName, IncorrectMileage
 from haulage_app.models import db
 from haulage_app.functions import(
     display_date_pretty,
@@ -18,6 +18,15 @@ from haulage_app.analysis.functions import(
     find_previous_saturday,
     get_week_number_sat_to_fri,
 )
+from functools import lru_cache
+
+@lru_cache(maxsize=128)
+def get_driver(driver_id):
+    return Driver.query.get(driver_id)
+
+@lru_cache(maxsize=128)
+def get_truck(truck_id):
+    return Truck.query.get(truck_id)
 
 def get_next_friday_from_date(start_date):
     """
@@ -28,9 +37,8 @@ def get_next_friday_from_date(start_date):
         A datetime.date object representing the Friday of the week.
     """
     days_ahead = (4 - start_date.weekday()) % 7  # 4 corresponds to Friday
+
     return start_date + timedelta(days=days_ahead)
-
-
 
 def find_missing_payslip_weeks(start_date, end_date):
     """
@@ -128,6 +136,137 @@ def check_week_for_missing_day_entries(driver_id, year, week_number):
     }
             
 
+def find_incorrect_mileage(truck_id, year, week_number):
+    """
+    Finds incorrect mileage for a given truck and week.
+    Args:
+        truck_id: The truck ID.
+        year: The year of the data (integer).
+        week_number: The week number (integer).
+    Returns:
+        A dictionary containing the truck_id, year, week_number,
+        and a list of dictionaries containing start_mileage, end_mileage,
+        start_date, end_date.
+    """
+    # Calculate the start and end dates for the given week
+    start_date, end_date = get_start_and_end_of_week(year, week_number)
+
+    day_entries = Day.query.filter(
+        Day.truck_id == truck_id,
+        Day.date.between(start_date, end_date),
+        Day.status == 'working'
+    ).order_by(Day.date.asc()).all()
+
+    acceptable_mileage_discrepancy = 2000 # 20 miles
+
+    incorrect_mileages = []
+
+    if day_entries:
+        previous_end_mileage = None
+        previous_date = None
+        for day in day_entries:
+            if previous_end_mileage is None:
+                previous_end_mileage = day.end_mileage
+                previous_date = day.date
+                previous_day_id = day.id
+                continue
+            mileage_diff = abs(day.start_mileage - previous_end_mileage)
+            if (
+                previous_date is not None
+                and mileage_diff > acceptable_mileage_discrepancy
+            ):
+                incorrect_mileages.append({
+                    'previous_date': previous_date,
+                    'previous_end_mileage': previous_end_mileage,
+                    'next_date': day.date,
+                    'next_start_mileage': day.start_mileage,
+                    'previous_day_id': previous_day_id,
+                    'next_day_id': day.id,
+                })
+            previous_end_mileage = day.end_mileage
+            previous_date = day.date
+            previous_day_id = day.id
+
+    return {
+        'truck_id': truck_id,
+        'year': year,
+        'week_number': week_number,
+        'incorrect_mileages': incorrect_mileages,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+
+def find_incorrect_mileages_for_date_range(start_date, end_date):
+    """
+    Checks for missing day entries for each driver between two dates.
+    Args:
+        start_date: The start date of the date range.
+        end_date: The end date of the date range.
+
+    Returns:
+        A list of dictionaries containing the driver_id, missing_days, start_date, end_date,
+        week_number, and year for each driver with missing day entries.
+    """
+
+    results = []
+
+    # Find the first saturday before or on the start date to be the start of week
+    adjusted_start_date = find_previous_saturday(start_date)
+
+    # Find the last friday on or after the end_date to be the end of week
+    if end_date.weekday() != 4:  # if not friday
+        adjusted_end_date = get_next_friday_from_date(end_date)
+    else:
+        adjusted_end_date = end_date
+
+    # Iterate through each week in the date range
+    current_date = adjusted_start_date
+    while current_date <= adjusted_end_date:
+        year, week_number = get_week_number_sat_to_fri(current_date)
+
+        trucks = Truck.query.all()
+        for truck in trucks:
+            consistency_check_result = find_incorrect_mileage(truck.id, year, week_number)
+            #append the data to the results list
+            if consistency_check_result['incorrect_mileages'] != []:
+                results.append(consistency_check_result)
+
+        # Move to the next week
+        current_date += timedelta(days=7)
+
+    return results
+
+def check_all_incorrect_mileages():
+    """
+    Checks day entry consistency across all available data for all drivers.
+    Returns:
+        A list of dictionaries, where each dictionary represents a week and driver
+        combination with missing day entries. Each dictionary
+        contains driver_id, week_number, year, and missing_dates.
+    """
+    # Find the earliest and latest dates in the Day table.
+    min_date_result = Day.query.order_by(Day.date.asc()).first()
+    max_date_result = Day.query.order_by(Day.date.desc()).first()
+
+    if not min_date_result or not max_date_result:
+        print("No data found in the Day table.")
+        return []
+
+    start_date = min_date_result.date
+    end_date = max_date_result.date
+
+    # Check day entries for the range
+    day_entry_output = find_incorrect_mileages_for_date_range(start_date, end_date)
+
+    return day_entry_output
+
+    
+
+
+
+
+
+
 
 def check_week_for_missing_fuel_data(truck_id, year, week_number):
     """
@@ -146,7 +285,7 @@ def check_week_for_missing_fuel_data(truck_id, year, week_number):
     # Calculate the start and end dates for the given week
     start_date, end_date = get_start_and_end_of_week(year, week_number)
 
-    # Count the number of fuel entries for the given truck and week
+    # Get all fuel entries for the given truck and week
     fuel_entry = Fuel.query.filter(
         Fuel.truck_id == truck_id,
         Fuel.date >= start_date,
@@ -271,6 +410,70 @@ def check_week_for_missing_fuel_data_for_date_range(start_date, end_date):
 
     return results
 
+def process_incorrect_mileages(incorrect_mileage_output):
+
+    anomalies_to_add = []
+
+    for data in incorrect_mileage_output:
+        truck_id = data['truck_id']
+        incorrect_mileages = data['incorrect_mileages']
+        week_number = data['week_number']
+        year = data['year']
+
+        truck = get_truck(truck_id)
+
+        anomalies_to_add = []
+        
+        for data in incorrect_mileages:
+            #Create a new Anomaly instance
+            previous_day_id = data['previous_day_id']
+            next_day_id = data['next_day_id']
+            anomaly_already_present = IncorrectMileage.query.filter_by(
+                truck_id=truck_id,
+                previous_day_id=previous_day_id,
+                next_day_id=next_day_id,
+            ).first()
+            previous_end_mileage = round(data['previous_end_mileage']/100)
+            next_start_mileage = round(data['next_start_mileage']/100)
+
+            if not anomaly_already_present:
+                anomaly = IncorrectMileage(
+                    description = 
+                        f'''
+                            <b>{truck.registration}</b><br>
+                            ({display_date_pretty(data["previous_date"])}) Previous day end miles: {previous_end_mileage:,} mls <br>
+                            ({display_date_pretty(data["next_date"])}) Next day start miles: {next_start_mileage:,} mls
+                        ''',
+                    week_number=week_number,
+                    year=year,
+                    truck_id=truck_id,
+                    previous_date=data["previous_date"],
+                    next_date=data["next_date"],
+                    previous_end_mileage=data["previous_end_mileage"],
+                    next_start_mileage=data["next_start_mileage"],
+                    previous_day_id=previous_day_id,
+                    next_day_id=next_day_id,
+                )
+                anomalies_to_add.append(anomaly)
+            elif anomaly_already_present and anomaly_already_present.is_read and not anomaly_already_present.is_recurring:
+                try:
+                    anomaly_already_present.is_recurring = True
+                    db.session.commit()
+                except Exception as e:
+                    print(f'Error updating anomaly: {e}')
+                else:
+                    print(f'Success updating anomaly status for missing mileage')  
+        try:
+            db.session.add_all(anomalies_to_add)
+            db.session.commit()
+        except Exception as e:
+            print(f"Error creating anomaly: {e}")
+        else:
+            print(f'Success entering incorrect mileage entry')
+    print('All incorrect mileage entries processed.')
+            
+
+
 def process_missing_day_entries(day_entry_output):
 
     ten_days_ago = date.today() - timedelta(days=10)
@@ -281,10 +484,7 @@ def process_missing_day_entries(day_entry_output):
         missing_dates = data['missing_days']
 
         # Fetch Driver object from cache or database
-        driver = driver_cache.get(driver_id)
-        if not driver:
-            driver = Driver.query.get(driver_id)
-            driver_cache[driver_id] = driver
+        driver = get_driver(driver_id)
 
         for date_obj in missing_dates:
             # Create a new Anomaly instance
@@ -292,18 +492,28 @@ def process_missing_day_entries(day_entry_output):
             anomaly_already_present = MissingEntryAnomaly.query.filter_by(
                 date=date_obj, driver_id=driver_id, table_name=table_name
             ).first()
+            print(anomaly_already_present)
 
             if not anomaly_already_present and date_obj < ten_days_ago:
                 anomaly = MissingEntryAnomaly(
                     date=date_obj,
-                    description=f'Missing: Day entry for {driver.full_name} on {display_date_pretty(date_obj)}',
+                    description=
+                    f'''
+                    <b>Missing Day Entry</b><br>
+                    {display_date_pretty(date_obj)}<br>
+                    {driver.full_name}
+                    ''',
                     driver_id=driver_id,
                     table_name=table_name,
                     is_read=False,
                     is_recurring=False,
                 )
                 anomalies_to_add.append(anomaly)
-            elif anomaly_already_present and anomaly_already_present.isread and not anomaly_already_present.is_recurring:
+            elif (
+                anomaly_already_present 
+                and anomaly_already_present.is_read 
+                and not anomaly_already_present.is_recurring
+            ):
                 try:
                     anomaly_already_present.is_recurring = True
                     db.session.commit()
@@ -312,13 +522,13 @@ def process_missing_day_entries(day_entry_output):
                 else:
                     print(f'Success updating anomaly {date_obj}, {driver.full_name}')
         try:
-            db.session.add(anomalies_to_add)
+            db.session.add_all(anomalies_to_add)
             db.session.commit()
         except Exception as e:
-            print(f"Error creating anomaly: {e}")
+            print(f"Error creating missing day anomaly: {e}")
         else:
-            print(f'Success entering anomaly {date_obj}, {driver.full_name}')
-    print('All fuel entries processed.')
+            print(f'Success processing missing day anomaly {date_obj}, {driver.full_name}')
+    print('All day entries processed.')
 
 def check_all_missing_day_entries():
     """
@@ -390,7 +600,12 @@ def process_missing_fuel_data(fuel_consistency_output):
                 try:
                     anomaly = MissingEntryAnomaly(
                         date=date_obj,
-                        description=f'Missing: Fuel Invoice for {truck.registration} on {display_date_pretty(date_obj)}',
+                        description=
+                        f'''
+                        <b>Missing Fuel Entry</b> <br>
+                        {display_date_pretty(date_obj)} <br>
+                        {truck.registration}
+                        ''',
                         truck_id=truck_id,
                         table_name=table_name,
                         is_read=False,
@@ -440,7 +655,11 @@ def process_missing_payslips(missing_payslips_output):
             if not anomaly_entry:
                 new_anomaly = MissingEntryAnomaly(
                     date=date_obj,
-                    description=f"Missing: PAYSLIP for {driver.full_name.capitalize()} on {display_date_pretty(date_obj)}",
+                    description=f'''
+                    <b>Missing Payslip Entry</b><br>
+                    {display_date_pretty(date_obj)}<br>
+                    {driver.full_name.capitalize()}
+                    ''',
                     driver_id=driver_id,
                     table_name=table_name,
                     is_read=False,

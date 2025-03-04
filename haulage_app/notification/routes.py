@@ -17,9 +17,12 @@ from haulage_app.verification.checks.verification_manager import(
     payslip_check,
     fuel_check,
     day_check,
+    mileage_check,
     )
 from haulage_app.verification.checks.verification_functions import(
     check_all_missing_fuel_data,
+    find_incorrect_mileage,
+    check_all_incorrect_mileages,
 )
 from datetime import timedelta, date, datetime
 from haulage_app.notification import notification_bp
@@ -35,18 +38,24 @@ def inject_notification():
 
     test_notifications = []
 
-    anomalies = Anomaly.query.filter_by(is_read=False).limit(5).all()
+    # find_incorrect_mileage(2, 2025, 3)
+    mileage_check()
+    day_check()
+    fuel_check()
+    payslip_check()
+
+    anomalies = Anomaly.query.filter_by(is_read=False, type='missing_entry').limit(5).all()
     for anomaly in anomalies:
         anomaly_info = {
             "id": anomaly.id,
-            "date": anomaly.date,
+            # "date": anomaly.date,
             "details": anomaly.description,
-            "table_name": anomaly.table_name,
+            # "table_name": anomaly.table_name,
         }
-        if anomaly.driver_id is not None:
-            anomaly_info["driver_id"] = anomaly.driver_id
-        elif anomaly.truck_id is not None:
-            anomaly_info["truck_id"] = anomaly.truck_id
+        # if anomaly.driver_id is not None:
+        #     anomaly_info["driver_id"] = anomaly.driver_id
+        # elif anomaly.truck_id is not None:
+        #     anomaly_info["truck_id"] = anomaly.truck_id
         test_notifications.append(anomaly_info)
 
     return {'notifications': test_notifications}

@@ -179,6 +179,7 @@ Is the server running locally and accepting connections on that socket?
 ```
 pg_ctl -D /home/user/haulage_assist/.idx/.data/postgres -o "-k /tmp/postgres" start
 ```
+If you are using Project IDX, It may be that there is a stale postmaster.opts file in the .idx/.data/postgres directory. Remove this file and run the above command again.
 
 #### Migrating database from Gitpod environment to Heroku
 ##### Login to Heroku via CLI
