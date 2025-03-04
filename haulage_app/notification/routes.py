@@ -39,10 +39,10 @@ def inject_notification():
     test_notifications = []
 
     # find_incorrect_mileage(2, 2025, 3)
-    mileage_check()
-    day_check()
-    fuel_check()
-    payslip_check()
+    # mileage_check()
+    # day_check()
+    # fuel_check()
+    # payslip_check()
 
     anomalies = Anomaly.query.filter_by(is_read=False, type='missing_entry').limit(5).all()
     for anomaly in anomalies:
