@@ -44,7 +44,7 @@ def inject_notification():
     # fuel_check()
     # payslip_check()
 
-    anomalies = Anomaly.query.filter_by(is_read=False, type='missing_entry').limit(5).all()
+    anomalies = Anomaly.query.filter_by(is_read=False).all()
     for anomaly in anomalies:
         anomaly_info = {
             "id": anomaly.id,
