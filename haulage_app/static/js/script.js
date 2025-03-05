@@ -3,6 +3,39 @@ document.addEventListener('DOMContentLoaded', function () {
     const collapsibles = document.querySelectorAll('.collapsible');
     M.Collapsible.init(collapsibles);
 
+    const collapsibleExpandable = document.querySelector('.collapsible.expandable');
+    M.Collapsible.init(collapsibleExpandable, {
+        accordion: false
+    });
+
+    const searchInput = document.getElementById('search-entries');
+    const collapsibleItems = document.querySelectorAll('.collapsible li');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function(event) {
+            const searchTerm = event.target.value.toLowerCase();
+    
+            collapsibleItems.forEach(item => {
+                const header = item.querySelector('.collapsible-header');
+                if (header) {
+                    const headerText = header.textContent.toLowerCase();
+                    if (headerText.includes(searchTerm)) {
+                        item.style.display = ''; // Show the item
+                    } else {
+                        item.style.display = 'none'; // Hide the item
+                    }
+                }
+                const body = item.querySelector('.collapsible-body');
+                if(body){
+                    const bodyText = body.textContent.toLowerCase();
+                    if (bodyText.includes(searchTerm)) {
+                        item.style.display = ''; // Show the item
+                    }
+                }
+            });
+        });
+    }
+
     const weekSelectOptions = {
         format: "dd/mm/yyyy",
         i18n: {done: "Select"},
@@ -96,8 +129,8 @@ document.addEventListener('DOMContentLoaded', function () {
      M.Dropdown.init(notification_dropdown, {
         alignment: 'left',
         coverTrigger: false,
-        constrainWidth: false,
-        closeOnClick: false,
+        // constrainWidth: false,
+        // closeOnClick: false,
     });
     
     //flash feedback timeout and remove container after a time interval

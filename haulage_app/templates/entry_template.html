@@ -46,7 +46,11 @@
     <!-- history title -->
     <h4>{% block entry_history_title %}Test history{% endblock %}</h4>
     <!-- history content -->
-    <ul class="collapsible">
+    <div class="input-field col s12 no-margin">
+        <i class="material-icons prefix">search</i>
+        <input type="text" id="search-entries" placeholder="Search entries...">
+    </div>
+    <ul class="collapsible expandable">
         {% for item in list %}
         <li>
             <!-- collapsible header -->
@@ -54,7 +58,7 @@
                 {% if (item.start_mileage == 0 or item.end_mileage == 0) and item.status == 'working' %}
                 <i class="material-icons orange-text">warning</i>
                 {% else %}
-                <i class="material-icons">filter_drama</i>
+                <i class="material-icons">description</i>
                 {% endif %}
                 <strong>{% block collapsible_header scoped %}{% endblock %}</strong>
                 <div style="margin-left: auto; display: flex;">
