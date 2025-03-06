@@ -12,30 +12,63 @@ document.addEventListener('DOMContentLoaded', function () {
     const collapsibleItems = document.querySelectorAll('.collapsible li');
 
     if (searchInput) {
-        searchInput.addEventListener('input', function(event) {
-            const searchTerm = event.target.value.toLowerCase();
-    
-            collapsibleItems.forEach(item => {
-                const header = item.querySelector('.collapsible-header');
-                if (header) {
-                    const headerText = header.textContent.toLowerCase();
-                    if (headerText.includes(searchTerm)) {
-                        item.style.display = ''; // Show the item
+        searchInput.addEventListener('input', function (event) {
+            const inputString = event.target.value.toLowerCase();
+            const commaSplitTerms = inputString.split('+'); // Split by '+' first
+
+            let finalFilteredItems = new Set();
+
+            commaSplitTerms.forEach((commaSplitTerm, commaIndex) => {
+                const searchTerms = commaSplitTerm.split(',').map(term => term.trim()).filter(term => term !== ""); // Split by comma, trim spaces, and remove empty strings
+                let filteredItems = new Set(collapsibleItems); // Start with all items for each '+' group
+
+                searchTerms.forEach((searchTerm, termIndex) => {
+                    const currentFilteredItems = new Set();
+
+                    filteredItems.forEach(item => {
+                        const header = item.querySelector('.collapsible-header');
+                        const body = item.querySelector('.collapsible-body');
+                        let matchesTerm = false;
+
+                        if (header) {
+                            const headerText = header.textContent.toLowerCase();
+                            if (headerText.includes(searchTerm)) {
+                                matchesTerm = true;
+                            }
+                        }
+
+                        if (body) {
+                            const bodyText = body.textContent.toLowerCase();
+                            if (bodyText.includes(searchTerm)) {
+                                matchesTerm = true;
+                            }
+                        }
+
+                        if (matchesTerm) {
+                            currentFilteredItems.add(item);
+                        }
+                    });
+
+                    if (termIndex === 0) {
+                        filteredItems = new Set(currentFilteredItems); //set the first search term results as the current list to filter by
                     } else {
-                        item.style.display = 'none'; // Hide the item
+                        filteredItems = new Set([...filteredItems].filter(item => currentFilteredItems.has(item))); //filter out only the ones that match both
                     }
+
+                });
+                //combine filtered results
+                if(commaIndex === 0){
+                    finalFilteredItems = new Set(filteredItems) //set the first result to the final result
+                } else {
+                    finalFilteredItems = new Set([...finalFilteredItems, ...filteredItems]) //combine all results with the last results
                 }
-                const body = item.querySelector('.collapsible-body');
-                if(body){
-                    const bodyText = body.textContent.toLowerCase();
-                    if (bodyText.includes(searchTerm)) {
-                        item.style.display = ''; // Show the item
-                    }
-                }
+            });
+
+            collapsibleItems.forEach(item => {
+                item.style.display = finalFilteredItems.has(item) ? '' : 'none';
             });
         });
     }
-
     const weekSelectOptions = {
         format: "dd/mm/yyyy",
         i18n: {done: "Select"},
