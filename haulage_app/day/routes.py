@@ -4,6 +4,7 @@ from haulage_app.models import Driver, Day, Truck
 from haulage_app.day import day_bp
 from pprint import pprint
 from sqlalchemy.exc import IntegrityError
+from haulage_app.verification.checks.verification_functions import check_mileage_has_been_rectified
 
 @day_bp.route("/add_day/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_day(item_id, tab):
@@ -118,6 +119,7 @@ def edit_day(item_id):
             entry.additional_earned = None
             entry.additional_wages = None
         db.session.commit()
+        
     except ValueError as e:
         if request.args.get('weekly'):
             flash(str(e), 'error-msg-modal')
@@ -136,6 +138,8 @@ def edit_day(item_id):
                 flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg")
                 return redirect(url_for("week.week", item_id=item_id, tab='edit', success=True))
         else:
+            print(item_id)
+            check_mileage_has_been_rectified(item_id)
             flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg")
             return redirect(url_for("day.add_day", item_id=0, tab='edit'))
 

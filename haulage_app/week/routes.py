@@ -13,19 +13,19 @@ def week(item_id, tab):
 
     day_entries_to_edit = list(
         Day.query.join(Driver)
-        .filter(
-            Day.status == 'working',
-            db.or_(
-                Day.start_mileage == 0,
-                Day.end_mileage == 0
-            )
-        )
+        .filter(Day.status == 'working')
         .order_by(
+            db.case(
+                (Day.start_mileage == 0, 0),
+                (Day.end_mileage == 0, 0),
+                else_=1
+            ),  # Prioritize 0 mileages
             Day.driver_id,
             Driver.first_name,
             Driver.last_name,
             Day.date.asc()
-        ).all()
+        )
+        .all()
     )
 
     all_day_entries = list(
@@ -60,5 +60,6 @@ def week(item_id, tab):
         selected_entry=selected_entry,
         tab=tab,
         item_id=0,
-        type='week',)
+        type='week',
+    )
 

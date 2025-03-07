@@ -19,6 +19,7 @@ from haulage_app.analysis.functions import(
     get_week_number_sat_to_fri,
 )
 from functools import lru_cache
+from flask import flash
 
 @lru_cache(maxsize=128)
 def get_driver(driver_id):
@@ -195,6 +196,54 @@ def find_incorrect_mileage(truck_id, year, week_number):
         'start_date': start_date,
         'end_date': end_date,
     }
+# ca68, 09/01 + ca68, 10/01
+def check_mileage_has_been_rectified(day_entry_id):
+    """Checks if mileage has been rectified for a given day entry.
+
+    Performs check on the week.
+    Loops through incorrect mileages, and checks the date is still present.
+    If the anomaly has been rectified, then the anomaly is removed from the database.
+
+    Args:
+        day_entry_id (int): day entry id
+    """
+    day_entry = Day.query.get(day_entry_id)
+    date = day_entry.date
+    anomaly = IncorrectMileage.query.filter(
+        db.or_(
+            IncorrectMileage.previous_day_id == day_entry_id,
+            IncorrectMileage.next_day_id == day_entry_id
+        )
+    ).first()
+    if anomaly:
+        week_number = anomaly.week_number
+        year = anomaly.year
+        truck_id = anomaly.truck_id
+        anomaly_rectified = True
+
+        mileage_check = find_incorrect_mileage(truck_id, year, week_number)
+        print(mileage_check)
+        for data in mileage_check['incorrect_mileages']:
+            print(data)
+            if data['previous_date'] == date or data['next_date'] == date:
+                anomaly_rectified = False
+        
+        if anomaly_rectified:
+            try:
+                db.session.delete(anomaly)
+                db.session.commit()
+            except Exception as e:
+                flash('Error deleting anomaly', 'error-msg')
+                print(f'Error deleting anomaly: {e}')
+            else:
+                flash('Success rectifying anomaly', 'success-msg')
+                print(f'Success deleting anomaly')
+        else:
+            print(f'Mileage error for data {date} still present')
+    else:
+        print('No anomaly found.')
+
+    
 
 def find_incorrect_mileages_for_date_range(start_date, end_date):
     """

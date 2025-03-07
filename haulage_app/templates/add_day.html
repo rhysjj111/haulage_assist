@@ -23,8 +23,8 @@
                 {% if item.status == 'working' %}
                 Truck: {{ item.truck.registration }}<br>
                 Fuel: {{ 'True' if item.fuel else 'False' }}<br>
-                Start mileage: {{ f.display_float(item.start_mileage) }}<br>
                 End mileage: {{ f.display_float(item.end_mileage) }}<br>
+                Start mileage: {{ f.display_float(item.start_mileage) }}<br>
                 Total earned: {{ f.fd_currency(item.calculate_total_earned()) }}
                 {% else %}
                 <span class="italics">Status: {{ item.status.capitalize() }}</span>
