@@ -1,10 +1,13 @@
 from flask import render_template, request, redirect, url_for, flash
 from haulage_app import db, f
 from haulage_app.models import Driver, Day, Truck
+from haulage_app.verification.models import IncorrectMileage, Anomaly, MissingEntryAnomaly
+from haulage_app.analysis.functions import get_start_and_end_of_week
 from haulage_app.day import day_bp
 from pprint import pprint
 from sqlalchemy.exc import IntegrityError
 from haulage_app.verification.checks.verification_functions import check_mileage_has_been_rectified
+from datetime import timedelta
 
 @day_bp.route("/add_day/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_day(item_id, tab):
@@ -12,22 +15,50 @@ def add_day(item_id, tab):
     trucks = list(Truck.query.order_by(Truck.registration).all())
     components = {'drivers':drivers, 'trucks':trucks}
 
-    day_entries = list(
-        Day.query.join(Driver)
-        .order_by(
-            # db.case(
-            #     *(
-            #         (db.and_(Day.status == 'working', Day.start_mileage == 0), 0),
-            #         (db.and_(Day.status == 'working', Day.end_mileage == 0), 0),
-            #     ),
-            #     else_=1
-            # ).asc(),
-            # Day.driver_id,
-            # Driver.first_name,
-            # Driver.last_name,
-            Day.date.desc()
-        ).all()
-    )
+    anomaly_id = request.args.get('anomaly_id')
+    search_term = None
+    day = {}
+
+    if anomaly_id:
+        anomaly = Anomaly.query.get(anomaly_id)
+        if anomaly.type == 'incorrect_mileage':
+            anomaly = IncorrectMileage.query.filter(IncorrectMileage.id == anomaly_id).first()
+            registration = anomaly.truck.registration
+            previous_date = f.display_date(anomaly.previous_date)
+            next_date = f.display_date(anomaly.next_date)
+
+            # search_term = f"{registration}, {previous_date} + {registration}, {next_date}"
+            search_term = ""
+            day_entries = Day.query.filter(
+                db.or_(
+                    Day.date == anomaly.previous_date,
+                    Day.date == anomaly.next_date
+                ),
+                Day.truck_id == anomaly.truck_id
+            ).all()
+        else:
+            anomaly = MissingEntryAnomaly.query.filter(MissingEntryAnomaly.id == anomaly_id).first()
+            day['date'] = anomaly.date
+            day['driver_id'] = anomaly.driver_id
+            start_week_date, end_week_date = get_start_and_end_of_week(anomaly.year, anomaly.week_number)
+            start_week_date = start_week_date  - timedelta(days=5)
+            end_week_date = end_week_date + timedelta(days=5)
+
+            day_entries = Day.query.filter(
+                Day.date.between(start_week_date, end_week_date),
+                Day.driver_id == anomaly.driver_id
+            ).all()
+            search_term = ""
+
+    else:
+        day_entries = list(
+            Day.query.join(Driver)
+            .order_by(
+                Day.date.desc()
+            ).all()
+        )
+        search_term = ""
+
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     template_data = {  # Create a dictionary for template data
@@ -36,7 +67,8 @@ def add_day(item_id, tab):
         "tab": tab,
         "item_id": item_id,
         "type": 'day',
-        "day": {}       # Initially an empty dictionary for form data
+        "search_term": search_term,
+        "day": day       # Initially an empty dictionary for form data
     }
 
     if request.method == "POST":
@@ -138,7 +170,6 @@ def edit_day(item_id):
                 flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg")
                 return redirect(url_for("week.week", item_id=item_id, tab='edit', success=True))
         else:
-            print(item_id)
             check_mileage_has_been_rectified(item_id)
             flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg")
             return redirect(url_for("day.add_day", item_id=0, tab='edit'))

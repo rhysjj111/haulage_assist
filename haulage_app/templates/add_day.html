@@ -14,11 +14,11 @@
 
     {% block entry_history_title %}Day Entry History:{% endblock %}
 
-        {% block collapsible_header %}{{item.driver.full_name}} - {{f.display_date(item.date)}}{% endblock %}
+        {% block collapsible_header %}{{item.driver.full_name}} <br>{{f.display_date_pretty(item.date)}} ({{item.date.strftime('%a')}}){% endblock %}
 
         {% block collapsible_body %}
             <p>
-                Date: {{ f.display_date(item.date) }} -- {{item.date}}<br>
+                Date: {{ f.display_date(item.date) }}<br>
                 Driver: {{ item.driver.full_name }}<br>
                 {% if item.status == 'working' %}
                 Truck: {{ item.truck.registration }}<br>

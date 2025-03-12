@@ -36,27 +36,49 @@ def inject_notification():
     #     return Notification.query.filter_by(is_read=False).order_by(Notification.timestamp.desc()).all()
     # return dict(notifications=get_notifications())
 
-    test_notifications = []
-
     # find_incorrect_mileage(2, 2025, 3)
     # mileage_check()
-    # day_check()
+    day_check()
     # fuel_check()
     # payslip_check()
 
+    # notifications = {}
+    # notifications['mileage_notifications'] = []
+    # mileage_anomalies = Anomaly.query.filter(Anomaly.type == 'incorrect_mileage').all()
+    # for anomaly in mileage_anomalies:
+    #     anomaly_info = {
+    #         "id": anomaly.id,
+    #         "details": anomaly.description,
+    #         "json": {
+    #             "truck_id": anomaly.truck_id,
+    #             "previous_date": anomaly.previous_date,
+    #             "next_date": anomaly.next_date,
+    #         },
+    #     }
+    #     notifications['mileage_notifications'].append(anomaly_info)
+    # return notifications
+    
+    notifications = []
+
     anomalies = Anomaly.query.filter_by(is_read=False).all()
     for anomaly in anomalies:
+        if anomaly.type == 'incorrect_mileage':
+            entry_type = 'day'
+        else:
+            entry_type = anomaly.table_name.value
         anomaly_info = {
             "id": anomaly.id,
             # "date": anomaly.date,
             "details": anomaly.description,
             # "table_name": anomaly.table_name,
+            "entry_type": entry_type
         }
         # if anomaly.driver_id is not None:
         #     anomaly_info["driver_id"] = anomaly.driver_id
         # elif anomaly.truck_id is not None:
         #     anomaly_info["truck_id"] = anomaly.truck_id
-        test_notifications.append(anomaly_info)
+        notifications.append(anomaly_info)
 
-    return {'notifications': test_notifications}
+    return {'notifications': notifications}
+
 

@@ -224,7 +224,7 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
             <select name="status" id="status" class="validate" required>
-                {% if day != {} %}
+                {% if day != {} and day.status is defined %}
                 <option value="{{day.status}}" selected>{{day.status.capitalize()}}</option>
                 <option value="working" >Working</option>
                 <option value="holiday" >Holiday</option>

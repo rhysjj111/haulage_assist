@@ -46,9 +46,10 @@
     <!-- history title -->
     <h4>{% block entry_history_title %}Test history{% endblock %}</h4>
     <!-- history content -->
+        <!-- search bar -->
     <div class="input-field col s12 no-margin">
         <i class="material-icons prefix">search</i>
-        <input type="text" id="search-entries" placeholder="Search entries...">
+        <input type="text" id="search-entries" placeholder="Search entries..." value="{{search_term}}">
     </div>
     <ul class="collapsible expandable">
         {% for item in list %}
@@ -73,7 +74,7 @@
                 </div>
             </div>
             <!-- collapsible-body -->
-            <div class="collapsible-body">
+            <div class="collapsible-body" {{'style= display:block;' if search_term}}>
                 {% block collapsible_body scoped %}{% endblock %}
             </div>
 

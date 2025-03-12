@@ -1,5 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash
 from haulage_app import db, f
+from haulage_app.verification.models import MissingEntryAnomaly
 from haulage_app.models import Truck, Fuel
 from haulage_app.fuel import fuel_bp
 
@@ -11,6 +12,16 @@ def add_fuel(item_id, tab):
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     fuel = {}
+
+    anomaly_id = request.args.get('anomaly_id')
+    search_term = None
+
+    if anomaly_id:
+        anomaly = MissingEntryAnomaly.query.filter(MissingEntryAnomaly.id == anomaly_id).first()
+        fuel['date'] = anomaly.date
+        fuel['truck_id'] = anomaly.truck_id
+        
+
     if request.method == "POST":
         try:
             new_entry = Fuel(

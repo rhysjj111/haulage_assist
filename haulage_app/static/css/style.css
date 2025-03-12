@@ -273,36 +273,34 @@ footer, nav{
 
 /* notification  */
 
-.notification-item-content{
-    min-height: 40px;
-    display: flex;
-    align-items: center; /* Vertically center content */
-    justify-content: space-between; /* Distribute space between span and button */
-}
-
 .dropdown-content {
     min-width: 60vw;
-    /* width: 750px !important;  */
     max-height: 500px !important; 
+}
+
+.notification-item-content {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .notification-details {
     display: flex;
     flex-direction: column;
 }
-/* 
-.notification-meta {
-    font-size: 0.8rem; 
-    color: #757575; 
-    margin-bottom: 4px; 
-} */
 
 .notification-description {
-    font-size: 0.9rem; /* Slightly smaller description font */
-    margin: 0; /* Remove default paragraph margins */
-    overflow: hidden; /* prevent content from overflowing */
-    text-overflow: ellipsis; /* add "..." if overflows */
-    white-space: nowrap; /* prevent the description from wrapping */
+    font-size: 0.9rem;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.notification-item {
+    padding: 15px;
+    border-bottom: 1px solid #e8e8e8;
 }
 
 .notification-container {
@@ -320,8 +318,16 @@ footer, nav{
     display: flex;
     align-items: center;
     justify-content: center;
-
 }
+
+.notification-item-content a:first-child{
+    flex: 1;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    min-width: 0; /* important so flexbox can shrink it*/
+}
+
 
 .notification-badge {
     margin-left: 4px !important;
@@ -338,10 +344,6 @@ footer, nav{
     z-index: 1;
 }
 
-.notification-item {
-    padding: 15px;
-    border-bottom: 1px solid #e8e8e8;
-}
 
 .preloader-background {
 	display: flex;

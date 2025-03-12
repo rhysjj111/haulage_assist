@@ -7,20 +7,33 @@ document.addEventListener('DOMContentLoaded', function () {
     M.Collapsible.init(collapsibleExpandable, {
         accordion: false
     });
+    
+    function filterCollapsibleItems(parentSelector, collapsibleItems) {
+        const parent = document.querySelector(parentSelector);
 
-    const searchInput = document.getElementById('search-entries');
-    const collapsibleItems = document.querySelectorAll('.collapsible li');
+        if (parent) {
+            parent.addEventListener('input', function (event) {
+                if (event.target.id === 'search-entries') {
+                    performFiltering(event.target.value); // Call filtering function with input value
+                }
+            });
 
-    if (searchInput) {
-        searchInput.addEventListener('input', function (event) {
-            const inputString = event.target.value.toLowerCase();
-            const commaSplitTerms = inputString.split('+'); // Split by '+' first
+            // Initial filtering on page load
+            const searchInput = parent.querySelector('#search-entries');
+            if (searchInput) {
+                performFiltering(searchInput.value); // Trigger filtering with initial value
+            }
+        }
+
+        function performFiltering(inputValue) {
+            const inputString = inputValue.toLowerCase();
+            const commaSplitTerms = inputString.split('+');
 
             let finalFilteredItems = new Set();
 
             commaSplitTerms.forEach((commaSplitTerm, commaIndex) => {
-                const searchTerms = commaSplitTerm.split(',').map(term => term.trim()).filter(term => term !== ""); // Split by comma, trim spaces, and remove empty strings
-                let filteredItems = new Set(collapsibleItems); // Start with all items for each '+' group
+                const searchTerms = commaSplitTerm.split(',').map(term => term.trim()).filter(term => term !== "");
+                let filteredItems = new Set(collapsibleItems);
 
                 searchTerms.forEach((searchTerm, termIndex) => {
                     const currentFilteredItems = new Set();
@@ -50,25 +63,28 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
 
                     if (termIndex === 0) {
-                        filteredItems = new Set(currentFilteredItems); //set the first search term results as the current list to filter by
+                        filteredItems = new Set(currentFilteredItems);
                     } else {
-                        filteredItems = new Set([...filteredItems].filter(item => currentFilteredItems.has(item))); //filter out only the ones that match both
+                        filteredItems = new Set([...filteredItems].filter(item => currentFilteredItems.has(item)));
                     }
-
                 });
-                //combine filtered results
-                if(commaIndex === 0){
-                    finalFilteredItems = new Set(filteredItems) //set the first result to the final result
+
+                if (commaIndex === 0) {
+                    finalFilteredItems = new Set(filteredItems);
                 } else {
-                    finalFilteredItems = new Set([...finalFilteredItems, ...filteredItems]) //combine all results with the last results
+                    finalFilteredItems = new Set([...finalFilteredItems, ...filteredItems]);
                 }
             });
 
             collapsibleItems.forEach(item => {
                 item.style.display = finalFilteredItems.has(item) ? '' : 'none';
             });
-        });
+        }
     }
+
+    const collapsibleItems = document.querySelectorAll('.collapsible li');
+    filterCollapsibleItems('.entry-history', collapsibleItems);
+
     const weekSelectOptions = {
         format: "dd/mm/yyyy",
         i18n: {done: "Select"},

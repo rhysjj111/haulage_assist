@@ -17,16 +17,19 @@
         {% for notification in notifications %}
             <li class="notification-item ">
                 <div class="notification-item-content">
-                    <div class="notification-details">
-                        <!-- <div class="notification-meta"> 
-                            <span class="">{# f.display_date(notification.date) #} - </span>
-                            <span class="">{# notification.driver_id #} - </span> 
-                            <span class="">{# notification.table_name.value #}</span>
-                        </div> -->
-                        <p class="notification-description">{{ notification.details | safe}}</p>
-                    </div>
-                    <a class="btn-small btn-flat modal-trigger white" href="#notification-modal-{{notification.id}}">Dismiss</a>
+                    <a href="{{ url_for(notification.entry_type+'.add_'+notification.entry_type, item_id=0, tab='entry', anomaly_id=notification.id) }}" class=" text-black black-text">
+                        <div class="notification-details">
+                            <!-- <div class="notification-meta"> 
+                                <span class="">{# f.display_date(notification.date) #} - </span>
+                                <span class="">{# notification.driver_id #} - </span> 
+                                <span class="">{# notification.table_name.value #}</span>
+                            </div> -->
+                            <p class="notification-description">{{ notification.details | safe}}</p>
+                        </div>
+                    </a>
+                        <a class="btn-small btn-flat modal-trigger white" href="#notification-modal-{{notification.id}}">Dismiss</a>
                 </div>
+
             </li>
 
         {% endfor %}

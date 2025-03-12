@@ -1,16 +1,30 @@
 from flask import render_template, request, redirect, url_for, flash
 from haulage_app import db, f
 from haulage_app.models import Driver, Payslip 
+from haulage_app.verification.models import MissingEntryAnomaly
 from haulage_app.payslip import payslip_bp
 from sqlalchemy.exc import IntegrityError
 
 @payslip_bp.route("/add_payslip/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_payslip(item_id, tab):
+
+    anomaly_id = request.args.get('anomaly_id')
+    search_term = None
+
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     payslips = list(Payslip.query.order_by(Payslip.date.desc()).all())
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     payslip = {}
+    if anomaly_id:
+        anomaly = MissingEntryAnomaly.query.filter(MissingEntryAnomaly.id == anomaly_id).first()
+        date = anomaly.date
+
+        # search_term = f"{registration}, {previous_date} + {registration}, {next_date}"
+        # print(search_term)
+        payslip['date'] = anomaly.date
+        payslip['driver_id'] = anomaly.driver_id
+
     if request.method == "POST":
         try:
             new_entry = Payslip(

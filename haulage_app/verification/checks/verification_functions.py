@@ -93,6 +93,7 @@ def get_all_missing_payslip_weeks():
     return find_missing_payslip_weeks(first_payslip.date, last_payslip.date)
 
 def check_week_for_missing_day_entries(driver_id, year, week_number):
+    import calendar
     """
     Checks for missing day entries for a given driver and week.
 
@@ -118,14 +119,13 @@ def check_week_for_missing_day_entries(driver_id, year, week_number):
     missing_days = []
     present_dates = [entry.date for entry in day_entries]
 
-    # Iterate through each day of the week (Monday=0, Tuesday=1, ..., Friday=4)
-    for day_offset in range(5):
-        # Calculate the expected date for this weekday
-        expected_date = start_date + timedelta(days=day_offset)
-
-        # Check if the expected date is in the list of present dates
-        if expected_date not in present_dates:
-            missing_days.append(expected_date)
+    # Iterate through each day within the range, but only check Monday to Friday.
+    current_date = start_date
+    while current_date <= end_date:
+        if current_date.weekday() < 5:  # Monday=0, Tuesday=1, ..., Friday=4
+            if current_date not in present_dates:
+                missing_days.append(current_date)
+        current_date += timedelta(days=1)
     
     return {
         'driver_id': driver_id,
@@ -222,9 +222,7 @@ def check_mileage_has_been_rectified(day_entry_id):
         anomaly_rectified = True
 
         mileage_check = find_incorrect_mileage(truck_id, year, week_number)
-        print(mileage_check)
         for data in mileage_check['incorrect_mileages']:
-            print(data)
             if data['previous_date'] == date or data['next_date'] == date:
                 anomaly_rectified = False
         
@@ -541,7 +539,7 @@ def process_missing_day_entries(day_entry_output):
             anomaly_already_present = MissingEntryAnomaly.query.filter_by(
                 date=date_obj, driver_id=driver_id, table_name=table_name
             ).first()
-            print(anomaly_already_present)
+            year, week_number = get_week_number_sat_to_fri(date_obj)
 
             if not anomaly_already_present and date_obj < ten_days_ago:
                 anomaly = MissingEntryAnomaly(
@@ -554,6 +552,8 @@ def process_missing_day_entries(day_entry_output):
                     ''',
                     driver_id=driver_id,
                     table_name=table_name,
+                    year=year,
+                    week_number=week_number,
                     is_read=False,
                     is_recurring=False,
                 )
@@ -576,7 +576,7 @@ def process_missing_day_entries(day_entry_output):
         except Exception as e:
             print(f"Error creating missing day anomaly: {e}")
         else:
-            print(f'Success processing missing day anomaly {date_obj}, {driver.full_name}')
+            print(f'Success processing missing day anomalies')
     print('All day entries processed.')
 
 def check_all_missing_day_entries():
