@@ -38,7 +38,7 @@ def inject_notification():
 
     # find_incorrect_mileage(2, 2025, 3)
     # mileage_check()
-    day_check()
+    # day_check()
     # fuel_check()
     # payslip_check()
 
