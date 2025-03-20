@@ -949,14 +949,13 @@ from datetime import datetime
 {% set negative %}<i class="material-icons red-text tiny bold">remove</i>{% endset %}
 {% macro driver_card(driver_id, data, f) %}
     <div class="col s12 xl4">
-        <div class="card wages-card small">
+        <div class="card wages-card small ">
             <div class="card-content ">
                 <span class="card-title bold"><h5>{{ data.driver.full_name }}</h5>
                     <!-- <i class="material-icons right">more_vert</i> -->
                     <div class="divider"></div>
                 </span>
                 <div>
-                    <br>
                     {% if '/wages_calculator' in request.path %}
                         <p class="wages-calc-card-text">{{positive}} Total Earned: {{ f.fd_currency(data.total_earned) }}</p>
                         <p class="wages-calc-card-text bold">{{positive}} Extras: {{ f.fd_currency(data.weekly_extras) }}</p>
@@ -970,21 +969,18 @@ from datetime import datetime
                             {{negative}}
                             Wages Cost: {{ f.fd_currency_rd(data.total_cost_to_employer) }}{{ '*' if data.estimated==True}}
                         </p>
-                    {% if '/analysis/' in request.path %}
-                    {% if data.truck is not none %}
-                    {{ truck_card_data_only_short(data.truck_data.truck_id, data.truck_data, f) }}
-                    {% else %}
-                        <p class="grey-text">No Truck Assigned</p>
-                    {% endif %}
-
-                    {% endif %}
+                        {% if data.truck is not none %}
+                        {{ truck_card_data_only_short(data.truck_data.truck_id, data.truck_data, f) }}
+                        {% else %}
+                            <p class="grey-text">No Truck Assigned</p>
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>
             {% if '/wages_calculator' in request.path %}
             <div class="card-action">
-                <a href="#modal_{{ driver_id }}" class="waves-effect waves-light blue darken-2 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
-                <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-light blue darken-2 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">list</i>Jobs</a>
+                <a href="#modal_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
+                <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">list</i>Jobs</a>
             </div>
         </div>
         <div>
@@ -996,13 +992,14 @@ from datetime import datetime
         </div>
         {% else %}
         <div class="card-action">
-            <span class="card-title wages-calc-card-text activator {{'italics' if estimated}}
+            <span class="card-footer wages-calc-card-text {{'italics' if estimated}}
             {{'green-text bold' if f.display_float(data.profit) > 500}}">
                 {% if data.truck_data.total_fuel_cost == 0 %}
                 Waiting on fuel data.
                     {% else %}
-                Profit: {{f.fd_currency_rd(data.profit)}}{{ '*' if estimated}}<i class="material-icons right">more_vert</i>
-                {% endif %}
+                    Profit: {{f.fd_currency_rd(data.profit)}}{{ '*' if estimated}}
+                    {% endif %}
+                    <!-- <i class="material-icons right">more_vert</i> -->
             </span>
         </div>
         <div class="card-reveal">

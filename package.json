@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "svelte": "^5.23.0"
+  }
+}

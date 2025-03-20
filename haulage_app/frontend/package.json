@@ -1,0 +1,19 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "watch": "nodemon --watch src --ext js,svelte,css --exec 'npm run build'"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "nodemon": "^3.1.9",
+    "npm-watch": "^0.13.0",
+    "svelte": "^5.20.2",
+    "vite": "^6.2.0"
+  }
+}
