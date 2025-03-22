@@ -11,10 +11,11 @@ def init_scheduler(app):
             verification_manager.payslip_check()
             verification_manager.day_check()
             verification_manager.fuel_check()
+            print('check chek')
     
     scheduler.add_job(
         func=run_verification,
-        trigger=CronTrigger(day_of_week='thu', hour=6,minute=30),
+        trigger=CronTrigger(day_of_week='sat', hour=6,minute=50),
         # trigger=CronTrigger(second='*/30'),
         id='weekly_verification',
         name='Run weekly verification checks',
