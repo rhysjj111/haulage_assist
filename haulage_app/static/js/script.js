@@ -1,27 +1,77 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // collapsible initialization
-    const collapsibles = document.querySelectorAll('.collapsible');
-    M.Collapsible.init(collapsibles);
+    // Debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }  
 
-    const collapsibleExpandable = document.querySelector('.collapsible.expandable');
-    M.Collapsible.init(collapsibleExpandable, {
-        accordion: false
-    });
+    // collapsible initialization
+    // const collapsibles = document.querySelectorAll('.collapsible');
+    // M.Collapsible.init(collapsibles);
+
+    // const collapsibleExpandable = document.querySelector('.collapsible.expandable');
+    // M.Collapsible.init(collapsibleExpandable, {
+    //     accordion: false
+    // });
+
+    const initCollapsiblesInView = () => {
+        const collapsibles = document.querySelectorAll('.collapsible:not(.initialized)');
+        collapsibles.forEach(collapsible => {
+            const rect = collapsible.getBoundingClientRect();
+            if (rect.top < window.innerHeight && rect.bottom > 0) {
+                if (collapsible.classList.contains('expandable')) {
+                    M.Collapsible.init(collapsible, {
+                        accordion: false
+                    });
+                } else {
+                    M.Collapsible.init(collapsible);
+                }
+                collapsible.classList.add('initialized');
+            }
+        });
+    };
+
+    // Initialize visible collapsibles on page load
+    initCollapsiblesInView();
+    // Initialize more as user scrolls
+    window.addEventListener('scroll', debounce(initCollapsiblesInView, 100), { passive: true });
     
     function filterCollapsibleItems(parentSelector, collapsibleItems) {
         const parent = document.querySelector(parentSelector);
+        let debounceTimer;
 
         if (parent) {
             parent.addEventListener('input', function (event) {
                 if (event.target.id === 'search-entries') {
-                    performFiltering(event.target.value); // Call filtering function with input value
+                    // Clear previous timer
+                    clearTimeout(debounceTimer);
+                    
+                    // Set a new timer to delay filtering
+                    debounceTimer = setTimeout(() => {
+                        const searchValue = event.target.value.trim();
+                        
+                        // Only perform filtering if there's actually a search term
+                        if (searchValue) {
+                            performFiltering(searchValue);
+                        } else {
+                            // If search is empty, show all items
+                            collapsibleItems.forEach(item => {
+                                item.style.display = '';
+                            });
+                        }
+                    }, 300); // 300ms delay before filtering
                 }
             });
-
-            // Initial filtering on page load
+    
+            // Initial filtering on page load only if there's a value
             const searchInput = parent.querySelector('#search-entries');
-            if (searchInput) {
-                performFiltering(searchInput.value); // Trigger filtering with initial value
+            if (searchInput && searchInput.value.trim()) {
+                performFiltering(searchInput.value);
             }
         }
 
@@ -85,29 +135,61 @@ document.addEventListener('DOMContentLoaded', function () {
     const collapsibleItems = document.querySelectorAll('.collapsible li');
     filterCollapsibleItems('.entry-history', collapsibleItems);
 
+    // const weekSelectOptions = {
+    //     format: "dd/mm/yyyy",
+    //     i18n: {done: "Select"},
+    //     setDefaultDate: true,
+    //     autoClose: true,
+    //     disableDayFn: function(date){
+    //         if(date.getDay() == 6){
+    //         return false;
+    //         } else {
+    //         return true;
+    //         };
+    //     },
+    //     firstDay: 6,
+    //     yearRange: 2,
+    //     onSelect: function(date){
+    //     // Set the input value explicitly
+    //     this.el.value = M.Datepicker.getInstance(this.el).toString();
+    //     // Submit the form
+    //     this.el.closest('form').submit();
+    //     },
+    //     maxDate: new Date(),
+
+
+    // }
+
+    // const defaultOptions = {
+    //     format: "dd/mm/yyyy",
+    //     i18n: {done: "Select"},
+    //     setDefaultDate: true,
+    //     autoClose: true,
+    // }
+
+    // 7. Specific Datepicker Optimization
+    // Pre-calculate dates to avoid recalculation during rendering
+    const today = new Date();
+    const maxDate = new Date(today);
+    const minDate = new Date(today);
+    minDate.setFullYear(today.getFullYear() - 2);
+
     const weekSelectOptions = {
         format: "dd/mm/yyyy",
         i18n: {done: "Select"},
         setDefaultDate: true,
         autoClose: true,
-        disableDayFn: function(date){
-            if(date.getDay() == 6){
-            return false;
-            } else {
-            return true;
-            };
-        },
+        disableDayFn: date => date.getDay() !== 6, // Simplified logic
         firstDay: 6,
         yearRange: 2,
+        minDate: minDate,
+        maxDate: maxDate,
         onSelect: function(date){
-        // Set the input value explicitly
-        this.el.value = M.Datepicker.getInstance(this.el).toString();
-        // Submit the form
-        this.el.closest('form').submit();
-        },
-        maxDate: new Date(),
-
-
+            // Set the input value explicitly
+            this.el.value = M.Datepicker.getInstance(this.el).toString();
+            // Submit the form
+            this.el.closest('form').submit();
+        }
     }
 
     const defaultOptions = {
@@ -115,21 +197,72 @@ document.addEventListener('DOMContentLoaded', function () {
         i18n: {done: "Select"},
         setDefaultDate: true,
         autoClose: true,
-    }
+    }   
 
     // datepicker initialization
+    // let datepickers = document.querySelectorAll('.datepicker');
+    // datepickers.forEach(picker => {
+    //     // Only initialize when needed
+    //     const initDatepicker = () => {
+    //         if (picker.id === 'week_select') {
+    //             M.Datepicker.init(picker, weekSelectOptions);
+    //         } else {
+    //             M.Datepicker.init(picker, defaultOptions);
+    //         }
+    //         // Remove event listener after initialization
+    //         picker.removeEventListener('focus', initDatepicker);
+    //     };
+        
+    //     // Initialize on focus instead of on page load
+    //     picker.addEventListener('focus', initDatepicker);
+        
+    //     // For week_select, handle the trigger button
+    //     if (picker.id === 'week_select') {
+    //         const dateTrigger = document.querySelector('#date-trigger');
+    //         if (dateTrigger) {
+    //             dateTrigger.addEventListener('click', () => {
+    //                 // Initialize if not already done
+    //                 if (!M.Datepicker.getInstance(picker)) {
+    //                     M.Datepicker.init(picker, weekSelectOptions);
+    //                 }
+    //                 M.Datepicker.getInstance(picker).open();
+    //             });
+    //         }
+    //     }
+    // });
     let datepickers = document.querySelectorAll('.datepicker');
     datepickers.forEach(picker => {
-        if (picker.id === 'week_select') {
-            M.Datepicker.init(picker, weekSelectOptions);
-            const dateTrigger = document.querySelector('#date-trigger');
-            dateTrigger.addEventListener('click', () => {
-                M.Datepicker.getInstance(picker).open();
-            });
-        } else {
-            M.Datepicker.init(picker, defaultOptions);
-        }
+        // Only initialize when needed
+        const initDatepicker = () => {
+            if (picker.id === 'week_select') {
+                if (!M.Datepicker.getInstance(picker)) {
+                    M.Datepicker.init(picker, weekSelectOptions);
+                }
+            } else {
+                if (!M.Datepicker.getInstance(picker)) {
+                    M.Datepicker.init(picker, defaultOptions);
+                }
+            }
+            // Remove event listener after initialization
+            picker.removeEventListener('focus', initDatepicker);
+        };
+        
+        // Initialize on focus instead of on page load
+        picker.addEventListener('focus', initDatepicker);
     });
+    
+    // Special handling for week_select
+    const weekSelect = document.getElementById('week_select');
+    const dateTrigger = document.querySelector('#date-trigger');
+    if (weekSelect && dateTrigger) {
+        dateTrigger.addEventListener('click', () => {
+            // Initialize if not already done
+            if (!M.Datepicker.getInstance(weekSelect)) {
+                M.Datepicker.init(weekSelect, weekSelectOptions);
+            }
+            M.Datepicker.getInstance(weekSelect).open();
+        });
+    }
 
 
 
@@ -138,20 +271,76 @@ document.addEventListener('DOMContentLoaded', function () {
     M.Sidenav.init(sidenavigation);
 
 
-    // modal initialisation
-    let modal = document.querySelectorAll('.modal');
-    M.Modal.init(modal, {
-        endingTop: '10%',
-        preventScrolling: false
+    // // modal initialisation
+    // let modal = document.querySelectorAll('.modal');
+    // M.Modal.init(modal, {
+    //     endingTop: '10%',
+    //     preventScrolling: false,
+    //     onOpenEnd: function(modal) {
+    //         // If this is a week modal, focus on the first start mileage field
+    //         if (modal.classList.contains('week-modal')) {
+    //             const firstStartMileage = modal.querySelector('input[name$="start_mileage"]');
+    //             if (firstStartMileage && !firstStartMileage.disabled) {
+    //                 setTimeout(() => {
+    //                     firstStartMileage.focus();
+    //                     firstStartMileage.select(); // Select text if any
+    //                 }, 100); // Small delay to ensure modal is fully rendered
+    //             }
+    //         }
+    //     }
+    // });
+    
+    // // edit-modal re-open when invalid form submission
+    // let modalOpen = document.querySelector('.open-modal')
+    // if (modalOpen){
+    //     modalOpen = modalOpen.textContent;
+    //     modalOpen = document.querySelector(`#${modalOpen}`);
+    //     M.Modal.init(modalOpen).open();
+    // };
+
+    // 2. Optimize Modal Initialization
+    // Lazy initialization for modals
+    const modalTriggers = document.querySelectorAll('[data-target^="modal"], .modal-trigger');
+    modalTriggers.forEach(trigger => {
+        trigger.addEventListener('click', () => {
+            const modalId = trigger.getAttribute('data-target') || trigger.getAttribute('href');
+            if (!modalId) return;
+            
+            const modal = document.querySelector(modalId);
+            if (modal && !M.Modal.getInstance(modal)) {
+                M.Modal.init(modal, {
+                    endingTop: '10%',
+                    preventScrolling: false,
+                    onOpenEnd: function(modal) {
+                        if (modal.classList.contains('week-modal')) {
+                            const firstStartMileage = modal.querySelector('input[name$="start_mileage"]');
+                            if (firstStartMileage && !firstStartMileage.disabled) {
+                                setTimeout(() => {
+                                    firstStartMileage.focus();
+                                    firstStartMileage.select();
+                                }, 100);
+                            }
+                        }
+                    }
+                });
+            }
+            M.Modal.getInstance(modal).open();
+        });
     });
-    // edit-modal re-open when invalid form submission
+    
+    // Handle edit-modal re-open when invalid form submission
     let modalOpen = document.querySelector('.open-modal')
     if (modalOpen){
-        modalOpen = modalOpen.textContent;
-        modalOpen = document.querySelector(`#${modalOpen}`);
-        M.Modal.init(modalOpen).open();
+        const modalId = modalOpen.textContent;
+        const modal = document.querySelector(`#${modalId}`);
+        if (modal && !M.Modal.getInstance(modal)) {
+            M.Modal.init(modal, {
+                endingTop: '10%',
+                preventScrolling: false
+            });
+        }
+        M.Modal.getInstance(modal).open();
     };
-
 
     // select initialization
     let selects = document.querySelectorAll('select');
@@ -170,6 +359,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     }
+
     window.onresize = removeTabs;
     removeTabs();
 
@@ -178,8 +368,6 @@ document.addEventListener('DOMContentLoaded', function () {
      M.Dropdown.init(notification_dropdown, {
         alignment: 'left',
         coverTrigger: false,
-        // constrainWidth: false,
-        // closeOnClick: false,
     });
     
     //flash feedback timeout and remove container after a time interval
@@ -223,17 +411,105 @@ document.addEventListener('DOMContentLoaded', function () {
     // Loading spinner Javascript
     const preloaderBackground = document.querySelector('.preloader-background');
     const preloaderWrapper = document.querySelector('.preloader-wrapper');
+
+    if (preloaderBackground && preloaderWrapper) {
+        // Use requestAnimationFrame for smoother transitions
+        requestAnimationFrame(() => {
+            preloaderBackground.style.opacity = 0;
+            preloaderBackground.style.transition = 'opacity 0.5s ease-in-out';
+            
+            preloaderWrapper.style.opacity = 0;
+            preloaderWrapper.style.transition = 'opacity 0.5s ease-in-out';
+            
+            // Use transitionend instead of setTimeout when possible
+            preloaderBackground.addEventListener('transitionend', () => {
+                preloaderBackground.style.display = 'none';
+                preloaderWrapper.style.display = 'none';
+            }, { once: true });
+        });
+    }
     
-    preloaderBackground.style.opacity = 0; // Start fading out
-    preloaderBackground.style.transition = 'opacity 0.5s ease-in-out'; // Add a smooth transition
+    // preloaderBackground.style.opacity = 0; // Start fading out
+    // preloaderBackground.style.transition = 'opacity 0.5s ease-in-out'; // Add a smooth transition
 
-    preloaderWrapper.style.opacity = 0;
-    preloaderWrapper.style.transition = 'opacity 0.5s ease-in-out';
+    // preloaderWrapper.style.opacity = 0;
+    // preloaderWrapper.style.transition = 'opacity 0.5s ease-in-out';
 
-    setTimeout(() => {
-        preloaderBackground.style.display = 'none';
-        preloaderWrapper.style.display = 'none';
-    }, 500); // 500ms delay to ensure fade-out is complete
+    // setTimeout(() => {
+    //     preloaderBackground.style.display = 'none';
+    //     preloaderWrapper.style.display = 'none';
+    // }, 500); // 500ms delay to ensure fade-out is complete
+
+    // Function to handle disabling fields based on status in week modals
+    function setupWeekModalStatusHandlers() {
+        const weekModals = document.querySelectorAll('.week-modal');
+        
+        weekModals.forEach(modal => {
+            const statusSelects = modal.querySelectorAll('select[name$="status"]');
+            
+            statusSelects.forEach(statusSelect => {
+                // Get the prefix from the select name (format: prefix-date-status)
+                const nameParts = statusSelect.name.split('-');
+                const prefix = nameParts.slice(0, nameParts.length - 1).join('-');
+                
+                // Find all related fields in the same row
+                const row = statusSelect.closest('tr');
+                const fieldsToToggle = row.querySelectorAll(`
+                    input[name^="${prefix}"][name$="start_mileage"],
+                    input[name^="${prefix}"][name$="end_mileage"],
+                    input[name^="${prefix}"][name$="overnight"],
+                    input[name^="${prefix}"][name$="fuel"],
+                    select[name^="${prefix}"][name$="truck"]
+                `);
+                
+                // Initial setup on page load
+                toggleFieldsBasedOnStatus(statusSelect.value, fieldsToToggle);
+                
+                // Add event listener for status changes
+                statusSelect.addEventListener('change', function() {
+                    toggleFieldsBasedOnStatus(this.value, fieldsToToggle);
+                    
+                    // Reinitialize Materialize selects if they're disabled/enabled
+                    const truckSelect = row.querySelector(`select[name^="${prefix}"][name$="truck"]`);
+                    if (truckSelect) {
+                        M.FormSelect.init(truckSelect);
+                    }
+                });
+            });
+        });
+    }
+    
+    function toggleFieldsBasedOnStatus(status, fields) {
+        const shouldEnable = (status === 'working');
+        
+        fields.forEach(field => {
+            field.disabled = !shouldEnable;
+            
+            // For checkboxes and other inputs, add visual indication
+            if (field.type === 'checkbox') {
+                const label = field.closest('label');
+                if (label) {
+                    if (shouldEnable) {
+                        label.classList.remove('disabled');
+                    } else {
+                        label.classList.add('disabled');
+                    }
+                }
+            } else {
+                // For text inputs and selects
+                const inputField = field.closest('.input-field');
+                if (inputField) {
+                    if (shouldEnable) {
+                        inputField.classList.remove('disabled');
+                    } else {
+                        inputField.classList.add('disabled');
+                    }
+                }
+            }
+        });
+    }
+
+    setupWeekModalStatusHandlers();
 
 })
 

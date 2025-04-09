@@ -39,35 +39,81 @@
         {% endblock %}
 
         {% block additional_content %}
-        {#
-        <!-- modal for weekly entries -->
-        <div id="modal_first" class="modal">
-            <div class="modal-content">
-                <h3 class="center-align">Weekly Entries</h3>
+            {% for driver_id, weeks_forms in driver_weeks_forms.items() %}
+                {% for (year, week), (week_dates, forms) in weeks_forms.items() %}
+                    <div id="driverModal{{ driver_id }}{{ year }}{{ week }}" class="modal week-modal">
+                        <form method="POST" action="{{ url_for('day.edit_days') }}">
+                            <input type="hidden" name="driver_id" value="{{ driver_id }}">
+                            <input type="hidden" name="year" value="{{ year }}">
+                            <input type="hidden" name="week" value="{{ week }}">
+                            <div class="modal-content">
+                                <h4>Driver {{ driver_id }}, Week {{ week }}, {{ year }}</h4>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th>Start Mileage</th>
+                                            <th>End Mileage</th>
+                                            <th>Overnight</th>
+                                            <th>Fuel</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for day_date in week_dates %}
+                                        <tr>
+                                            <td>
+                                                {{ day_date.strftime('%a') }} <br>
+                                                <span class="text-small grey-text">{{ f.display_date_pretty(day_date) }}</span>
+                                            </td>
+                                            {% if forms[day_date] %}
+                                            {{ forms[day_date].hidden_tag() }}
+                                            <td> 
+                                                <div class="input-field col">
+                                                    {{ macros.render_field(forms[day_date].status) }}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="input-field col">
+                                                    {{ macros.render_field(forms[day_date].truck) }}
+                                                </div>
+                                            </td>
 
-                <!-- error messages -->
-                {% set err_msg = get_flashed_messages(category_filter=["error-msg-modal"]) %}
-                {% set scc_msg = get_flashed_messages(category_filter=["success-msg-modal"]) %}
-                {% with messages = err_msg if err_msg else scc_msg %}
-                {% if messages %}
-                <div class="messages-container s12 {{'err-msg' if err_msg else 'scc-msg'}}">
-                    {% for message in messages %}
-                    <ul>
-                        <li> {{ message }}</li>
-                    </ul>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {% endwith %}
-
-                <div class="row">
-                   <form method="POST" action="{{ url_for(type+'.edit_'+type, item_id=first_entry.id, tab='history', weekly=True) }}">
-                    {{ macros['week'](first_entry, components, f) }}
-                   </form>
-                </div>
-            </div>
-        </div>
-        #}
+                                            <td>
+                                                <div class="input-field">
+                                                    {{ macros.render_field(forms[day_date].start_mileage) }}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="input-field">
+                                                    {{ macros.render_field(forms[day_date].end_mileage) }}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {{ macros.render_checkbox(forms[day_date].overnight) }}
+                                            </td>
+                                            <td>
+                                                {{ macros.render_checkbox(forms[day_date].fuel) }}
+                                            </td>
+                                            {% else %}
+                                            <td colspan="6" class="grey-text">
+                                                ------------ No Entry ------------
+                                            </td>
+                                            {% endif %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="modal-close waves-effect waves-green btn-flat">Save Changes</button>
+                                <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+                            </div>
+                        </form>
+                    </div>
+                {% endfor %}
+            {% endfor %}
         {% endblock %}
 
 

@@ -9,6 +9,7 @@ click==8.1.7
 Flask==3.0.0
 Flask-Migrate==4.0.7
 Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.2.2
 google-ai-generativelanguage==0.6.10
 google-api-core==2.23.0
 google-api-python-client==2.153.0
@@ -42,3 +43,5 @@ tzlocal==5.2
 uritemplate==4.1.1
 urllib3==2.2.3
 Werkzeug==3.0.1
+WTForms==3.2.1
+WTForms-SQLAlchemy==0.4.2

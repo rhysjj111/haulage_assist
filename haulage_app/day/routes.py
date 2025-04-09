@@ -8,11 +8,21 @@ from pprint import pprint
 from sqlalchemy.exc import IntegrityError
 from haulage_app.verification.checks.verification_functions import check_mileage_has_been_rectified
 from datetime import timedelta
+from haulage_app.analysis.functions import(
+    get_start_of_week,
+)
+from haulage_app.functions import(
+    date_to_db,
+    get_week_number_sat_to_fri,
+)
+from collections import defaultdict
+from haulage_app.day.forms import DayForm
 
 @day_bp.route("/add_day/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_day(item_id, tab):
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())
+    days = list(Day.query.order_by(Day.date).all())
     components = {'drivers':drivers, 'trucks':trucks}
 
     anomaly_id = request.args.get('anomaly_id')
@@ -58,6 +68,50 @@ def add_day(item_id, tab):
             ).all()
         )
         search_term = ""
+    
+    for entry in day_entries:
+        date_obj = entry.date
+        year, week_number = get_week_number_sat_to_fri(date_obj)
+        entry.week_number = week_number
+        entry.year = year
+
+    # weekly modal creation
+    weekly_data = defaultdict(lambda: defaultdict(list))
+
+    for day in days:
+        date_obj = day.date
+        driver_id = day.driver_id
+        year, week_number = get_week_number_sat_to_fri(date_obj)
+
+        weekly_data[driver_id][(year, week_number)].append(day)
+
+    driver_weeks_forms = {}
+    #Drill into outer dict
+    for driver_id, weeks_data in weekly_data.items():
+        driver_weeks_forms[driver_id] = {}
+        #Drill into week number, day entries next layer of dict
+        for (year, week_number), entries in weeks_data.items():
+            start_date = get_start_of_week(year, week_number)
+            week_dates = [start_date + timedelta(days=i) for i in range(7)]
+            forms = {}
+
+            for day_date in week_dates:
+                #Search for day entry with matching date
+                entry_for_day = next((e for e in entries if e.date == day_date), None)
+                if entry_for_day:
+                    form = DayForm(prefix=f'{driver_id}-{day_date}')
+                    form.id.data = entry_for_day.id
+                    form.date.data = entry_for_day.date
+                    form.start_mileage.data = entry_for_day.start_mileage if entry_for_day.start_mileage is not None else 0
+                    form.end_mileage.data = entry_for_day.end_mileage if entry_for_day.end_mileage is not None else 0
+                    form.fuel.data = entry_for_day.fuel
+                    form.overnight.data = entry_for_day.overnight
+                    form.status.data = entry_for_day.status
+                    form.truck.data = entry_for_day.truck_id
+                    forms[day_date] = form
+                else:
+                    forms[day_date] = None
+            driver_weeks_forms[driver_id][(year, week_number)] = (week_dates, forms)    
 
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
@@ -68,6 +122,7 @@ def add_day(item_id, tab):
         "item_id": item_id,
         "type": 'day',
         "search_term": search_term,
+        "driver_weeks_forms": driver_weeks_forms,
         "day": day       # Initially an empty dictionary for form data
     }
 
@@ -90,13 +145,13 @@ def add_day(item_id, tab):
             db.session.commit()
         except IntegrityError as e:
             db.session.rollback()
-            flash("Entry already exists with the same driver and date you dull pr*ck.", 'error-msg')
-            template_data["day"].update(request.form)
+            flash("Entry already exists with the same driver and date.", 'error-msg')
+            template_data["day"] = request.form
         except ValueError as e:
             db.session.rollback()
             flash(str(e), 'error-msg')
             #retrieve previous answers
-            template_data["day"].update(request.form)
+            template_data["day"] = request.form
         else:
             flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
             return redirect(url_for("day.add_day", item_id=0, tab='entry'))
@@ -173,4 +228,64 @@ def edit_day(item_id):
             check_mileage_has_been_rectified(item_id)
             flash(f"Entry Updated: {entry.driver.full_name} - {f.display_date(entry.date)}", "success-msg")
             return redirect(url_for("day.add_day", item_id=0, tab='edit'))
+
+@day_bp.route("/edit_days", methods=["POST"])
+def edit_days():
+    driver_id = int(request.form.get('driver_id'))
+    year = int(request.form.get('year'))
+    week_number = int(request.form.get('week'))
+
+    start_date = get_start_of_week(year, week_number)
+    week_dates = [start_date + timedelta(days=i) for i in range(7)]
+
+    form_data = request.form
+
+    try:
+        for day_date in week_dates:
+            prefix = str(driver_id) + '-' + str(day_date)
+        #     form = DayForm(request.form, prefix=prefix)
+            if f'{prefix}-status' in form_data:
+                status = form_data.get(f'{prefix}-status')
+                truck_id = form_data.get(f'{prefix}-truck')
+                day_id = form_data.get(f'{prefix}-id')
+                start_mileage = form_data.get(f'{prefix}-start_mileage')
+                end_mileage = form_data.get(f'{prefix}-end_mileage')
+                overnight = 'on' if form_data.get(f'{prefix}-overnight') == 'y' else ''
+                fuel = 'on' if form_data.get(f'{prefix}-fuel') == 'y' else ''
+                
+                # Check if a day entry exists for this driver and date.
+                existing_entry = db.session.query(Day).filter_by(driver_id=driver_id, date=day_date).first()
+
+                if existing_entry:
+                    # Update the existing entry
+                    existing_entry.status = status
+                    existing_entry.truck_id = truck_id
+                    existing_entry.start_mileage = start_mileage
+                    existing_entry.end_mileage = end_mileage
+                    existing_entry.overnight = overnight
+                    existing_entry.fuel = fuel
+                else:
+                    # Create a new entry
+                    new_entry = Day(
+                        driver_id=driver_id,
+                        date=day_date,
+                        status=status,
+                        truck_id=truck_id,
+                        start_mileage=start_mileage,
+                        end_mileage=end_mileage,
+                        overnight=overnight,
+                        fuel=fuel
+                    )
+                    db.session.add(new_entry)
+            # Commit the changes to the database
+        db.session.commit()
+    except Exception as e:
+        flash(str(e), 'error-msg')
+        db.session.rollback()
+        return redirect(url_for('day.add_day', item_id=0, tab='edit'))
+    else:
+        flash(f'Entries successfuly updated', 'success-msg')
+        return redirect(url_for('day.add_day', item_id=0, tab='edit'))
+
+    return redirect(url_for('day.add_day', item_id=0, tab='edit')) # You might need to adjust the redirect arguments
 

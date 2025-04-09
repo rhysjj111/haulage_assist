@@ -189,23 +189,23 @@ def calculate_weekly_metrics(
         total_expense = calculate_total_metric_list('cost', expenses)
 
         profit = total_earned - total_fuel_cost - total_cost_to_employer - total_expense
-        driver_data[driver.id]['expense'] = total_expense
-        driver_data[driver.id]['profit'] = profit
+        driver_data[driver.id]['total_expenses'] = total_expense
+        driver_data[driver.id]['total_profit'] = profit
 
     total_expenses = total_expense * 3
     grand_total_earned = calculate_total_metric_dict('total_earned', driver_data)
     grand_total_wages = calculate_total_metric_dict('total_cost_to_employer', driver_data)
     grand_total_fuel_volume = calculate_total_metric_dict('total_fuel_volume', truck_data)
     grand_total_fuel_cost = calculate_total_metric_dict('total_fuel_cost', truck_data)
-    profit = grand_total_earned - grand_total_wages - total_expenses - grand_total_fuel_cost
+    grand_total_profit = grand_total_earned - grand_total_wages - total_expenses - grand_total_fuel_cost
 
     grand_total_data = {
         'grand_total_earned': grand_total_earned,
-        'total_expenses': total_expenses,
+        'grand_total_expenses': total_expenses,
         'grand_total_fuel_volume': grand_total_fuel_volume,
         'grand_total_wages': grand_total_wages,
         'grand_total_fuel_cost': grand_total_fuel_cost,
-        'profit': profit,
+        'grand_total_profit': grand_total_profit,
     }
 
     return {

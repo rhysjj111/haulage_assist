@@ -1,47 +1,98 @@
 
 
-{% extends "entry_template.html" %}
+{% extends "std_template.html" %}
 
+{% block standard_title %} WEEKLY ENTRIES {% endblock %}
 
-{% block entry_title %} WEEKLY ENTRIES {% endblock %}
+{% block standard_content %}
 
-    {% block entry_form_title %}Weekly Entry:{% endblock %}
-        {% block entry_form_questions %}
-            <form method="POST" action="{{ url_for('day.edit_day', item_id=selected_entry.id, tab='entry') }}">
-                {{ macros['week'](selected_entry, components, f) }}
-            </form>
-        {% endblock %}
+<div class="container">
+    <h1>Driver Weeks</h1>
+    {% for driver_id, weeks_forms in driver_weeks_forms.items() %}
+        <h2>Driver {{ driver_id }}</h2>
+        {% for (year, week), (week_dates, forms) in weeks_forms.items() %}
+            <button class="waves-effect waves-light btn modal-trigger" data-target="driverModal{{ driver_id }}{{ year }}{{ week }}">
+                Week {{ week }}, {{ year }}
+            </button>
+            
+            <div id="driverModal{{ driver_id }}{{ year }}{{ week }}" class="modal week-modal">
+                <form method="POST" action="{{ url_for('day.edit_days') }}">
+                    {{ form.csrf_token }}
+                    <input type="hidden" name="driver_id" value="{{ driver_id }}">
+                    <input type="hidden" name="year" value="{{ year }}">
+                    <input type="hidden" name="week" value="{{ week }}">
+                    <div class="modal-content">
+                        <h4>Driver {{ driver_id }}, Week {{ week }}, {{ year }}</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Start Mileage</th>
+                                    <th>End Mileage</th>
+                                    <th>Overnight</th>
+                                    <th>Fuel</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for day_date in week_dates %}
+                                <tr>
+                                    <td>
+                                        {{ day_date.strftime('%a') }} <br>
+                                        <span class="text-small grey-text">{{ f.display_date_pretty(day_date) }}</span>
+                                    </td>
+                                    {% if forms[day_date] %}
+                                    {{ forms[day_date].hidden_tag() }}
+                                    <td> 
+                                        <div class="input-field col">
+                                            {{ macros.render_field(forms[day_date].status) }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="input-field col">
+                                            {{ macros.render_field(forms[day_date].truck) }}
+                                        </div>
+                                    </td>
 
-    {% block entry_history_title %}Day Entry History:{% endblock %}
+                                    <td>
+                                        <div class="input-field">
+                                            {{ macros.render_field(forms[day_date].start_mileage) }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="input-field">
+                                            {{ macros.render_field(forms[day_date].end_mileage) }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {{ macros.render_checkbox(forms[day_date].overnight) }}
+                                    </td>
+                                    <td>
+                                        {{ macros.render_checkbox(forms[day_date].fuel) }}
+                                    </td>
+                                    {% else %}
+                                    <td colspan="6" class="grey-text">
+                                        ------------ No Entry ------------
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="modal-close waves-effect waves-green btn-flat">Save Changes</button>
+                        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+                    </div>
+                </form>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
 
-        {% block collapsible_header %}{{item.driver.full_name}} - {{f.display_date(item.date)}}{% endblock %}
+{% endblock %}
 
-        {% block collapsible_body %}
-            <p>
-                Date: {{ f.display_date(item.date) }}<br>
-                Driver: {{ item.driver.full_name }}<br>
-                {% if item.status == 'working' %}
-                Truck: {{ item.truck.registration }}<br>
-                Start mileage: {{ f.display_float(item.start_mileage) }}<br>
-                End mileage: {{ f.display_float(item.end_mileage) }}<br>
-                Total earned: {{ f.fd_currency(item.calculate_total_earned()) }}
-                {% else %}
-                <span class="italics">Status: {{ item.status.capitalize() }}</span>
-                {% endif %}
-            </p>
-        {% endblock %}
-
-        {% block entry_history_questions scoped %}
-            <form method="POST" action="{{ url_for('week.week', item_id=item.id, tab='entry')}}">
-                {{ macros['week'](selected_entry, components, f) }}
-            </form>
-        {% endblock %}
-
-        {% block additional_content %}
-
-
-
-        {% endblock %}
 
 
             

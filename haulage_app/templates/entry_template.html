@@ -63,14 +63,18 @@
                 {% endif %}
                 <strong>{% block collapsible_header scoped %}{% endblock %}</strong>
                 <div style="margin-left: auto; display: flex;">
+                    {% if type == 'day' %}
+                    <a href="#driverModal{{ item.driver_id }}{{ item.year }}{{ item.week_number }}" class="modal-trigger icon-container">
+                        <i class="material-icons green-text">edit</i>
+                    </a>
+                    {% else %}
                     <a href="#modal_edit_{{ item.id }}" class="modal-trigger icon-container {{'hide' if item.split is true}}">
                         <i class="material-icons green-text">edit</i>
                     </a>
-                    {% if type != 'week' %}
+                    {% endif %}
                     <a href="#modal_delete_{{ item.id }}" class="icon-container modal-trigger">
                         <i class="material-icons no-margin grey-text">delete</i>
                     </a>
-                    {% endif %}
                 </div>
             </div>
             <!-- collapsible-body -->
@@ -78,18 +82,7 @@
                 {% block collapsible_body scoped %}{% endblock %}
             </div>
 
-            {% if type == 'week' %}
-
-            <!-- Select week modal -->
-            <div id="modal_edit_{{ item.id }}" class="modal">
-                <div class="modal-content">
-                    <h4>Edit {{item}} entries?</h4>
-                </div>
-                <div class="modal-footer">
-                    <a href="{{ url_for('week.week', item_id=item.id, tab='entry')}}" class="btn green">Confirm</a>
-                    <a class="modal-close btn grey">Cancel</a>
-                </div>
-            </div>
+            {% if type == 'day' %}
 
             {% else %}
 

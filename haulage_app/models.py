@@ -149,7 +149,7 @@ class Driver(db.Model):
                     raise ValueError('Driver already exists in the database, please choose another name or edit/delete current driver to replace.')
 
 
-class Truck (db.Model):
+class Truck(db.Model):
     id: Mapped[intpk]
     timestamp: Mapped[tstamp]
     registration: Mapped[str] = mapped_column(String(8), nullable=False, unique=True, index=True)

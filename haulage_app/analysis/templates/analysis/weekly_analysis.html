@@ -8,7 +8,7 @@
 {% set positive %}<i class="material-icons green-text tiny bold">add</i>{% endset %}
 {% set negative %}<i class="material-icons red-text tiny bold">remove</i>{% endset %}
 
-<div class="row">
+<div class="row no-margin">
     <div class="col s12 m6">
         <div class="row">
             <form method="GET">
@@ -28,11 +28,11 @@
             <p class="italics grey-text">* Value has been estimated.</p>
             <h5>Week: {{ selected_week_number }}</h5>
             <h6>Month: {{ month_name }}</h6>
-            <div class="col m6">
+            <div class="col m4">
                 <h5>Start date:</h5>
                 <h6>{{ f.display_date_pretty(start_date) }}</h6>
             </div>
-            <div class="col m6">
+            <div class="col m4">
                 <h5>End date:</h5>
                 <h6>{{ f.display_date_pretty(end_date) }}</h6>
             </div>
@@ -50,36 +50,30 @@
         <h5>TOTALS</h5>
         <div class="divider"></div>
         <div class="col s12">
-            <div class="card wages-card small">
-                <div class="card-content">
-                    <span class="card-title"><h5 class="medium-bold">Week: {{ selected_week_number }}, {{month_name}}</h5>
-                        <!-- <i class="material-icons right">more_vert</i> -->
-                        <div class="divider"></div>
-                    </span>
-                    <p class="wages-calc-card-text">
-                        {% if weekly_metrics.grand_total_data.total_expenses %}
-                        {{positive}} Earned: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_earned) }}<br>
-                        {{negative}} Overheads: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.total_expenses) }} <br>
-                        {{negative}} Wages: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_wages) }} <br>
-                        {{negative}} Fuel: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_fuel_cost) }} <br>
-                    <!-- <p class="small-text italics grey-text">
-                        (Total Fuel Used: {{ f.display_float(weekly_metrics.grand_total_data.grand_total_fuel_volume) }} L)
-                    </p> -->
-                    </p>
+            <div class="card wages-card horizontal">
+                <div class="card-stacked">
+                    <div class="card-content">
+                        <span class="card-title"><h5 class="medium-bold">Week: {{ selected_week_number }}, {{month_name}}</h5>
+                            <!-- <i class="material-icons right">more_vert</i> -->
+                            <div class="divider"></div>
+                        </span>
+                        <p class="wages-calc-card-text">
+                            {{positive}} Earned: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_earned) }}<br>
+                            {{negative}} Overheads: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_expenses) }} <br>
+                            {{negative}} Wages: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_wages) }} <br>
+                            {{negative}} Fuel: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_fuel_cost) }} <br>
+                        </p>
+                    </div>
                     <div class="card-action">
-                        <span class="card-title wages-calc-card-text {{'italics' if estimated}}">
-                            Profit: {{ f.fd_currency(weekly_metrics.grand_total_data.profit) }}{{ '*' if weekly_metrics.estimated}}
+                        <span class="card-footer wages-calc-card-text {{'italics' if estimated}}">
+                            Profit: {{ f.fd_currency(weekly_metrics.grand_total_data.grand_total_profit) }}{{ '*' if weekly_metrics.estimated}}
                         </span>
                     </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </div> 
 </div>
-
-<br>
-
 
 <!-- drivers card -->
 <h5>DRIVERS</h5>
