@@ -81,11 +81,7 @@
             <div class="collapsible-body" {{'style= display:block;' if search_term}}>
                 {% block collapsible_body scoped %}{% endblock %}
             </div>
-
-            {% if type == 'day' %}
-
-            {% else %}
-
+            
             <!-- Delete entry modal -->
             <div id="modal_delete_{{ item.id }}" class="modal">
                 <div class="modal-content">
@@ -97,33 +93,35 @@
                     <a class="modal-close btn grey">Cancel</a>
                 </div>
             </div>
+            
+            {% if type != 'day' %}
 
-            <!-- Edit modal -->
-            <div id="modal_edit_{{ item.id }}" class="modal">
-                <div class="modal-content">
-                    <h3 class="center-align">Edit {{type|replace("_"," ")|capitalize()}}</h3>
+                <!-- Edit modal -->
+                <div id="modal_edit_{{ item.id }}" class="modal">
+                    <div class="modal-content">
+                        <h3 class="center-align">Edit {{type|replace("_"," ")|capitalize()}}</h3>
 
-                    <!-- error messages -->
-                    {% with messages = get_flashed_messages(category_filter=["error-msg-modal"]) %}
-                    {% if messages %}
-                    <div class="messages-container err-msg">
-                        {% for message in messages %}
-                        <ul>
-                            <li> {{ message }}</li>
-                        </ul>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                    {% endwith %}
+                        <!-- error messages -->
+                        {% with messages = get_flashed_messages(category_filter=["error-msg-modal"]) %}
+                        {% if messages %}
+                        <div class="messages-container err-msg">
+                            {% for message in messages %}
+                            <ul>
+                                <li> {{ message }}</li>
+                            </ul>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% endwith %}
 
-                    <div class="row">
-                        {% block entry_history_questions scoped %}
-                        {% endblock %}
+                        <div class="row">
+                            {% block entry_history_questions scoped %}
+                            {% endblock %}
+                        </div>
                     </div>
                 </div>
-            </div>
+            {% endif %}
         </li>
-        {% endif %}
         {% endfor %}
         <!-- delete all collapsible  -->
         <!-- <li>

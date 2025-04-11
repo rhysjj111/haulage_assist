@@ -26,7 +26,6 @@ def add_day(item_id, tab):
     components = {'drivers':drivers, 'trucks':trucks}
 
     anomaly_id = request.args.get('anomaly_id')
-    search_term = None
     day = {}
 
     if anomaly_id:
@@ -37,8 +36,6 @@ def add_day(item_id, tab):
             previous_date = f.display_date(anomaly.previous_date)
             next_date = f.display_date(anomaly.next_date)
 
-            # search_term = f"{registration}, {previous_date} + {registration}, {next_date}"
-            search_term = ""
             day_entries = Day.query.filter(
                 db.or_(
                     Day.date == anomaly.previous_date,
@@ -58,32 +55,35 @@ def add_day(item_id, tab):
                 Day.date.between(start_week_date, end_week_date),
                 Day.driver_id == anomaly.driver_id
             ).all()
-            search_term = ""
 
     else:
         day_entries = list(
             Day.query.join(Driver)
             .order_by(
+                db.case(
+                    (db.and_(Day.status == 'working', Day.start_mileage == 0), 0),
+                    (db.and_(Day.status == 'working', Day.end_mileage == 0), 1),
+                    else_=2
+                ),
                 Day.date.desc()
             ).all()
         )
-        search_term = ""
-    
+
     for entry in day_entries:
         date_obj = entry.date
         year, week_number = get_week_number_sat_to_fri(date_obj)
         entry.week_number = week_number
         entry.year = year
-
+    print(day)
     # weekly modal creation
     weekly_data = defaultdict(lambda: defaultdict(list))
 
-    for day in days:
-        date_obj = day.date
-        driver_id = day.driver_id
+    for day_entry in days:
+        date_obj = day_entry.date
+        driver_id = day_entry.driver_id
         year, week_number = get_week_number_sat_to_fri(date_obj)
 
-        weekly_data[driver_id][(year, week_number)].append(day)
+        weekly_data[driver_id][(year, week_number)].append(day_entry)
 
     driver_weeks_forms = {}
     #Drill into outer dict
@@ -112,7 +112,7 @@ def add_day(item_id, tab):
                 else:
                     forms[day_date] = None
             driver_weeks_forms[driver_id][(year, week_number)] = (week_dates, forms)    
-
+    
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
     template_data = {  # Create a dictionary for template data
@@ -121,7 +121,6 @@ def add_day(item_id, tab):
         "tab": tab,
         "item_id": item_id,
         "type": 'day',
-        "search_term": search_term,
         "driver_weeks_forms": driver_weeks_forms,
         "day": day       # Initially an empty dictionary for form data
     }
