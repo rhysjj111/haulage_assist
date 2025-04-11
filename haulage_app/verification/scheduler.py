@@ -11,7 +11,7 @@ def init_scheduler(app):
             verification_manager.payslip_check()
             verification_manager.day_check()
             verification_manager.fuel_check()
-            print('check chek')
+            verification_manager.mileage_check()
     
     scheduler.add_job(
         func=run_verification,

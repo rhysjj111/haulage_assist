@@ -3,6 +3,9 @@ from haulage_app import db, f
 from haulage_app.verification.models import MissingEntryAnomaly
 from haulage_app.models import Truck, Fuel
 from haulage_app.fuel import fuel_bp
+from haulage_app.verification.checks.verification_functions import(
+    check_missing_fuel_has_been_rectified,
+)
 
 
 @fuel_bp.route("/add_fuel/<int:item_id>/<tab>", methods=["GET", "POST"])
@@ -40,6 +43,7 @@ def add_fuel(item_id, tab):
         else:
             flash(f"Entry Success: {new_entry.truck.registration} - {f.display_date(new_entry.date)}", "success-msg")
             fuel['fuel_card_name'] = new_entry.fuel_card_name
+            check_missing_fuel_has_been_rectified(new_entry.id)
     return render_template("add_fuel.html", trucks=trucks, list=fuel_entries, tab=tab, fuel=fuel, item_id=item_id, type='fuel')
 
 @fuel_bp.route("/delete_fuel/<int:item_id>")

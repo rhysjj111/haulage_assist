@@ -4,6 +4,9 @@ from haulage_app.models import Driver, Payslip
 from haulage_app.verification.models import MissingEntryAnomaly
 from haulage_app.payslip import payslip_bp
 from sqlalchemy.exc import IntegrityError
+from haulage_app.verification.checks.verification_functions import(
+    check_missing_payslip_has_been_rectified,
+)
 
 @payslip_bp.route("/add_payslip/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_payslip(item_id, tab):
@@ -46,6 +49,7 @@ def add_payslip(item_id, tab):
         else:
             flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
             payslip['date'] = new_entry.date
+            check_missing_payslip_has_been_rectified(new_entry.id)
     return render_template("add_payslip.html", drivers=drivers, list=payslips, tab=tab, 
                            payslip=payslip, item_id=item_id, type='payslip')
 

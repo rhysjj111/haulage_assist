@@ -135,7 +135,126 @@ def check_week_for_missing_day_entries(driver_id, year, week_number):
         'week_number': week_number,
         'year': year,
     }
-            
+def check_missing_day_has_been_rectified(day_entry_id):
+    """Checks if a missing day entry has been rectified.
+    
+    Performs check on the week containing the day entry.
+    If the day entry now exists, the anomaly is removed from the database.
+    
+    Args:
+        day_entry_id (int): The ID of the day entry that was created to rectify the anomaly
+    """
+    day_entry = Day.query.get(day_entry_id)
+    if not day_entry:
+        print(f"No day entry found with ID {day_entry_id}")
+        return
+        
+    date = day_entry.date
+    driver_id = day_entry.driver_id
+    
+    # Find the anomaly for this date and driver
+    anomaly = MissingEntryAnomaly.query.filter(
+        MissingEntryAnomaly.date == date,
+        MissingEntryAnomaly.driver_id == driver_id,
+        MissingEntryAnomaly.table_name == TableName.DAY
+    ).first()
+    
+    if anomaly:
+        # The day entry now exists, so the anomaly has been rectified
+        try:
+            db.session.delete(anomaly)
+            db.session.commit()
+        except Exception as e:
+            flash('Error deleting anomaly', 'error-msg')
+            print(f'Error deleting anomaly: {e}')
+        else:
+            flash('Success rectifying missing day anomaly', 'success-msg')
+            print(f'Success deleting missing day anomaly for {date}')
+    else:
+        print(f'No missing day anomaly found for driver {driver_id} on {date}')
+def check_missing_day_has_been_rectified(day_entry_id):
+    """Checks if a missing day entry has been rectified.
+    
+    Performs check on the week containing the day entry.
+    If the day entry now exists, the anomaly is removed from the database.
+    
+    Args:
+        day_entry_id (int): The ID of the day entry that was created to rectify the anomaly
+    """
+    day_entry = Day.query.get(day_entry_id)
+    if not day_entry:
+        print(f"No day entry found with ID {day_entry_id}")
+        return
+        
+    date = day_entry.date
+    driver_id = day_entry.driver_id
+    
+    # Find the anomaly for this date and driver
+    anomaly = MissingEntryAnomaly.query.filter(
+        MissingEntryAnomaly.date == date,
+        MissingEntryAnomaly.driver_id == driver_id,
+        MissingEntryAnomaly.table_name == TableName.DAY
+    ).first()
+    
+    if anomaly:
+        # The day entry now exists, so the anomaly has been rectified
+        try:
+            db.session.delete(anomaly)
+            db.session.commit()
+        except Exception as e:
+            flash('Error deleting anomaly', 'error-msg')
+            print(f'Error deleting anomaly: {e}')
+        else:
+            flash('Success rectifying missing day anomaly', 'success-msg')
+            print(f'Success deleting missing day anomaly for {date}')
+    else:
+        print(f'No missing day anomaly found for driver {driver_id} on {date}')
+
+
+def check_missing_day_has_been_rectified(day_entry_id):
+    """Checks if a missing day entry has been rectified.
+    
+    Performs check on the week containing the day entry.
+    If the day entry now exists, the anomaly is removed from the database.
+    
+    Args:
+        day_entry_id (int): The ID of the day entry that was created to rectify the anomaly
+    """
+    day_entry = Day.query.get(day_entry_id)
+    if not day_entry:
+        print(f"No day entry found with ID {day_entry_id}")
+        return
+        
+    date = day_entry.date
+    driver_id = day_entry.driver_id
+    
+    # Find the anomaly for this date and driver
+    anomaly = MissingEntryAnomaly.query.filter(
+        MissingEntryAnomaly.date == date,
+        MissingEntryAnomaly.driver_id == driver_id,
+        MissingEntryAnomaly.table_name == TableName.DAY
+    ).first()
+    
+    if anomaly:
+        # The day entry now exists, so the anomaly has been rectified
+        try:
+            db.session.delete(anomaly)
+            db.session.commit()
+        except Exception as e:
+            flash('Error deleting anomaly', 'error-msg')
+            print(f'Error deleting anomaly: {e}')
+        else:
+            flash('Success adding missing day anomaly', 'success-msg')
+            print(f'Success deleting missing day anomaly for {date}')
+    else:
+        print(f'No missing day anomaly found for driver {driver_id} on {date}')
+
+
+
+
+
+
+
 
 def find_incorrect_mileage(truck_id, year, week_number):
     """
@@ -196,7 +315,7 @@ def find_incorrect_mileage(truck_id, year, week_number):
         'start_date': start_date,
         'end_date': end_date,
     }
-# ca68, 09/01 + ca68, 10/01
+
 def check_mileage_has_been_rectified(day_entry_id):
     """Checks if mileage has been rectified for a given day entry.
 
@@ -221,6 +340,7 @@ def check_mileage_has_been_rectified(day_entry_id):
         truck_id = anomaly.truck_id
         anomaly_rectified = True
 
+        # run mileage check to see if mileage has been rectified
         mileage_check = find_incorrect_mileage(truck_id, year, week_number)
         for data in mileage_check['incorrect_mileages']:
             if data['previous_date'] == date or data['next_date'] == date:
@@ -315,67 +435,7 @@ def check_all_incorrect_mileages():
 
 
 
-def check_week_for_missing_fuel_data(truck_id, year, week_number):
-    """
-    Checks the consistency of fuel data for a given truck and week.
 
-    Args:
-        truck_id: The truck ID.
-        week_number: The week number (integer).
-        year: The year of the data (integer).
-
-    Returns:
-        A dictionary containing the counts of fuel entries, day entries with fuel flag,
-        and the difference between them. Returns an empty dictionary if there are no
-        inconsistencies.
-    """
-    # Calculate the start and end dates for the given week
-    start_date, end_date = get_start_and_end_of_week(year, week_number)
-
-    # Get all fuel entries for the given truck and week
-    fuel_entry = Fuel.query.filter(
-        Fuel.truck_id == truck_id,
-        Fuel.date >= start_date,
-        Fuel.date <= end_date
-    ).all()
-
-    # Count the number of day entries with fuel_flag=True for the given truck and week
-    day_entry_fuel = Day.query.filter(
-        Day.truck_id == truck_id,
-        Day.date >= start_date,
-        Day.date <= end_date,
-        Day.fuel == True
-    ).all()
-
-    fuel_entry_dates = [entry.date for entry in fuel_entry]
-    day_entry_fuel_dates = [entry.date for entry in day_entry_fuel]
-
-    # Count the number of fuel entries
-    fuel_entry_count = len(fuel_entry_dates)
-    # Count the number of day entries with fuel_flag=True
-    day_entry_fuel_count = len(day_entry_fuel_dates)
-
-    # Calculate the difference
-    difference = day_entry_fuel_count - fuel_entry_count
-
-    result = {
-        "truck_id": truck_id,
-        "week_number": week_number,
-        "year": year,
-        "invoice_flag_count_difference": difference,
-        "fuel_entry_count": fuel_entry_count,
-        "fuel_flag_count": day_entry_fuel_count,
-        "start_date": start_date,
-        "end_date": end_date,
-        "missing_invoice_dates": [],
-    }
-
-    if difference > 0:
-        unique_day_entry_fuel_dates = list(set(day_entry_fuel_dates) - set(fuel_entry_dates))
-        result["missing_invoice_dates"] = unique_day_entry_fuel_dates
-        return result
-    else:
-        return result
 
 def check_week_for_missing_day_entries_for_date_range(start_date, end_date):
     """
@@ -417,45 +477,6 @@ def check_week_for_missing_day_entries_for_date_range(start_date, end_date):
 
     return results
 
-def check_week_for_missing_fuel_data_for_date_range(start_date, end_date):
-    """
-    Checks fuel data consistency for all trucks within a given date range.
-
-    Args:
-        start_date: The start date of the range (datetime.date).
-        end_date: The end date of the range (datetime.date).
-
-    Returns:
-        A list of dictionaries, where each dictionary represents a week and truck 
-        combination. Each dictionary contains truck_id, week_number, year and fuel_flag_difference.
-    """
-
-    results = []
-
-    # Find the first saturday before or on the start date to be the start of week
-    adjusted_start_date = find_previous_saturday(start_date)
-
-    # Find the last friday on or after the end_date to be the end of week
-    if end_date.weekday() != 4:  # if not friday
-        adjusted_end_date = get_next_friday_from_date(end_date)
-    else:
-        adjusted_end_date = end_date
-
-    # Iterate through each week in the date range
-    current_date = adjusted_start_date
-    while current_date <= adjusted_end_date:
-        year, week_number = get_week_number_sat_to_fri(current_date)
-
-        trucks = Truck.query.all()
-        for truck in trucks:
-            consistency_check_result = check_week_for_missing_fuel_data(truck.id, year, week_number)
-            #append the data to the results list
-            results.append(consistency_check_result)
-
-        # Move to the next week
-        current_date += timedelta(days=7)
-
-    return results
 
 def process_incorrect_mileages(incorrect_mileage_output):
 
@@ -603,6 +624,112 @@ def check_all_missing_day_entries():
 
     return day_entry_output
 
+
+
+
+
+def check_week_for_missing_fuel_data(truck_id, year, week_number):
+    """
+    Checks the consistency of fuel data for a given truck and week.
+
+    Args:
+        truck_id: The truck ID.
+        week_number: The week number (integer).
+        year: The year of the data (integer).
+
+    Returns:
+        A dictionary containing the counts of fuel entries, day entries with fuel flag,
+        and the difference between them. Returns an empty dictionary if there are no
+        inconsistencies.
+    """
+    # Calculate the start and end dates for the given week
+    start_date, end_date = get_start_and_end_of_week(year, week_number)
+
+    # Get all fuel entries for the given truck and week
+    fuel_entry = Fuel.query.filter(
+        Fuel.truck_id == truck_id,
+        Fuel.date >= start_date,
+        Fuel.date <= end_date
+    ).all()
+
+    # Count the number of day entries with fuel_flag=True for the given truck and week
+    day_entry_fuel = Day.query.filter(
+        Day.truck_id == truck_id,
+        Day.date >= start_date,
+        Day.date <= end_date,
+        Day.fuel == True
+    ).all()
+
+    fuel_entry_dates = [entry.date for entry in fuel_entry]
+    day_entry_fuel_dates = [entry.date for entry in day_entry_fuel]
+
+    # Count the number of fuel entries
+    fuel_entry_count = len(fuel_entry_dates)
+    # Count the number of day entries with fuel_flag=True
+    day_entry_fuel_count = len(day_entry_fuel_dates)
+
+    # Calculate the difference
+    difference = day_entry_fuel_count - fuel_entry_count
+
+    result = {
+        "truck_id": truck_id,
+        "week_number": week_number,
+        "year": year,
+        "invoice_flag_count_difference": difference,
+        "fuel_entry_count": fuel_entry_count,
+        "fuel_flag_count": day_entry_fuel_count,
+        "start_date": start_date,
+        "end_date": end_date,
+        "missing_invoice_dates": [],
+    }
+
+    if difference > 0:
+        unique_day_entry_fuel_dates = list(set(day_entry_fuel_dates) - set(fuel_entry_dates))
+        result["missing_invoice_dates"] = unique_day_entry_fuel_dates
+        return result
+    else:
+        return result
+
+def check_week_for_missing_fuel_data_for_date_range(start_date, end_date):
+    """
+    Checks fuel data consistency for all trucks within a given date range.
+
+    Args:
+        start_date: The start date of the range (datetime.date).
+        end_date: The end date of the range (datetime.date).
+
+    Returns:
+        A list of dictionaries, where each dictionary represents a week and truck 
+        combination. Each dictionary contains truck_id, week_number, year and fuel_flag_difference.
+    """
+
+    results = []
+
+    # Find the first saturday before or on the start date to be the start of week
+    adjusted_start_date = find_previous_saturday(start_date)
+
+    # Find the last friday on or after the end_date to be the end of week
+    if end_date.weekday() != 4:  # if not friday
+        adjusted_end_date = get_next_friday_from_date(end_date)
+    else:
+        adjusted_end_date = end_date
+
+    # Iterate through each week in the date range
+    current_date = adjusted_start_date
+    while current_date <= adjusted_end_date:
+        year, week_number = get_week_number_sat_to_fri(current_date)
+
+        trucks = Truck.query.all()
+        for truck in trucks:
+            consistency_check_result = check_week_for_missing_fuel_data(truck.id, year, week_number)
+            #append the data to the results list
+            results.append(consistency_check_result)
+
+        # Move to the next week
+        current_date += timedelta(days=7)
+
+    return results
+
 def check_all_missing_fuel_data():
     """
     Checks fuel data consistency across all available data for all trucks.
@@ -682,6 +809,45 @@ def process_missing_fuel_data(fuel_consistency_output):
                         pass
     print('All fuel entries processed.')
 
+def check_missing_fuel_has_been_rectified(fuel_entry_id):
+    """Checks if a missing fuel entry anomaly has been rectified.
+    
+    Performs check on the fuel entry. If the fuel entry now exists,
+    the anomaly is removed from the database.
+    
+    Args:
+        fuel_entry_id (int): The ID of the fuel entry that was created to rectify the anomaly
+    """
+    print('hello you cunt')
+    fuel_entry = Fuel.query.get(fuel_entry_id)
+    if not fuel_entry:
+        print(f"No fuel entry found with ID {fuel_entry_id}")
+        return
+        
+    date = fuel_entry.date
+    truck_id = fuel_entry.truck_id
+    
+    # Find the anomaly for this date and truck
+    anomaly = MissingEntryAnomaly.query.filter(
+        MissingEntryAnomaly.date == date,
+        MissingEntryAnomaly.truck_id == truck_id,
+        MissingEntryAnomaly.table_name == TableName.FUEL
+    ).first()
+    
+    if anomaly:
+        # The fuel entry now exists, so the anomaly has been rectified
+        try:
+            db.session.delete(anomaly)
+            db.session.commit()
+        except Exception as e:
+            flash('Error deleting anomaly', 'error-msg')
+            print(f'Error deleting anomaly: {e}')
+        else:
+            flash('Success rectifying missing fuel anomaly', 'success-msg')
+            print(f'Success deleting missing fuel anomaly for truck {truck_id} on {date}')
+    else:
+        print(f'No missing fuel anomaly found for truck {truck_id} on {date}')
+
 def process_missing_payslips(missing_payslips_output):
     """
     Process missing payslips and update the Anomaly table.
@@ -734,6 +900,45 @@ def process_missing_payslips(missing_payslips_output):
                     else:
                         pass
     print("ALL Missing payslips processed")
+
+def check_missing_payslip_has_been_rectified(payslip_id):
+    """Checks if a missing payslip anomaly has been rectified.
+    
+    Performs check on the payslip entry. If the payslip now exists,
+    the anomaly is removed from the database.
+    
+    Args:
+        payslip_id (int): The ID of the payslip that was created to rectify the anomaly
+    """
+    payslip = Payslip.query.get(payslip_id)
+    if not payslip:
+        print(f"No payslip found with ID {payslip_id}")
+        return
+        
+    date = payslip.date
+    driver_id = payslip.driver_id
+    
+    # Find the anomaly for this date and driver
+    anomaly = MissingEntryAnomaly.query.filter(
+        MissingEntryAnomaly.date == date,
+        MissingEntryAnomaly.driver_id == driver_id,
+        MissingEntryAnomaly.table_name == TableName.PAYSLIP
+    ).first()
+    
+    if anomaly:
+        # The payslip now exists, so the anomaly has been rectified
+        try:
+            db.session.delete(anomaly)
+            db.session.commit()
+        except Exception as e:
+            flash('Error deleting anomaly', 'error-msg')
+            print(f'Error deleting anomaly: {e}')
+        else:
+            flash('Success rectifying missing payslip anomaly', 'success-msg')
+            print(f'Success deleting missing payslip anomaly for driver {driver_id} on {date}')
+    else:
+        print(f'No missing payslip anomaly found for driver {driver_id} on {date}')
+
 
 
 

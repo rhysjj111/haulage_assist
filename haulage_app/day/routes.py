@@ -6,7 +6,10 @@ from haulage_app.analysis.functions import get_start_and_end_of_week
 from haulage_app.day import day_bp
 from pprint import pprint
 from sqlalchemy.exc import IntegrityError
-from haulage_app.verification.checks.verification_functions import check_mileage_has_been_rectified
+from haulage_app.verification.checks.verification_functions import(
+    check_mileage_has_been_rectified,
+    check_missing_day_has_been_rectified,
+)
 from datetime import timedelta
 from haulage_app.analysis.functions import(
     get_start_of_week,
@@ -153,6 +156,7 @@ def add_day(item_id, tab):
             template_data["day"] = request.form
         else:
             flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
+            check_missing_day_has_been_rectified(new_entry.id)
             return redirect(url_for("day.add_day", item_id=0, tab='entry'))
     return render_template("add_day.html", **template_data)
 
@@ -263,6 +267,7 @@ def edit_days():
                     existing_entry.end_mileage = end_mileage
                     existing_entry.overnight = overnight
                     existing_entry.fuel = fuel
+                    check_mileage_has_been_rectified(existing_entry.id)
                 else:
                     # Create a new entry
                     new_entry = Day(
@@ -276,6 +281,7 @@ def edit_days():
                         fuel=fuel
                     )
                     db.session.add(new_entry)
+                    check_mileage_has_been_rectified(new_entry.id)
             # Commit the changes to the database
         db.session.commit()
     except Exception as e:
