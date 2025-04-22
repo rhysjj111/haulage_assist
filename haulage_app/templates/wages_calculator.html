@@ -21,3 +21,7 @@
 
 
 {% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/deductions.js') }}"></script>
+{% endblock %}

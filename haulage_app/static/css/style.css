@@ -252,7 +252,9 @@ footer, nav{
     text-align: center;
 }
 
-
+.margin-left{
+    margin-left: 10px !important;
+}
 
 
 .datepicker-modal{

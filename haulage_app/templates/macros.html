@@ -952,17 +952,45 @@ from datetime import datetime
             <div class="card-stacked">
                 <div class="card-content ">
                     <!-- CARD TITLE -->
-                    <span class="card-title bold">
+                    <span class="card-title">
                         <h5>{{ data.driver.full_name }}</h5>
                         <div class="divider"></div>
                     </span>
                     <!-- CARD MAIN CONTENT  -->
                     <div>
                         {% if '/wages_calculator' in request.path %}
-                            <p class="wages-calc-card-text">{{positive}} Total Earned: {{ f.fd_currency(data.total_earned) }}</p>
+                            <!-- <p class="wages-calc-card-text">{{positive}} Total Earned: {{ f.fd_currency(data.total_earned) }}</p>
                             <p class="wages-calc-card-text bold">{{positive}} Extras: {{ f.fd_currency(data.weekly_extras) }}</p>
-                            <p class="wages-calc-card-text">{{positive}} Overnights: {{ f.fd_currency(data.total_overnight) }}</p>
-                            <p class="wages-calc-card-text">{{positive}} Gross Pay: {{ f.fd_currency(data.gross_pay) }}</p>
+                            <p class="wages-calc-card-text">{{positive}} Overnights: {{ f.fd_currency(data.total_overnight) }}</p> -->
+                            <!-- <p class="wages-calc-card-text">
+                                {{negative}} Deductions: 
+                                <input id="deductions_{{driver_id}}" name="deductions" type="number" step="0.01" class="inline-input" style="width: 80px; display: inline-block; margin-left: 5px; height: 24px;" value="{{ data.deductions|default(20)|float }}">
+                            </p> -->
+                            <!-- ----------------------------- -->
+                            <!-- <p class="wages-calc-card-text">{{positive}} Total Earned: <span id="total_earned_{{driver_id}}">{{ f.fd_currency(data.total_earned) }}</span></p>
+                            <p class="wages-calc-card-text">{{positive}} Basic Wage: <span id="basic_wage_{{driver_id}}">{{ f.fd_currency(data.driver.basic_wage) }}</span></p>
+                            <p class="wages-calc-card-text bold">{{positive}} Extras: <span id="extras_{{driver_id}}">{{ f.fd_currency(data.weekly_extras) }}</span></p>
+                            <input type="hidden" id="original_extras_{{driver_id}}" value="{{ data.weekly_extras }}">
+                            <input type="hidden" id="original_basic_wage_{{driver_id}}" value="{{ data.driver.basic_wage }}">
+                            <p class="wages-calc-card-text">{{positive}} Overnights: <span id="total_overnight_{{driver_id}}">{{ f.fd_currency(data.total_overnight) }}</span></p>
+                            <p class="wages-calc-card-text">{{negative}} Deductions: 
+                                <input id="deductions_{{driver_id}}" name="deductions" type="number" step="0.01" class="inline-input" style="width: 80px; display: inline-block; margin-left: 5px; height: 24px;" value="20">
+                            </p> -->
+                            <!-- ----------------------------- -->
+                            
+                            <!-- Add hidden fields for total_daily_bonus -->
+                            <input type="hidden" id="total_earned_{{driver_id}}" value="{{ f.display_float(data.total_earned) }}">
+                            <input type="hidden" id="total_daily_bonus_{{driver_id}}" value="{{ f.display_float(data.total_daily_bonus) }}">
+                            <input type="hidden" id="weekly_bonus_percentage_{{driver_id}}" value="{{ (data.weekly_bonus_percentage) }}">
+                            <input type="hidden" id="original_extras_{{driver_id}}" value="{{ f.display_float(data.weekly_extras) }}">
+                            <input type="hidden" id="original_basic_wage_{{driver_id}}" value="{{ f.display_float(data.driver.basic_wage) }}">
+                            
+                            <p class="wages-calc-card-text">{{positive}} Total Earned: <span id="total_earned_display_{{driver_id}}">{{ f.fd_currency(data.total_earned) }}</span></p>
+                            <p class="wages-calc-card-text">{{positive}} Basic Wage: <span id="basic_wage_{{driver_id}}">{{ f.fd_currency(data.driver.basic_wage) }}</span></p>
+                            <p class="margin-left small-text grey-text text-darken-2">{{negative}} Deductions: <span id="deductions_display_{{driver_id}}"></span></p>
+                            <p class="wages-calc-card-text bold">{{positive}} Extras: <span id="extras_{{driver_id}}">{{ f.fd_currency(data.weekly_extras) }}</span></p>
+                            <p class="wages-calc-card-text">{{positive}} Overnights: <span id="total_overnight_{{driver_id}}">{{ f.fd_currency(data.total_overnight) }}</span></p>
+
                         {% endif %}
                         {% if '/analysis/' in request.path %}
                             <p class="wages-calc-card-text">{{positive}} Total Earned: {{ f.fd_currency_rd(data.total_earned) }}</p>
@@ -971,18 +999,36 @@ from datetime import datetime
                                 {{negative}} Wages Cost: {{ f.fd_currency_rd(data.total_cost_to_employer) }}{{ '*' if data.estimated==True}}
                             </p>
                             {% if data.truck is not none %}
-                            {{ truck_card_data_only_short(data.truck_data.truck_id, data.truck_data, f) }}
+                                {{ truck_card_data_only_short(data.truck_data.truck_id, data.truck_data, f) }}
                             {% else %}
                                 <p class="grey-text">No Truck Assigned</p>
                             {% endif %}
                         {% endif %}
                     </div>
                 </div>
-                {% if '/wages_calculator' in request.path %}
+        {% if '/wages_calculator' in request.path %}
                 <div class="card-action">
+                    <span class="card-title activator grey-text text-darken-4 right"><i class="material-icons">more_vert</i></span>
                     <a href="#modal_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
                     <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">list</i>Jobs</a>
                 </div>
+            </div>
+            <div class="card-reveal">
+            <span class="card-title grey-text text-darken-4">{{data.driver.first_name }}'s Settings<i class="material-icons right">close</i></span>
+            <!-- Add editable field for total_weekly_bonus -->
+            <p class="wages-calc-card-text">Deductions: 
+                <input id="deductions_{{driver_id}}" name="deductions" type="number" step="0.01" class="inline-input" 
+                       style="width: 80px; display: inline-block; margin-left: 5px; height: 24px;" 
+                       value="20">
+            </p>
+            <p class="wages-calc-card-text">Weekly Bonus Threshold: 
+                <input id="weekly_bonus_threshold_{{driver_id}}" name="total_weekly_bonus" type="number" step="0.01" class="inline-input" 
+                        style="width: 80px; display: inline-block; margin-left: 5px; height: 24px;" 
+                        value="{{ f.display_float(data.weekly_bonus_threshold) }}" data-driver-id="{{ driver_id }}">
+            </p>
+            <p class="">Weekly Bonus: <span id="weekly_bonus_display_{{driver_id}}">{{ f.fd_currency(data.total_weekly_bonus) }}</span><br>                                                                                                       
+            Daily Bonus: <span id="daily_bonus_display_{{driver_id}}">{{ f.fd_currency(data.total_daily_bonus) }}</span></p>
+
             </div>
         </div>
         <div>
@@ -1054,7 +1100,22 @@ from datetime import datetime
                         <td><em>{# f.fd_currency(data.weekly_total_overnight) #}</em></td>
                     </tr>
                 </tbody>
-            </table> 
+            </table>
+            <div class="card">
+                <div class="card-content">
+                  <span class="card-title">Earnings Summary</span>
+                  <div class="divider"></div>
+                  <p>
+                    <strong>Total Earned:</strong> {{ f.fd_currency(data.total_earned) }}
+                  </p>
+                  <p>
+                    <strong>Total Daily Bonus:</strong> {{ f.fd_currency(data.total_daily_bonus) }}
+                  </p>
+                  <p>
+                    <strong>Total Weekly Bonus:</strong> {{ f.fd_currency(data.total_weekly_bonus) }}
+                  </p>
+                </div>
+              </div>
         </div>
         <div class="modal-footer">
             <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>

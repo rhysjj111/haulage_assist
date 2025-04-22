@@ -38,8 +38,19 @@ def calculate_driver_wages(day_entries, driver):
         weekly_extras = total_daily_bonus + total_weekly_bonus - (15000 - total_overnight)
         total_overnight = 15000
 
+    basic_wage = driver.basic_wage
     gross_pay = weekly_extras + driver.basic_wage + total_overnight
-    return total_earned, weekly_extras, gross_pay, total_overnight
+    metrics = {
+        'total_earned': total_earned,
+        'total_daily_bonus': total_daily_bonus,
+        'total_weekly_bonus': total_weekly_bonus,
+        'gross_pay': gross_pay,
+        'basic_wage': basic_wage,
+        'weekly_extras': weekly_extras,
+        'total_overnight': total_overnight,
+    }
+    return metrics
+    return total_earned, weekly_extras, gross_pay, total_overnight, basic_wage
 
 
 def most_frequent_truck_id(day_data):
@@ -81,14 +92,14 @@ def calculate_driver_metrics_week(driver, start_date, end_date):
         Payslip.date <= end_date
         ).order_by(Payslip.date).all()
     
-    total_earned, weekly_extras, gross_pay, total_overnight = calculate_driver_wages(day_entries, driver)
+    metrics = calculate_driver_wages(day_entries, driver)
 
     if payslip_entries:
-        gross_pay = payslip_entries[0].total_wage
+        metrics['gross_pay'] = payslip_entries[0].total_wage
         total_cost_to_employer = payslip_entries[0].total_cost_to_employer
-    elif gross_pay > 0: 
+    elif metrics['gross_pay'] > 0: 
         estimated = True
-        total_cost_to_employer = gross_pay * TAX_NI_MULTIPLIER
+        total_cost_to_employer = metrics['gross_pay'] * TAX_NI_MULTIPLIER
     else:
         total_cost_to_employer = 0
     
@@ -103,11 +114,18 @@ def calculate_driver_metrics_week(driver, start_date, end_date):
         'driver': driver,
         'day_entries': day_entries,
         'job_entries': job_entries,
-        'total_earned': total_earned,
-        'gross_pay': gross_pay,
-        'total_overnight': total_overnight,
+        'total_earned': metrics['total_earned'],
+        'basic_wage': metrics['basic_wage'],
+        'total_overnight': metrics['total_overnight'],
         'total_cost_to_employer': total_cost_to_employer,
-        'weekly_extras': weekly_extras,
+        'weekly_extras': metrics['weekly_extras'],
+        'gross_pay': metrics['gross_pay'],
+        'total_daily_bonus': metrics['total_daily_bonus'],
+        'total_weekly_bonus': metrics['total_weekly_bonus'],
+        'weekly_bonus_threshold': driver.weekly_bonus_threshold,
+        'weekly_bonus_percentage': driver.weekly_bonus_percentage,
+        
+
         'start_date': start_date,
         'end_date': end_date,
         'truck': truck,
