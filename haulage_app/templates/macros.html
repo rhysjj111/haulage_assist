@@ -1047,6 +1047,9 @@ from datetime import datetime
                             {% else %}
                             Profit: {{f.fd_currency_rd(data.total_profit)}}{{ '*' if estimated}}
                             {% endif %}
+                            <br>
+                            <a href="#modal_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
+                            <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">list</i>Jobs</a>
                             <!-- <i class="material-icons right">more_vert</i> -->
                     </span>
                 </div>

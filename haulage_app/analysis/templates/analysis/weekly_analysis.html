@@ -39,11 +39,11 @@
         </div>
     </div>
 
-    {% if waiting_on_mileage_data or data_available != true or weekly_metrics.grand_total_data.grand_total_earned == 0 %}
+    {# if waiting_on_mileage_data or data_available != true or weekly_metrics.grand_total_data.grand_total_earned == 0 %}
     <div class="col s12 center-align">
         <h4>No data available</h4>
     </div>
-    {% else %}
+    {% else #}
     
     <div class="col s12 m6">
         <!-- totals card -->
@@ -90,7 +90,7 @@
     
     {% endfor %}
 </div>
-{% endif %}
+{# endif #}
 
 
 {% endblock %}
