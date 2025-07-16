@@ -87,6 +87,10 @@ def monthly_analysis():
 @analysis_bp.route("/weekly_analysis", methods=["GET"])
 def weekly_analysis():
 
+    today = date.today() # Get today's date within the request context
+    year = int(request.args.get('year', get_week_number_sat_to_fri(today)[0]))
+    week_num = int(request.args.get('week_num', get_week_number_sat_to_fri(today)[1]))
+
     # Get all drivers and trucks
     drivers = list(Driver.query.order_by(Driver.first_name).all())
     trucks = list(Truck.query.order_by(Truck.registration).all())

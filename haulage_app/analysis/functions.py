@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, date
 from haulage_app.functions import(
     find_previous_saturday,
     get_week_number_sat_to_fri,
+    display_date,
+    date_to_db,
 )
 from haulage_app.calculations.driver_truck_metrics import (
     calculate_driver_metrics_week,
@@ -348,3 +350,78 @@ def validate_month_data(weeks_data: list, year: int, month: int) -> tuple[bool, 
 # is_valid, message = validate_month_data(weeks_data, target_year, target_month)
 # if is_valid:
 #     monthly_metrics = calculate_monthly_metrics(weeks_data, drivers, trucks, target_year, target_month)
+
+def get_weekly_report_data_agg(year, week_number):
+    """
+    Returns the aggregated weekly report data for a given week.
+    """
+    # Get the start and end dates of the week
+    start_date, end_date = get_start_and_end_of_week(year, week_number)
+
+    # Determine the overall status for the week
+    overall_period_status = "Complete" # Default for past week
+    if end_of_week >= date.today(): # If week ends today or in future, it's partial
+        overall_period_status = "Partial/Estimated"
+
+    # 1. Query Days with Mileage (for estimated fuel)
+    days_in_period_query = db.session.query(Day).\
+        filter(Day.date >= start_of_week, Day.date <= end_of_week).\
+        all()
+    days_lookup = {display_date(d.date): d for d in days_in_period_query}
+
+    # 2. Query Jobs
+    jobs_for_period = db.session.query(Job, Driver).\
+        join(Driver).\
+        filter(Job.date >= start_of_week, Job.date <= end_of_week).\
+        order_by(Driver.id, Job.date).\
+        all()
+
+    # 3. Query Fuel Entries (Actuals)
+    fuel_entries_for_period = db.session.query(FuelEntry, Truck).\
+        outerjoin(Truck).\
+        filter(FuelEntry.date >= start_of_week, FuelEntry.date <= end_of_week).\
+        all()
+
+    # 4. Query Wage Entries (Actuals)
+    wage_entries_for_period = db.session.query(WageEntry, Driver).\
+        join(Driver).\
+        filter(WageEntry.date >= start_of_week, WageEntry.date <= end_of_week).\
+        all()
+
+    # --- Initialize Aggregation Structure ---
+    # defaultdicts are used for dynamic aggregation
+    drivers_data = defaultdict(lambda: {
+        "driver_id": None, 
+        "driver_name": None,
+        "truck_id": None,
+        "weekly_earned": 0.0, 
+        "weekly_estimated_fuel_sum": 0.0, 
+        "weekly_actual_fuel_sum": 0.0,
+        "weekly_calculated_wage_sum": 0.0,
+        "weekly_estimated_cost_to_employer": 0.0,
+        "weekly_actual_cost_to_employer": 0.0,
+        "weekly_total_costs_best_available": 0.0,
+        "weekly_net_profit_best_available": 0.0,
+        "weekly_fuel_status": "Estimated/Actual",
+        "weekly_cost_to_employer_status": "Estimated/Actual",
+        "days_worked": 0,
+        "days_absent": 0,
+        "days_holiday": 0,
+        "daily_breakdown": defaultdict(lambda: { # Will hold data only for days with activity
+            "day_id": None,
+            "date": None,
+            "status": "working",
+            "day_start_mileage": 0.0,
+            "day_end_mileage": 0.0,
+            "day_mileage_diff": 0.0,
+            "daily_earned": 0.0, 
+            "overnight": False,
+            "fuel_flag": False,
+            "daily_bonus": 0.0,
+            "daily_estimated_fuel_sum": 0.0,
+            "jobs": [], 
+            "fuel_entries_details": [],
+            "wage_entries_details": [],
+            "status": "No data" # Initial status, updated if data is found
+        })
+    })

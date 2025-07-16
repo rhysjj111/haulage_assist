@@ -196,6 +196,8 @@ class Day(db.Model):
     driver: Mapped["Driver"] = relationship(back_populates="days")
     truck: Mapped["Truck"] = relationship(back_populates="days")
     jobs: Mapped[List["Job"]] = relationship(back_populates="day", lazy=True)
+    fuel_entries: Mapped[List["Fuel"]] = relationship(back_populates="day", lazy=True)
+    payslip_entries: Mapped[List["Payslip"]] = relationship(back_populates="day", lazy=True)
     
     def __repr__(self):
         #represents itself in form of string
@@ -340,12 +342,15 @@ class Job(db.Model):
 
 class Payslip(db.Model):
     id: Mapped[intpk]
+    day_id: Mapped[Optional[dayfk]]
     timestamp: Mapped[tstamp]
     date: Mapped[date]
     driver_id: Mapped[driverfk]
     total_wage: Mapped[int]
     total_cost_to_employer: Mapped[int]
     week_number_mtf: Mapped[week_number_computed]
+
+    day: Mapped["Day"] = relationship(back_populates="payslip_entries")
 
     __table_args__ = (
         db.UniqueConstraint(
@@ -392,11 +397,13 @@ class Fuel(db.Model):
     timestamp: Mapped[tstamp]
     date: Mapped[date]
     truck_id: Mapped[truckfk]
+    day_id: Mapped[Optional[dayfk]]
     fuel_card_name: Mapped[str50] = mapped_column(index=True)    
     fuel_volume: Mapped[int]
     fuel_cost: Mapped[int]
 
     truck: Mapped["Truck"] = relationship(back_populates="fuel_entries")
+    day: Mapped["Day"] = relationship(back_populates="fuel_entries")
 
     def __repr__(self): 
     #represents itself in form of string

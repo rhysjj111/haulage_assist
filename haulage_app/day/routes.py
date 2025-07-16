@@ -77,7 +77,6 @@ def add_day(item_id, tab):
         year, week_number = get_week_number_sat_to_fri(date_obj)
         entry.week_number = week_number
         entry.year = year
-    print(day)
     # weekly modal creation
     weekly_data = defaultdict(lambda: defaultdict(list))
 

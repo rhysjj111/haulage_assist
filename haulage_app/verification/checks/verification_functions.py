@@ -168,7 +168,7 @@ def check_missing_day_has_been_rectified(day_entry_id):
             flash('Error deleting anomaly', 'error-msg')
             print(f'Error deleting anomaly: {e}')
         else:
-            flash('Success rectifying missing day anomaly', 'success-msg')
+            # flash('Success rectifying missing day anomaly', 'success-msg')
             print(f'Success deleting missing day anomaly for {date}')
     else:
         print(f'No missing day anomaly found for driver {driver_id} on {date}')
@@ -205,7 +205,7 @@ def check_missing_day_has_been_rectified(day_entry_id):
             flash('Error deleting anomaly', 'error-msg')
             print(f'Error deleting anomaly: {e}')
         else:
-            flash('Success rectifying missing day anomaly', 'success-msg')
+            # flash('Success rectifying missing day anomaly', 'success-msg')
             print(f'Success deleting missing day anomaly for {date}')
     else:
         print(f'No missing day anomaly found for driver {driver_id} on {date}')
@@ -244,7 +244,7 @@ def check_missing_day_has_been_rectified(day_entry_id):
             flash('Error deleting anomaly', 'error-msg')
             print(f'Error deleting anomaly: {e}')
         else:
-            flash('Success adding missing day anomaly', 'success-msg')
+            # flash('Success adding missing day anomaly', 'success-msg')
             print(f'Success deleting missing day anomaly for {date}')
     else:
         print(f'No missing day anomaly found for driver {driver_id} on {date}')
@@ -354,7 +354,7 @@ def check_mileage_has_been_rectified(day_entry_id):
                 flash('Error deleting anomaly', 'error-msg')
                 print(f'Error deleting anomaly: {e}')
             else:
-                flash('Success rectifying anomaly', 'success-msg')
+                # flash('Success rectifying anomaly', 'success-msg')
                 print(f'Success deleting anomaly')
         else:
             print(f'Mileage error for data {date} still present')
@@ -818,7 +818,6 @@ def check_missing_fuel_has_been_rectified(fuel_entry_id):
     Args:
         fuel_entry_id (int): The ID of the fuel entry that was created to rectify the anomaly
     """
-    print('hello you cunt')
     fuel_entry = Fuel.query.get(fuel_entry_id)
     if not fuel_entry:
         print(f"No fuel entry found with ID {fuel_entry_id}")
@@ -843,7 +842,7 @@ def check_missing_fuel_has_been_rectified(fuel_entry_id):
             flash('Error deleting anomaly', 'error-msg')
             print(f'Error deleting anomaly: {e}')
         else:
-            flash('Success rectifying missing fuel anomaly', 'success-msg')
+            # flash('Success rectifying missing fuel anomaly', 'success-msg')
             print(f'Success deleting missing fuel anomaly for truck {truck_id} on {date}')
     else:
         print(f'No missing fuel anomaly found for truck {truck_id} on {date}')
@@ -934,7 +933,7 @@ def check_missing_payslip_has_been_rectified(payslip_id):
             flash('Error deleting anomaly', 'error-msg')
             print(f'Error deleting anomaly: {e}')
         else:
-            flash('Success rectifying missing payslip anomaly', 'success-msg')
+            # flash('Success rectifying missing payslip anomaly', 'success-msg')
             print(f'Success deleting missing payslip anomaly for driver {driver_id} on {date}')
     else:
         print(f'No missing payslip anomaly found for driver {driver_id} on {date}')

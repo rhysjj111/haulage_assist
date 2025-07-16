@@ -58,27 +58,33 @@ def inject_notification():
     #     notifications['mileage_notifications'].append(anomaly_info)
     # return notifications
     
-    notifications = []
+    try:
+        notifications = []
 
-    anomalies = Anomaly.query.filter_by(is_read=False).all()
-    for anomaly in anomalies:
-        if anomaly.type == 'incorrect_mileage':
-            entry_type = 'day'
-        else:
-            entry_type = anomaly.table_name.value
-        anomaly_info = {
-            "id": anomaly.id,
-            # "date": anomaly.date,
-            "details": anomaly.description,
-            # "table_name": anomaly.table_name,
-            "entry_type": entry_type
-        }
-        # if anomaly.driver_id is not None:
-        #     anomaly_info["driver_id"] = anomaly.driver_id
-        # elif anomaly.truck_id is not None:
-        #     anomaly_info["truck_id"] = anomaly.truck_id
-        notifications.append(anomaly_info)
+        anomalies = Anomaly.query.filter_by(is_read=False).all()
+        for anomaly in anomalies:
+            if anomaly.type == 'incorrect_mileage':
+                entry_type = 'day'
+            else:
+                entry_type = anomaly.table_name.value
+            anomaly_info = {
+                "id": anomaly.id,
+                # "date": anomaly.date,
+                "details": anomaly.description,
+                # "table_name": anomaly.table_name,
+                "entry_type": entry_type
+            }
+            # if anomaly.driver_id is not None:
+            #     anomaly_info["driver_id"] = anomaly.driver_id
+            # elif anomaly.truck_id is not None:
+            #     anomaly_info["truck_id"] = anomaly.truck_id
+            notifications.append(anomaly_info)
 
-    return {'notifications': notifications}
+        return {'notifications': notifications}
+    
+    except Exception as e:
+        # Log the error or handle it appropriately
+        print(f"Error in inject_notification: {e}")
+        return {'notifications': []}
 
 
