@@ -61,23 +61,36 @@ def inject_notification():
     try:
         notifications = []
 
-        anomalies = Anomaly.query.filter_by(is_read=False).all()
+        anomalies = Anomaly.query.filter_by(is_read=False).order_by(
+            Anomaly.type,
+            Anomaly.year,
+            Anomaly.week_number
+        ).all()
+        filtered_anomalies = []
+
         for anomaly in anomalies:
+            # Include IncorrectMileage anomalies
+            if anomaly.type == 'incorrect_mileage':
+                filtered_anomalies.append(anomaly)
+            # Include MissingEntryAnomaly but exclude those with table_name = 'day'
+            elif anomaly.type == 'missing_entry':
+                if hasattr(anomaly, 'table_name') and anomaly.table_name.value != 'day':
+                    filtered_anomalies.append(anomaly)
+
+        for anomaly in filtered_anomalies:
             if anomaly.type == 'incorrect_mileage':
                 entry_type = 'day'
             else:
                 entry_type = anomaly.table_name.value
+
+            date_tuple = (anomaly.year, anomaly.week_number) if anomaly.year is not None and anomaly.week_number is not None else None
+            
             anomaly_info = {
                 "id": anomaly.id,
-                # "date": anomaly.date,
+                "date": date_tuple,
                 "details": anomaly.description,
-                # "table_name": anomaly.table_name,
                 "entry_type": entry_type
             }
-            # if anomaly.driver_id is not None:
-            #     anomaly_info["driver_id"] = anomaly.driver_id
-            # elif anomaly.truck_id is not None:
-            #     anomaly_info["truck_id"] = anomaly.truck_id
             notifications.append(anomaly_info)
 
         return {'notifications': notifications}
