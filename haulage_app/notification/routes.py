@@ -73,8 +73,7 @@ def inject_notification():
             MissingEntryAnomaly.table_name != TableName.DAY
         ).order_by(
             MissingEntryAnomaly.table_name,
-            MissingEntryAnomaly.year,
-            MissingEntryAnomaly.week_number
+            MissingEntryAnomaly.date,
         ).all()
 
         # Combine them in the order you want
