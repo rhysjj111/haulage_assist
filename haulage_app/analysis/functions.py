@@ -95,10 +95,10 @@ def get_start_and_end_of_week(year, week_number):
 
 def get_start_and_end_of_month(year, month_number):
     month_start_date = date(year, month_number, 1)
-    if selected_month_number == 12:
-        month_end_date = date(selected_year + 1, 1, 1) - timedelta(days=1)
+    if month_number == 12:
+        month_end_date = date(year + 1, 1, 1) - timedelta(days=1)
     else:
-        month_end_date = date(selected_year, selected_month_number + 1, 1) - timedelta(days=1)
+        month_end_date = date(year, month_number + 1, 1) - timedelta(days=1)
     return month_start_date, month_end_date
 
 def get_expected_weeks_in_month(year: int, month: int) -> dict:
@@ -203,7 +203,8 @@ def calculate_weekly_metrics(
         driver_data[driver.id]['total_profit'] = profit
 
     number_of_drivers = len(drivers)
-    total_expenses = total_expense * number_of_drivers
+    expenses_for_one_truck = calculate_total_metric_list('cost', expenses)
+    total_expenses = expenses_for_one_truck * number_of_drivers
 
     grand_total_earned = calculate_total_metric_dict('total_earned', driver_data)
     grand_total_wages = calculate_total_metric_dict('total_cost_to_employer', driver_data)
