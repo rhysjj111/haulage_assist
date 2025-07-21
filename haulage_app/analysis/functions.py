@@ -93,6 +93,14 @@ def get_start_and_end_of_week(year, week_number):
     end_date = start_date + timedelta(days=6)
     return start_date, end_date
 
+def get_start_and_end_of_month(year, month_number):
+    month_start_date = date(year, month_number, 1)
+    if selected_month_number == 12:
+        month_end_date = date(selected_year + 1, 1, 1) - timedelta(days=1)
+    else:
+        month_end_date = date(selected_year, selected_month_number + 1, 1) - timedelta(days=1)
+    return month_start_date, month_end_date
+
 def get_expected_weeks_in_month(year: int, month: int) -> dict:
     """
     Returns the total number of Saturday-Friday weeks and their week numbers 
@@ -194,7 +202,9 @@ def calculate_weekly_metrics(
         driver_data[driver.id]['total_expenses'] = total_expense
         driver_data[driver.id]['total_profit'] = profit
 
-    total_expenses = total_expense * 3
+    number_of_drivers = len(drivers)
+    total_expenses = total_expense * number_of_drivers
+
     grand_total_earned = calculate_total_metric_dict('total_earned', driver_data)
     grand_total_wages = calculate_total_metric_dict('total_cost_to_employer', driver_data)
     grand_total_fuel_volume = calculate_total_metric_dict('total_fuel_volume', truck_data)
@@ -240,10 +250,12 @@ def calculate_monthly_metrics(weeks_data: list, drivers: list, trucks: list, tar
             'estimated': False,
             'driver': driver,
             'total_earned': 0,
+            'total_daily_bonus': 0,
+            'total_weekly_bonus': 0,
             'total_overnight': 0,
             'total_cost_to_employer': 0,
-            'expenses': 0,
-            'profit': 0,
+            'total_expenses': 0,
+            'total_profit': 0,
             'truck_assignments': [],
             'truck_used': None,
             'truck_data':{
@@ -261,7 +273,8 @@ def calculate_monthly_metrics(weeks_data: list, drivers: list, trucks: list, tar
 
     expenses_for_one_truck = one_week_expenses * expected_weeks['total_weeks']
 
-    total_expenses = expenses_for_one_truck * 3 # The number of current trucks (3).
+    number_of_drivers = len(drivers)
+    total_expenses = expenses_for_one_truck * number_of_drivers
 
     monthly_totals['grand_total_data']['grand_total_expenses'] = one_week_expenses * expected_weeks['total_weeks'] * 3
 
@@ -280,7 +293,7 @@ def calculate_monthly_metrics(weeks_data: list, drivers: list, trucks: list, tar
         monthly_totals['grand_total_data']['grand_total_fuel_volume'] += grand_total_data['grand_total_fuel_volume']
         monthly_totals['grand_total_data']['grand_total_wages'] += grand_total_data['grand_total_wages']
         monthly_totals['grand_total_data']['grand_total_fuel_cost'] += grand_total_data['grand_total_fuel_cost']
-        monthly_totals['grand_total_data']['profit'] += grand_total_data['profit']
+        monthly_totals['grand_total_data']['profit'] += grand_total_data['grand_total_profit']
         
         if estimated:
             monthly_totals['grand_total_data']['estimated'] = True
@@ -291,7 +304,7 @@ def calculate_monthly_metrics(weeks_data: list, drivers: list, trucks: list, tar
             driver_data['total_earned'] += data['total_earned']
             driver_data['total_overnight'] += data['total_overnight']
             driver_data['total_cost_to_employer'] += data['total_cost_to_employer']
-            driver_data['profit'] += data['profit']
+            driver_data['total_profit'] += data['total_profit']
             driver_data['expenses'] = expenses_for_one_truck
 
             if data['truck_data'] is not None:

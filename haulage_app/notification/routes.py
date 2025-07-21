@@ -8,7 +8,7 @@ from haulage_app.models import (
     Fuel,
     Payslip,
     )
-from haulage_app.verification.models import Anomaly
+from haulage_app.verification.models import Anomaly, IncorrectMileage, MissingEntryAnomaly, TableName
 from haulage_app.utilities.verify_gemini_utils import GeminiVerifier
 from haulage_app.verification.checks.verification_functions import(
     get_all_missing_payslip_weeks,
@@ -61,27 +61,30 @@ def inject_notification():
     try:
         notifications = []
 
-        anomalies = Anomaly.query.filter_by(is_read=False).order_by(
-            Anomaly.type,
-            Anomaly.year,
-            Anomaly.week_number
+        # Query IncorrectMileage anomalies first (sorted)
+        incorrect_mileage_anomalies = IncorrectMileage.query.filter_by(is_read=False).order_by(
+            IncorrectMileage.year,
+            IncorrectMileage.week_number
         ).all()
-        filtered_anomalies = []
+
+        # Query MissingEntryAnomaly anomalies (excluding table_name = 'day', sorted)
+        missing_entry_anomalies = MissingEntryAnomaly.query.filter(
+            MissingEntryAnomaly.is_read == False,
+            MissingEntryAnomaly.table_name != TableName.DAY
+        ).order_by(
+            MissingEntryAnomaly.table_name,
+            MissingEntryAnomaly.year,
+            MissingEntryAnomaly.week_number
+        ).all()
+
+        # Combine them in the order you want
+        anomalies = missing_entry_anomalies + incorrect_mileage_anomalies
 
         for anomaly in anomalies:
-            # Include IncorrectMileage anomalies
             if anomaly.type == 'incorrect_mileage':
-                filtered_anomalies.append(anomaly)
-            # Include MissingEntryAnomaly but exclude those with table_name = 'day'
-            elif anomaly.type == 'missing_entry':
-                if hasattr(anomaly, 'table_name') and anomaly.table_name.value != 'day':
-                    filtered_anomalies.append(anomaly)
-
-        for anomaly in filtered_anomalies:
-            if anomaly.type == 'incorrect_mileage':
-                entry_type = 'day'
+                entry_table = 'day'
             else:
-                entry_type = anomaly.table_name.value
+                entry_table = anomaly.table_name.value
 
             date_tuple = (anomaly.year, anomaly.week_number) if anomaly.year is not None and anomaly.week_number is not None else None
             
@@ -89,7 +92,7 @@ def inject_notification():
                 "id": anomaly.id,
                 "date": date_tuple,
                 "details": anomaly.description,
-                "entry_type": entry_type
+                "entry_table": entry_table
             }
             notifications.append(anomaly_info)
 
@@ -99,5 +102,3 @@ def inject_notification():
         # Log the error or handle it appropriately
         print(f"Error in inject_notification: {e}")
         return {'notifications': []}
-
-

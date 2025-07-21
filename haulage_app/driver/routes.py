@@ -1,8 +1,9 @@
 from flask import render_template, request, redirect, url_for, flash
 from haulage_app import db
-from haulage_app.models import Driver, Truck
+from haulage_app.models import Driver, Truck, DriverEmploymentHistory, EmploymentStatus
 from haulage_app.driver import driver_bp
 from sqlalchemy.exc import IntegrityError
+import datetime
 
 
 @driver_bp.route("/add_driver/<int:item_id>/<tab>", methods=["GET", "POST"])
@@ -70,3 +71,126 @@ def edit_driver(item_id):
         db.session.commit()
         flash("Success", "success-msg")
         return redirect(url_for("driver.add_driver", item_id=0, tab='history'))
+
+# New Employment History Routes
+@driver_bp.route("/<int:driver_id>/employment_history")
+def driver_employment_history(driver_id):
+    """Display employment history management page for a specific driver"""
+    driver = Driver.query.get_or_404(driver_id)
+    employment_history = DriverEmploymentHistory.query.filter_by(
+        driver_id=driver_id
+    ).order_by(DriverEmploymentHistory.start_date.desc()).all()
+    
+    return render_template("driver_employment_history.html", 
+                         driver=driver, 
+                         employment_history=employment_history)
+
+@driver_bp.route("/<int:driver_id>/employment_history/add", methods=["POST"])
+def add_employment_history(driver_id):
+    """Add a new employment history record"""
+    driver = Driver.query.get_or_404(driver_id)
+    
+    try:
+        # Get form data
+        start_date = request.form.get("start_date")
+        end_date = request.form.get("end_date")
+        employment_status = request.form.get("employment_status")
+        
+        # Convert empty end_date to None
+        if end_date == "":
+            end_date = None
+            
+        # Convert employment_status string to enum
+        if employment_status == "ACTIVE":
+            status_enum = EmploymentStatus.ACTIVE
+        elif employment_status == "INACTIVE":
+            status_enum = EmploymentStatus.INACTIVE
+        else:
+            raise ValueError("Invalid employment status")
+        
+        new_record = DriverEmploymentHistory(
+            driver_id=driver_id,
+            start_date=start_date,
+            end_date=end_date,
+            employment_status=status_enum
+        )
+        
+        db.session.add(new_record)
+        db.session.commit()
+        flash(f"Employment record added successfully for {driver.full_name}", "success-msg")
+        
+    except ValueError as e:
+        db.session.rollback()
+        flash(str(e), 'error-msg')
+    except Exception as e:
+        db.session.rollback()
+        flash("An error occurred while adding the employment record", 'error-msg')
+    
+    return redirect(url_for("driver.driver_employment_history", driver_id=driver_id))
+
+@driver_bp.route("/<int:driver_id>/employment_history/<int:record_id>/edit", methods=["POST"])
+def edit_employment_history(driver_id, record_id):
+    """Edit an existing employment history record"""
+    driver = Driver.query.get_or_404(driver_id)
+    record = DriverEmploymentHistory.query.get_or_404(record_id)
+    
+    # Verify the record belongs to the driver
+    if record.driver_id != driver_id:
+        flash("Invalid employment record", 'error-msg')
+        return redirect(url_for("driver.driver_employment_history", driver_id=driver_id))
+    
+    try:
+        # Get form data
+        start_date = request.form.get("start_date")
+        end_date = request.form.get("end_date")
+        employment_status = request.form.get("employment_status")
+        
+        # Convert empty end_date to None
+        if end_date == "":
+            end_date = None
+            
+        # Convert employment_status string to enum
+        if employment_status == "ACTIVE":
+            status_enum = EmploymentStatus.ACTIVE
+        elif employment_status == "INACTIVE":
+            status_enum = EmploymentStatus.INACTIVE
+        else:
+            raise ValueError("Invalid employment status")
+        
+        # Update the record
+        record.start_date = start_date
+        record.end_date = end_date
+        record.employment_status = status_enum
+        
+        db.session.commit()
+        flash(f"Employment record updated successfully for {driver.full_name}", "success-msg")
+        
+    except ValueError as e:
+        db.session.rollback()
+        flash(str(e), 'error-msg')
+    except Exception as e:
+        db.session.rollback()
+        flash("An error occurred while updating the employment record", 'error-msg')
+    
+    return redirect(url_for("driver.driver_employment_history", driver_id=driver_id))
+
+@driver_bp.route("/<int:driver_id>/employment_history/<int:record_id>/delete")
+def delete_employment_history(driver_id, record_id):
+    """Delete an employment history record"""
+    driver = Driver.query.get_or_404(driver_id)
+    record = DriverEmploymentHistory.query.get_or_404(record_id)
+    
+    # Verify the record belongs to the driver
+    if record.driver_id != driver_id:
+        flash("Invalid employment record", 'error-msg')
+        return redirect(url_for("driver.driver_employment_history", driver_id=driver_id))
+    
+    try:
+        db.session.delete(record)
+        db.session.commit()
+        flash(f"Employment record deleted successfully for {driver.full_name}", "success-msg")
+    except Exception as e:
+        db.session.rollback()
+        flash("An error occurred while deleting the employment record", 'error-msg')
+    
+    return redirect(url_for("driver.driver_employment_history", driver_id=driver_id))

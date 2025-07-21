@@ -6,9 +6,6 @@ from haulage_app.verification.checks.verification_functions import (
     check_missing_payslip_has_been_rectified,
     check_mileage_has_been_rectified
 )
-# def delete_all_anomalies():
-#     Anomaly.query.delete()
-#     db.session.commit()
 
 with app.app_context():
     print("Starting rectification checks for all entries...\n")

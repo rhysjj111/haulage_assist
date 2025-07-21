@@ -1,5 +1,6 @@
 import re
 import datetime
+import enum
 from haulage_app import db
 from haulage_app.base import Base
 from haulage_app.functions import *
@@ -27,6 +28,10 @@ week_number_computed = Annotated[int, mapped_column(
     index=True
 )]
 
+class EmploymentStatus(enum.Enum):
+    ACTIVE = 'active'
+    INACTIVE = 'terminated'
+
 
 class Driver(db.Model):
     id: Mapped[intpk]
@@ -43,12 +48,48 @@ class Driver(db.Model):
 
     __table_args__ = (db.UniqueConstraint('first_name', 'last_name', name='_full_name_uc'),)
 
+    employment_history: Mapped[List["DriverEmploymentHistory"]] = relationship(back_populates="driver", lazy=True, order_by="DriverEmploymentHistory.start_date.desc()")
     days: Mapped[List["Day"]] = relationship(back_populates="driver", lazy=True)
     payslips: Mapped[List["Payslip"]] = relationship(back_populates="driver", lazy=True)
     
     def __repr__(self): 
         #represents itself in form of string
         return f"Driver: {self.first_name} {self.last_name}"
+        
+    @hybrid_property
+    def current_employment(self):
+        """Returns the current active employment record"""
+        return DriverEmploymentHistory.query.filter(
+            DriverEmploymentHistory.driver_id == self.id,
+            DriverEmploymentHistory.end_date.is_(None)
+        ).first()
+
+    @hybrid_property
+    def is_currently_employed(self):
+        """Returns True if driver has an active employment record"""
+        return self.current_employment is not None
+
+    def get_employment_on_date(self, check_date):
+        """Returns employment record active on a specific date"""
+        return DriverEmploymentHistory.query.filter(
+            DriverEmploymentHistory.driver_id == self.id,
+            DriverEmploymentHistory.start_date <= check_date,
+            db.or_(
+                DriverEmploymentHistory.end_date.is_(None),
+                DriverEmploymentHistory.end_date >= check_date
+            )
+        ).first()
+
+    def terminate_employment(self, end_date):
+        """Helper method to terminate current employment"""
+        current_record = self.current_employment
+        if current_record:
+            current_record.end_date = end_date
+            current_record.employment_status = EmploymentStatus.TERMINATED  # Use enum value
+            db.session.commit()
+            return current_record
+        return None
+
 
     @hybrid_property
     def full_name(self):
@@ -147,6 +188,128 @@ class Driver(db.Model):
                 database_entry = Driver.query.filter(Driver.full_name == full_name).first()
                 if database_entry is not None and database_entry.id != id:
                     raise ValueError('Driver already exists in the database, please choose another name or edit/delete current driver to replace.')
+
+
+class DriverEmploymentHistory(db.Model):
+    id: Mapped[intpk]
+    timestamp: Mapped[tstamp]
+    driver_id: Mapped[driverfk_restrict]
+    start_date: Mapped[date]
+    end_date: Mapped[Optional[date]]
+    employment_status: Mapped[EmploymentStatus] = mapped_column(default=EmploymentStatus.ACTIVE)
+    
+    __table_args__ = (
+        db.CheckConstraint('end_date IS NULL OR end_date > start_date', name='valid_employment_period'),
+        db.Index('idx_driver_employment_dates', 'driver_id', 'start_date', 'end_date'),
+    )
+
+    driver: Mapped["Driver"] = relationship(back_populates="employment_history")
+
+    def __repr__(self):
+        status = "Current" if self.end_date is None else f"Ended {display_date(self.end_date)}"
+        return f"Employment: {self.driver.full_name} - Started {display_date(self.start_date)} - {status}"
+
+    @hybrid_property
+    def is_current_employment(self):
+        return self.end_date is None
+
+    @hybrid_property
+    def employment_duration_days(self):
+        end = self.end_date or datetime.date.today()
+        return (end - self.start_date).days
+
+    def calculate_employment_duration_readable(self):
+        """Returns employment duration in a human-readable format"""
+        days = self.employment_duration_days
+        years = days // 365
+        remaining_days = days % 365
+        months = remaining_days // 30
+        remaining_days = remaining_days % 30
+        
+        parts = []
+        if years > 0:
+            parts.append(f"{years} year{'s' if years != 1 else ''}")
+        if months > 0:
+            parts.append(f"{months} month{'s' if months != 1 else ''}")
+        if remaining_days > 0 or not parts:
+            parts.append(f"{remaining_days} day{'s' if remaining_days != 1 else ''}")
+        
+        return ", ".join(parts)
+
+    ##################################### validation
+
+    @validates('start_date')
+    def validate_start_date(self, key, start_date):
+        try:
+            start_date = date_to_db(start_date)
+        except:
+            raise ValueError('Please enter start date in format dd/mm/yyyy')
+        return start_date
+
+    @validates('end_date')
+    def validate_end_date(self, key, end_date):
+        if end_date is None or end_date == "":
+            return None
+        try:
+            end_date = date_to_db(end_date)
+        except:
+            raise ValueError('Please enter end date in format dd/mm/yyyy')
+        else:
+            if hasattr(self, 'start_date') and self.start_date and end_date <= self.start_date:
+                raise ValueError("End date must be after start date")
+        return end_date
+
+    @validates('driver_id')
+    def validate_driver_exists(self, key, driver_id):
+        if not Driver.query.filter(Driver.id == driver_id).first():
+            raise ValueError('Selected driver does not exist in database')
+        return driver_id
+
+    @db.event.listens_for(db.session, 'before_flush')
+    def validate_no_overlapping_employment(session, flush_context, instances):
+        """
+        Validation to ensure no overlapping employment periods for the same driver
+        """
+        for instance in session.new | session.dirty:
+            if isinstance(instance, DriverEmploymentHistory):
+                driver_id = instance.driver_id
+                start_date = instance.start_date
+                end_date = instance.end_date
+                current_id = instance.id
+
+                # Query for overlapping employment periods
+                query = DriverEmploymentHistory.query.filter(
+                    DriverEmploymentHistory.driver_id == driver_id,
+                    DriverEmploymentHistory.id != current_id
+                )
+
+                for existing in query.all():
+                    existing_start = existing.start_date
+                    existing_end = existing.end_date
+
+                    # Check for overlap
+                    # Case 1: The existing record is an active, open-ended employment.
+                    if existing_end is None:
+                        # You cannot add another active (open-ended) employment.
+                        if end_date is None:
+                            raise ValueError('Driver already has an active employment period.')
+                        # A new, historical period must end BEFORE the active one starts.
+                        if end_date >= existing_start:
+                            raise ValueError('Employment period overlaps with the start of the current active period.')
+                    
+                    # Case 2: The existing record is a completed employment.
+                    else:  
+                        # If the new record is an active employment, it must start AFTER the existing one ended.
+                        if end_date is None:
+                            if start_date <= existing_end:
+                                raise ValueError('New active employment cannot start before a previous one has ended.')
+                        # If both are completed periods, their date ranges cannot overlap.
+                        else:
+                            # They overlap if the new one doesn't end before the existing one starts,
+                            # AND the new one doesn't start after the existing one ends.
+                            if not (end_date < existing_start or start_date > existing_end):
+                                raise ValueError('Employment period overlaps with an existing employment period.')
+
 
 
 class Truck(db.Model):

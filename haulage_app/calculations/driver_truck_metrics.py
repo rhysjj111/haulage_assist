@@ -69,6 +69,23 @@ def most_frequent_truck_id(day_data):
 
   return id_counts.most_common(1)[0][0]
 
+def get_unique_truck_id(day_data):
+    """
+    Checks the truck_ids in the day_data and returns the unique truck_id if
+    there is only one, otherwise returns None.
+
+    Args:
+        day_data: A list of dictionaries or objects with a 'truck_id' attribute.
+
+    Returns:
+        The unique truck_id if one exists, otherwise None.
+    """
+    truck_ids = {day.truck_id for day in day_data}
+    if len(truck_ids) == 1:
+        return truck_ids.pop()
+    else:
+        return None
+
 
 def calculate_driver_metrics_week(driver, start_date, end_date):
 
@@ -104,7 +121,7 @@ def calculate_driver_metrics_week(driver, start_date, end_date):
         total_cost_to_employer = 0
     
     if day_entries:
-        truck_id = most_frequent_truck_id(day_entries)
+        truck_id = get_unique_truck_id(day_entries)
         truck = Truck.query.filter_by(id=truck_id).first()
     else:
         truck = None
@@ -124,8 +141,6 @@ def calculate_driver_metrics_week(driver, start_date, end_date):
         'total_weekly_bonus': metrics['total_weekly_bonus'],
         'weekly_bonus_threshold': driver.weekly_bonus_threshold,
         'weekly_bonus_percentage': driver.weekly_bonus_percentage,
-        
-
         'start_date': start_date,
         'end_date': end_date,
         'truck': truck,

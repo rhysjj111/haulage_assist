@@ -17,7 +17,7 @@
         {% for notification in notifications %}
             <li class="notification-item ">
                 <div class="notification-item-content">
-                    <a href="{{ url_for(notification.entry_type+'.add_'+notification.entry_type, item_id=0, tab='entry', anomaly_id=notification.id) }}" class=" text-black black-text">
+                    <a href="{{ url_for(notification.entry_table+'.add_'+notification.entry_table, item_id=0, tab='entry', anomaly_id=notification.id) }}" class=" text-black black-text">
                         <div class="notification-details">
                             <!-- <div class="notification-meta"> 
                                 <span class="">{# f.display_date(notification.date) #} - </span>

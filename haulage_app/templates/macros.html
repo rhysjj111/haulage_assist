@@ -1041,12 +1041,12 @@ from datetime import datetime
         {% else %}
                 <div class="card-action">
                     <span class="card-footer wages-calc-card-text {{'italics' if estimated}}
-                    {{'green-text bold' if f.display_float(data.profit) > 500}}">
+                    {{'green-text bold' if f.display_float(data.total_profit) > 500}}">
                         {% if data.truck_data.total_fuel_cost == 0 %}
-                        Waiting on fuel data.
-                            {% else %}
+                            Waiting on fuel data.
+                        {% else %}
                             Profit: {{f.fd_currency_rd(data.total_profit)}}{{ '*' if estimated}}
-                            {% endif %}
+                        {% endif %}
                             <br>
                             <a href="#modal_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
                             <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">list</i>Jobs</a>
