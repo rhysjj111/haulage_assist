@@ -306,7 +306,7 @@ def calculate_monthly_metrics(weeks_data: list, drivers: list, trucks: list, tar
             driver_data['total_overnight'] += data['total_overnight']
             driver_data['total_cost_to_employer'] += data['total_cost_to_employer']
             driver_data['total_profit'] += data['total_profit']
-            driver_data['expenses'] = expenses_for_one_truck
+            driver_data['total_expenses'] = expenses_for_one_truck
 
             if data['truck_data'] is not None:
                 truck_data = monthly_totals['driver_data'][driver_id]['truck_data']
