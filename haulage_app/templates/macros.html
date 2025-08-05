@@ -953,60 +953,42 @@ from datetime import datetime
                 <div class="card-content ">
                     <!-- CARD TITLE -->
                     <span class="card-title">
-                        <h5>{{ data.driver.full_name }}</h5>
+                        <h5>{{ data['driver_name'] }}</h5>
                         <div class="divider"></div>
                     </span>
                     <!-- CARD MAIN CONTENT  -->
                     <div>
                         {% if '/wages_calculator' in request.path %}
-                            <!-- <p class="wages-calc-card-text">{{positive}} Total Earned: {{ f.fd_currency(data.total_earned) }}</p>
-                            <p class="wages-calc-card-text bold">{{positive}} Extras: {{ f.fd_currency(data.weekly_extras) }}</p>
-                            <p class="wages-calc-card-text">{{positive}} Overnights: {{ f.fd_currency(data.total_overnight) }}</p> -->
-                            <!-- <p class="wages-calc-card-text">
-                                {{negative}} Deductions: 
-                                <input id="deductions_{{driver_id}}" name="deductions" type="number" step="0.01" class="inline-input" style="width: 80px; display: inline-block; margin-left: 5px; height: 24px;" value="{{ data.deductions|default(20)|float }}">
-                            </p> -->
-                            <!-- ----------------------------- -->
-                            <!-- <p class="wages-calc-card-text">{{positive}} Total Earned: <span id="total_earned_{{driver_id}}">{{ f.fd_currency(data.total_earned) }}</span></p>
-                            <p class="wages-calc-card-text">{{positive}} Basic Wage: <span id="basic_wage_{{driver_id}}">{{ f.fd_currency(data.driver.basic_wage) }}</span></p>
-                            <p class="wages-calc-card-text bold">{{positive}} Extras: <span id="extras_{{driver_id}}">{{ f.fd_currency(data.weekly_extras) }}</span></p>
-                            <input type="hidden" id="original_extras_{{driver_id}}" value="{{ data.weekly_extras }}">
-                            <input type="hidden" id="original_basic_wage_{{driver_id}}" value="{{ data.driver.basic_wage }}">
-                            <p class="wages-calc-card-text">{{positive}} Overnights: <span id="total_overnight_{{driver_id}}">{{ f.fd_currency(data.total_overnight) }}</span></p>
-                            <p class="wages-calc-card-text">{{negative}} Deductions: 
-                                <input id="deductions_{{driver_id}}" name="deductions" type="number" step="0.01" class="inline-input" style="width: 80px; display: inline-block; margin-left: 5px; height: 24px;" value="20">
-                            </p> -->
-                            <!-- ----------------------------- -->
-                            
-                            <!-- Add hidden fields for total_daily_bonus -->
-                            <input type="hidden" id="total_earned_{{driver_id}}" value="{{ f.display_float(data.total_earned) }}">
-                            <input type="hidden" id="total_daily_bonus_{{driver_id}}" value="{{ f.display_float(data.total_daily_bonus) }}">
-                            <input type="hidden" id="weekly_bonus_percentage_{{driver_id}}" value="{{ (data.weekly_bonus_percentage) }}">
-                            <input type="hidden" id="original_extras_{{driver_id}}" value="{{ f.display_float(data.weekly_extras) }}">
-                            <input type="hidden" id="original_basic_wage_{{driver_id}}" value="{{ f.display_float(data.driver.basic_wage) }}">
-                            
-                            <p class="wages-calc-card-text">{{positive}} Total Earned: <span id="total_earned_display_{{driver_id}}">{{ f.fd_currency(data.total_earned) }}</span></p>
-                            <p class="wages-calc-card-text">{{positive}} Basic Wage: <span id="basic_wage_{{driver_id}}">{{ f.fd_currency(data.driver.basic_wage) }}</span></p>
-                            <!-- <p class="margin-left small-text grey-text text-darken-2">{{negative}} Deductions: <span id="deductions_display_{{driver_id}}"></span></p> -->
-                            <p class="wages-calc-card-text bold">{{positive}} Extras: <span id="extras_{{driver_id}}">{{ f.fd_currency(data.weekly_extras) }}</span></p>
-                            <p class="wages-calc-card-text">{{positive}} Overnights: <span id="total_overnight_{{driver_id}}">{{ f.fd_currency(data.total_overnight) }}</span></p>
-
+                        
+                        <!-- Add hidden fields for total_daily_bonus -->
+                        <input type="hidden" id="total_earned_{{driver_id}}" value="{{ f.display_float(data.total_earned) }}">
+                        <input type="hidden" id="total_daily_bonus_{{driver_id}}" value="{{ f.display_float(data.total_daily_bonus) }}">
+                        <input type="hidden" id="weekly_bonus_percentage_{{driver_id}}" value="{{ (data.weekly_bonus_percentage) }}">
+                        <input type="hidden" id="original_extras_{{driver_id}}" value="{{ f.display_float(data.weekly_extras) }}">
+                        <input type="hidden" id="original_basic_wage_{{driver_id}}" value="{{ f.display_float(data['driver_wage_parameters']['basic_wage']) }}">
+                        
+                        <p class="wages-calc-card-text">{{positive}} Total Earned: <span id="total_earned_display_{{driver_id}}">{{ f.fd_currency(data.total_earned) }}</span></p>
+                        <p class="wages-calc-card-text">{{positive}} Basic Wage: <span id="basic_wage_{{driver_id}}">{{ f.fd_currency(data['driver_wage_parameters']['basic_wage']) }}</span></p>
+                        <!-- <p class="margin-left small-text grey-text text-darken-2">{{negative}} Deductions: <span id="deductions_display_{{driver_id}}"></span></p> -->
+                        <p class="wages-calc-card-text bold">{{positive}} Extras: <span id="extras_{{driver_id}}">{{ f.fd_currency(data.weekly_extras) }}</span></p>
+                        <p class="wages-calc-card-text">{{positive}} Overnights: <span id="total_overnight_{{driver_id}}">{{ f.fd_currency(data.total_overnight) }}</span></p>
+                        
                         {% endif %}
                         {% if '/analysis/' in request.path %}
-                            <p class="wages-calc-card-text">{{positive}} Total Earned: {{ f.fd_currency_rd(data.total_earned) }}</p>
-                            <p class="wages-calc-card-text ">{{negative}} Overheads: {{ f.fd_currency_rd(data.total_expenses) }}</p>
-                            <p class="wages-calc-card-text {{'italics' if data.estimated == True }}">
-                                {{negative}} Wages Cost: {{ f.fd_currency_rd(data.total_cost_to_employer) }}{{ '*' if data.estimated==True}}
-                            </p>
-                            {% if data.truck is not none %}
-                                {{ truck_card_data_only_short(data.truck_data.truck_id, data.truck_data, f) }}
-                            {% else %}
-                                <p class="grey-text">No Truck Assigned</p>
-                            {% endif %}
+                        <p class="wages-calc-card-text">{{positive}} Total Earned: {{ f.fd_currency_rd(data.total_earned) }}</p>
+                        <p class="wages-calc-card-text ">{{negative}} Overheads: {{ f.fd_currency_rd(data.total_expenses) }}</p>
+                        <p class="wages-calc-card-text {{'italics' if data.estimated == True }}">
+                            {{negative}} Wages Cost: {{ f.fd_currency_rd(data.total_cost_to_employer) }}{{ '*' if data.estimated==True}}
+                        </p>
+                        {% if data.truck is not none %}
+                        {{ truck_card_data_only_short(data.truck_data.truck_id, data.truck_data, f) }}
+                        {% else %}
+                        <p class="grey-text">No Truck Assigned</p>
+                        {% endif %}
                         {% endif %}
                     </div>
                 </div>
-        {% if '/wages_calculator' in request.path %}
+                {% if '/wages_calculator' in request.path %}
                 <div class="card-action">
                     <span class="card-title activator grey-text text-darken-4 right"><i class="material-icons">more_vert</i></span>
                     <a href="#modal_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
@@ -1014,98 +996,100 @@ from datetime import datetime
                 </div>
             </div>
             <div class="card-reveal">
-            <span class="card-title grey-text text-darken-4">{{data.driver.first_name }}'s Settings<i class="material-icons right">close</i></span>
-            <!-- Add editable field for total_weekly_bonus -->
-            <p class="wages-calc-card-text">Deductions: 
-                <input id="deductions_{{driver_id}}" name="deductions" type="number" step="0.01" class="inline-input" 
-                       style="width: 80px; display: inline-block; margin-left: 5px; height: 24px;" 
-                       value="20">
-            </p>
-            <p class="wages-calc-card-text">Weekly Bonus Threshold: 
-                <input id="weekly_bonus_threshold_{{driver_id}}" name="total_weekly_bonus" type="number" step="0.01" class="inline-input" 
-                        style="width: 80px; display: inline-block; margin-left: 5px; height: 24px;" 
-                        value="{{ f.display_float(data.weekly_bonus_threshold) }}" data-driver-id="{{ driver_id }}">
-            </p>
-            <p class="">Weekly Bonus: <span id="weekly_bonus_display_{{driver_id}}">{{ f.fd_currency(data.total_weekly_bonus) }}</span><br>                                                                                                       
-            Daily Bonus: <span id="daily_bonus_display_{{driver_id}}">{{ f.fd_currency(data.total_daily_bonus) }}</span></p>
-
-            </div>
-        </div>
-        <div>
-            {% if data.day_entries|length < 5 %}
-            <p class="wages-calc-card-text orange-text text-small valign-wrapper no-margin"><i class="material-icons">warning</i>  Only {{data.day_entries |length}} day(s) recorded.</p>
-            <a class="text-small" href="{{ url_for('day.add_day', item_id=0, tab='history') }} ">Add Day entries</a><br>
-            <a class="text-small" href="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='False') }}">Add Job entries</a>
-            {% endif %}
-        </div>
-        {% else %}
-                <div class="card-action">
-                    <span class="card-footer wages-calc-card-text {{'italics' if estimated}}
-                    {{'green-text bold' if f.display_float(data.total_profit) > 500}}">
-                        {% if data.truck_data.total_fuel_cost == 0 %}
-                            Waiting on fuel data.
-                        {% else %}
-                            Profit: {{f.fd_currency_rd(data.total_profit)}}{{ '*' if estimated}}
-                        {% endif %}
-                            <br>
-                            <a href="#modal_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
-                            <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">list</i>Jobs</a>
-                            <!-- <i class="material-icons right">more_vert</i> -->
-                    </span>
+                <span class="card-title grey-text text-darken-4">{{data['first_name'] }}'s Settings<i class="material-icons right">close</i></span>
+                <!-- Add editable field for total_weekly_bonus -->
+                <p class="wages-calc-card-text">Deductions: 
+                    <input id="deductions_{{driver_id}}" name="deductions" type="number" step="0.01" class="inline-input" 
+                    style="width: 80px; display: inline-block; margin-left: 5px; height: 24px;" 
+                    value="20">
+                </p>
+                <p class="wages-calc-card-text">Weekly Bonus Threshold: 
+                    <input id="weekly_bonus_threshold_{{driver_id}}" name="total_weekly_bonus" type="number" step="0.01" class="inline-input" 
+                    style="width: 80px; display: inline-block; margin-left: 5px; height: 24px;" 
+                    value="{{ f.display_float(data['driver_wage_parameters']['weekly_bonus_threshold']) }}" data-driver-id="{{ driver_id }}">
+                </p>
+                <p class="">Weekly Bonus: <span id="weekly_bonus_display_{{driver_id}}">{{ f.fd_currency(data.total_weekly_bonus) }}</span><br>                                                                                                       
+                    Daily Bonus: <span id="daily_bonus_display_{{driver_id}}">{{ f.fd_currency(data.total_daily_bonus) }}</span></p>
+                    
                 </div>
             </div>
+            <div>
+                {% if data.days_summary|length < 5 %}
+                <p class="wages-calc-card-text orange-text text-small valign-wrapper no-margin"><i class="material-icons">warning</i>  Only {{data.days_summary |length}} day(s) recorded.</p>
+                <a class="text-small" href="{{ url_for('day.add_day', item_id=0, tab='history') }} ">Add Day entries</a><br>
+                <a class="text-small" href="{{ url_for('job.add_job', item_id=0, tab='entry', user_confirm='False') }}">Add Job entries</a>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="card-action">
+                <span class="card-footer wages-calc-card-text {{'italics' if estimated}}
+                {{'green-text bold' if f.display_float(data.total_profit) > 500}}">
+                {% if data.truck_data.total_fuel_cost == 0 %}
+                Waiting on fuel data.
+                {% else %}
+                Profit: {{f.fd_currency_rd(data.total_profit)}}{{ '*' if estimated}}
+                {% endif %}
+                <br>
+                <a href="#modal_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">today</i>Days</a>
+                <a href="#modal_timetable_{{ driver_id }}" class="waves-effect waves-light teal darken-3 white-text btn-flat modal-trigger wc-button"><i class="material-icons tiny left">list</i>Jobs</a>
+                <!-- <i class="material-icons right">more_vert</i> -->
+            </span>
         </div>
-        {% endif %}
     </div>
-    
-    <!-- WEEK BREAKDOWN MODAL -->
-    <div id="modal_{{ driver_id }}" class="modal">
-        <div class="modal-content">
-            <h4>{{ data.driver.full_name }}'s breakdown</h4>
-            <p class=""><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}">Click here to edit/delete history.</a></p>
-            <table class="centered">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Earned</th>
-                        <th>Daily bonus</th>
-                        <th>Overnight</th>
-                    </tr>
-                </thead>
-                
-                <tbody>
-                    {% for day in data.day_entries %}    
-                    <tr>
-                        {% if day.status != 'working' %}
-                        <td>{{ f.display_date(day.date) }}</td>
-                        <td class="grey-text">{{ day.status.capitalize() }}</td>
-                        <td class="grey-text">{{ day.status.capitalize() }}</td>
-                        <td class="grey-text">{{ day.status.capitalize() }}</td>
+</div>
+{% endif %}
+</div>
+
+<!-- WEEK BREAKDOWN MODAL -->
+<div id="modal_{{ driver_id }}" class="modal">
+    <div class="modal-content">
+        <h4>{{ data['driver_name'] }}'s breakdown</h4>
+        <p class=""><a href="{{ url_for('day.add_day', item_id=0, tab='history') }}">Click here to edit/delete history.</a></p>
+        <table class="centered">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Earned</th>
+                    <th>Daily bonus</th>
+                    <th>Overnight</th>
+                </tr>
+            </thead>
+            
+            <tbody>
+                {% set days = data.days_summary %}
+                {% for day in days %}    
+                <tr>
+                    {% if day.status != 'working' %}
+                    <td>{{ f.display_date(day.date) }}</td>
+                    # Status over 3 rows
+                    <td class="grey-text">{{ day.status.capitalize() }}</td>
+                    <td class="grey-text">{{ day.status.capitalize() }}</td>
+                    <td class="grey-text">{{ day.status.capitalize() }}</td>
+                    {% else %}
+                    <td>{{ f.display_date(day.date) }}</td>
+                    <td>{{ f.fd_currency(day.total_earned) }}</td>
+                    <td>{{ f.fd_currency(day.daily_bonus) }}</td>
+                    <td>{% if day.overnight is not none %}
+                        <i class="material-icons green-text">check</i> 
                         {% else %}
-                        <td>{{ f.display_date(day.date) }}</td>
-                        <td>{{ f.fd_currency(day.calculate_total_earned()) }}</td>
-                        <td>{{ f.fd_currency(day.calculate_daily_bonus(data.driver)) }}</td>
-                        <td>{% if day.overnight %}
-                            <i class="material-icons green-text">check</i> 
-                            {% else %}
-                            <i class="material-icons">remove</i>
-                            {% endif %}
-                        </td>
+                        <i class="material-icons">remove</i>
                         {% endif %}
-                    </tr>
-                    {% endfor %}
-                    <tr class="table-breaker">
-                    </tr>
-                    <tr class="totals-row">
-                        <td><em>Totals:</em></td>
-                        <td><em>{{ f.fd_currency(data.total_earned) }}</em></td>
-                        <td><em>{# f.fd_currency(data.weekly_total_bonus_wage) #}</em></td>
-                        <td><em>{# f.fd_currency(data.weekly_total_overnight) #}</em></td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="card">
-                <div class="card-content">
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+                <tr class="table-breaker">
+                </tr>
+                <tr class="totals-row">
+                    <td><em>Totals:</em></td>
+                    <td><em>{{ f.fd_currency(data.total_earned) }}</em></td>
+                    <td><em>{# f.fd_currency(data.weekly_total_bonus_wage) #}</em></td>
+                    <td><em>{# f.fd_currency(data.weekly_total_overnight) #}</em></td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="card">
+            <div class="card-content">
                   <span class="card-title">Earnings Summary</span>
                   <div class="divider"></div>
                   <p>
@@ -1129,7 +1113,7 @@ from datetime import datetime
     <div id="modal_timetable_{{ driver_id }}" class="modal">
         
         <div class="modal-content">
-            <h4>{{ data.driver.full_name }}'s timetable</h4>
+            <h4>{{ data['driver_name'] }}'s timetable</h4>
             <p class=""><a href="{{ url_for('job.add_job', item_id=0, tab='history', user_confirm='False') }}">Click here to edit/delete history.</a></p>
             <table class="centered">
                 <thead>
@@ -1143,19 +1127,21 @@ from datetime import datetime
                 </thead>
                 
                 <tbody>
-                    {% for job in data.job_entries %}    
-                    <tr>
-                        <td>{{ f.display_date(job.day.date) }}</td>
-                        <td>{{ job.collection | capitalize }}</td>
-                        <td>{{ job.delivery | capitalize }}</td>
-                        <td>{{ f.fd_currency(job.earned) }}</td>
-                        <td>{% if job.split %}
-                            <i class="material-icons green-text">check</i> 
-                            {% else %}
-                            <i class="material-icons">remove</i>
-                            {% endif %}
-                        </td>
-                    </tr>
+                    {% for day in days %}
+                        {% for job in day.jobs_summary %}    
+                        <tr>
+                            <td>{{ f.display_date(day.date) }}</td>
+                            <td>{{ job.collection | capitalize }}</td>
+                            <td>{{ job.delivery | capitalize }}</td>
+                            <td>{{ f.fd_currency(job.earned) }}</td>
+                            <td>{% if job.split %}
+                                <i class="material-icons green-text">check</i> 
+                                {% else %}
+                                <i class="material-icons">remove</i>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
                     {% endfor %}
                     <tr class="table-breaker">
                     </tr>
@@ -1186,6 +1172,7 @@ from datetime import datetime
 </div>
 {% endmacro %}
 {% macro truck_card_data_only_short(truck_id, data, f) %}
+    {{data.estimated}}
     {% if data.estimated == True %}
         <p class="wages-calc-card-text italics">{{negative}} Fuel Cost: {{ f.fd_currency_rd(data.total_fuel_cost) }}*</p>
     {% else %}
@@ -1223,9 +1210,10 @@ from datetime import datetime
 
 {% macro navigation() %}
   {% if request.path.count('/') > 1 %}
-    <a href="{{ url_for('home') }}">
-        <i class="small material-icons black-text">arrow_back</i>
-    </a>
+  <a href="{{ url_for('home') }}" class="valign-wrapper" style="text-decoration: none; color: inherit;">
+    <i class="small material-icons black-text">arrow_back</i>
+    <span style="font-size: 0.8rem; color: #757575; margin-left: 2px;">Home</span>
+</a>
   {% else %}
     <ul id="slide-out" class="sidenav">
         <!-- <li>

@@ -1,0 +1,125 @@
+{% extends "std_template.html" %}
+
+
+{% block standard_title %}WEEKLY ANALYSIS{% endblock %}
+
+{% block standard_content %} 
+
+{% set positive %}<i class="material-icons green-text tiny bold">add</i>{% endset %}
+{% set negative %}<i class="material-icons red-text tiny bold">remove</i>{% endset %}
+
+<div class="row no-margin">
+    <div class="col s12 m6">
+        <div class="row">
+            <form method="GET">
+                <div class="input-field center-align">
+                    <!-- <label for="week_select">Select Week:</label> -->
+                    <input id="week_select" name="week_select"  type="text" class="datepicker" hidden required>
+                    <!-- <input type="text" id="datepicker" class="datepicker" hidden> -->
+                    <a id="date-trigger" class="waves-effect waves-light btn-large">
+                        <i class="material-icons right">event</i>
+                        Select a date
+                    </a>
+                    <!-- <span id="date-trigger" style="cursor: pointer;" ><p style="display: flex; align-items: center;">Select a date <i class="material-icons" >event</i></p></span> -->
+                </div>
+            </form>
+        </div>
+        <div class="row">
+            <p class="italics grey-text">* Value has been estimated.</p>
+            <h5>Week: {{ selected_week_number }}</h5>
+            <h6>Month: {{ month_name }}</h6>
+            <div class="col m4">
+                <h5>Start date:</h5>
+                <h6>{{ f.display_date_pretty(start_date) }}</h6>
+            </div>
+            <div class="col m4">
+                <h5>End date:</h5>
+                <h6>{{ f.display_date_pretty(end_date) }}</h6>
+            </div>
+        </div>
+    </div>
+
+    {# if waiting_on_mileage_data or data_available != true or weekly_metrics.grand_total_data.grand_total_earned == 0 %}
+    <div class="col s12 center-align">
+        <h4>No data available</h4>
+    </div>
+    {% else #}
+    
+    <div class="col s12 m6">
+        <!-- totals card -->
+        <h5>TOTALS</h5>
+        <div class="divider"></div>
+        <div class="col s12">
+            <div class="card wages-card horizontal">
+                <div class="card-stacked">
+                    <div class="card-content">
+                        <span class="card-title"><h5 class="medium-bold">Week: {{ selected_week_number }}, {{month_name}}</h5>
+                            <!-- <i class="material-icons right">more_vert</i> -->
+                            <div class="divider"></div>
+                        </span>
+                        <p class="wages-calc-card-text">
+                            {{positive}} Earned: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_earned) }}<br>
+                            {{negative}} Overheads: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_expenses) }} <br>
+                            {{negative}} Wages: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_wages) }} <br>
+                            {{negative}} Fuel: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_fuel_cost) }} <br>
+                        </p>
+                    </div>
+                    <div class="card-action">
+                        <span class="card-footer wages-calc-card-text {{'italics' if estimated}}">
+                            Profit: {{ f.fd_currency(weekly_metrics.grand_total_data.grand_total_profit) }}{{ '*' if weekly_metrics.estimated}}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> 
+</div>
+
+<!-- drivers card -->
+<h5>DRIVERS</h5>
+<div class="divider"></div>
+<div class="row">
+    {% for driver_id, data in weekly_metrics.driver_data.items() %}
+    
+    {{ macros.driver_card(driver_id, data, f) }}
+    
+    {% if loop.index % 3 == 0 %}
+</div>
+<div class="row">
+    {% endif %}
+    
+    {% endfor %}
+</div>
+{# endif #}
+
+
+{% endblock %}
+<!-- trucks card -->
+<!-- <h5>TRUCKS</h5>
+    <div class="divider"></div>
+    <div class="row">
+        {% for truck_id, data in weekly_metrics.truck_data.items() %}
+        
+        {{ macros.truck_card(truck_id, data, f) }}
+        
+        {% if loop.index % 3 == 0 %}
+    </div>
+    <div class="row">
+        {% endif %}
+        
+        {% endfor %}
+    </div> -->
+    <!-- <label for="week_select">Select Week:</label>
+    <select name="week_select" id="week_select" onchange="this.form.submit()">
+        {% for week_data in available_weeks %}
+            {% if selected_week_number == week_data.week_number and selected_year == week_data.year %}
+                <option value="{{ week_data.year }}-{{ week_data.week_number }}" selected>
+                    Week: {{ week_data.week_number }} --- ({{ week_data.week_start_date.strftime('%b') }} {{ week_data.year }})
+                </option>
+            {% else %}
+                <option value="{{ week_data.year }}-{{ week_data.week_number }}">
+                    Week: {{ week_data.week_number }} --- ({{ week_data.week_start_date.strftime('%b') }} {{ week_data.year }})
+                </option>
+            {% endif %}
+            {% endfor %}
+        </select> -->

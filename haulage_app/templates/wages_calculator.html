@@ -1,27 +1,242 @@
 {% extends "std_template.html" %}
 
-
-{% block standard_title %}WAGES CALCULATOR{% endblock %}
+{% block standard_title %}Wages Calculator{% endblock %}
 
 {% block standard_content %}
-<h6>For week commencing: {{f.display_date( start_date)}} </h6>
-<br>
+
 <div class="row">
-    {% for driver_id, data in driver_data.items() %}
 
-    {{ macros.driver_card(driver_id, data, f) }}
+    <!-- Left Side Navigation -->
+    <div class="col s12 m3">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Week View</span>
+                <div class="divider"></div>
+                <div class="section center-align">
+                    <h6>Week Commencing</h6>
+                    <h5>{{ start_date.strftime('%d %b %Y') }}</h5>
+                    <p class="grey-text">{{ start_date.strftime('%d %b') }} - {{ end_date.strftime('%d %b') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    {% if loop.index % 3 == 0 %}
+    <!-- Right Side Content -->
+    <div class="col s12 m9">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Driver Wages</span>
+                <table class="striped responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Driver</th>
+                            <th class="right-align">Total Earned</th>
+                            <th class="right-align">Bonuses</th>
+                            <th class="right-align">Overnights</th>
+                            <th class="right-align">Gross Pay</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for id, data in driver_data.items() %}
+                        <tr class="driver-row">
+                            <td>
+                                {{ data.driver_first_name }}
+                                {% if data.recorded_days < 5 %}
+                                    <span class="right new badge orange lighten-1" data-badge-caption="days recorded">{{ data.recorded_days }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="right-align">{{ f.fd_currency(data.total_earned) }}</td>
+
+                            {% if anomalies_present or missing_days %}
+                                <td colspan="3" class="center-align orange-text text-darken-2">
+                                    <i class="material-icons tiny left">warning</i>
+                                    Pay cannot be calculated due to anomalies or missing day entries.
+                                    <a href="#days-modal-{{ id }}" class="btn-small waves-effect waves-light modal-trigger view-days-btn">View</a>
+                                </td>
+                            {% else %}
+                                <td class="right-align">{{ f.fd_currency(data.weekly_extras) }}</td>
+                                <td class="right-align">{{ f.fd_currency(data.total_overnight) }} ({{ data.overnight_count }})</td>
+                                <td class="right-align total-row">
+                                    {{ f.fd_currency(data.total_gross_pay) }}
+                                    <a href="#days-modal-{{ id }}" class="btn-small waves-effect waves-light modal-trigger view-days-btn">View</a>
+                                </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
-<div class="row">
-    {% endif %}
 
-    {% endfor %}
+<!-- Modals for Daily Breakdowns -->
+{% for id, data in driver_data.items() %}
+<div id="days-modal-{{ id }}" class="modal modal-fixed-footer">
+    <div class="modal-content">
+        <h4>Daily Breakdown: {{ data.driver_first_name }}</h4>
+        <p>Week of: {{ start_date.strftime('%d %b %Y') }}</p>
+        <table class="striped responsive-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Registration</th>
+                    <th class="right-align">Earned</th>
+                    <th class="right-align">Bonus</th>
+                    <th class="center-align">Overnight</th>
+                    <th class="jobs-cell-header">Jobs</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if data.days_summary %}
+                    {% for day in data.days_summary %}
+                    <tr {% if day.status != 'working' %}class="on-holiday"{% endif %}>
+                        <td>{{ day.display_date }}</td>
+                        <td>{{ day.status|capitalize }}</td>
+                        <td class="right-align">{{ day.registration }}</td>
+                        <td class="right-align">{{ f.fd_currency(day.total_earned) }}</td>
+                        <td class="right-align">{{ f.fd_currency(day.daily_bonus) }}</td>
+                        <td class="center-align">{{ f.fd_currency(day.overnight_value) }}</td>
+                        <td class="jobs-cell">
+                             {% if day.jobs_summary %}
+                                <table class="job-summary-table">
+                                    <tbody>
+                                        {% for job in day.jobs_summary %}
+                                        <tr>
+                                            <td class="job-location-cell">{{ job.collection }}</td>
+                                            <td><i class="material-icons tiny">arrow_forward</i></td>
+                                            <td class="job-location-cell">{{ job.delivery }}</td>
+                                            <td class="right-align">{{ f.fd_currency(job.earned) }}</td>
+                                        </tr>
+                                        {% if job.notes %}
+                                        <tr class="job-notes-row">
+                                            <td colspan="4" class="job-notes">{{ job.notes|capitalize }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="center-align">No daily data available for this week.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        
+        <!-- Weekly Totals Summary -->
+        <div class="weekly-bonus-summary">
+            <div class="row no-margin">
+                <div class="col s4">
+                    <strong>Total Earned:</strong> {{ f.fd_currency(data.total_earned) }}
+                </div>
+                <div class="col s4">
+                    <strong>Total Daily Bonus:</strong> {{ f.fd_currency(data.total_daily_bonus) }}
+                </div>
+                <div class="col s4">
+                    <strong>Total Weekly Bonus:</strong> {{ f.fd_currency(data.total_weekly_bonus) }}
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+    </div>
 </div>
+{% endfor %}
 
+<!-- CSS and JS -->
+<style>
+    .total-row {
+        font-weight: bold;
+    }
+    .card .card-title {
+        font-size: 1.5rem;
+        font-weight: 300;
+    }
+    .driver-row {
+        position: relative;
+    }
+    .driver-row .view-days-btn {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+    }
+    .driver-row:hover .view-days-btn {
+        visibility: visible;
+        opacity: 1;
+    }
+    .on-holiday {
+        background-color: #f2f2f2 !important;
+        color: #9e9e9e;
+    }
+    .modal {
+        width: 85% !important;
+        max-height: 90% !important;
+    }
+    .jobs-cell, .jobs-cell-header {
+        padding: 0 !important;
+        border-left: 2px solid #e0e0e0;
+    }
+    .jobs-cell-header {
+        padding-left: 8px !important;
+    }
+    .job-summary-table {
+        width: 100%;
+        border: none;
+    }
+    .job-summary-table td {
+        padding: 6px 8px;
+        border: none;
+        font-size: 0.9rem;
+        vertical-align: top;
+    }
+    .job-location-cell {
+        width: 40%;
+        white-space: normal;
+        word-wrap: break-word;
+    }
+    .job-summary-table td:not(.job-location-cell) {
+        white-space: nowrap;
+    }
+    .job-summary-table i.tiny {
+        vertical-align: middle;
+    }
+    .job-notes-row td {
+        padding-top: 0;
+        padding-left: 12px;
+        font-size: 0.8rem;
+        color: #757575;
+    }
+    .weekly-bonus-summary {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #fafafa;
+        border-top: 2px solid #e0e0e0;
+    }
+    .no-margin {
+        margin-bottom: 0;
+    }
+</style>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var modalElems = document.querySelectorAll('.modal');
+    M.Modal.init(modalElems, {
+        endingTop: '5%'
+    });
+});
+</script>
 {% endblock %}
-
-{# block additional_js %}
-<script src="{{ url_for('static', filename='js/deductions.js') }}"></script>
-{% endblock #}

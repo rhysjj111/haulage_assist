@@ -30,10 +30,6 @@ def handle_user_feedback(anomaly_id):
     else:
         redirect_url = url_for('home')
 
-    print('as;dkfja;sdlfjalskdjfa;klsdjf')
-
-    print(redirect_url)
-
     try:
         feedback_value = request.form['feedback']
         anomaly = Anomaly.query.get_or_404(anomaly_id)

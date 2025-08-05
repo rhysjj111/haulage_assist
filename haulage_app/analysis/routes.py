@@ -97,8 +97,6 @@ def get_active_drivers_for_date(check_date):
 
 @analysis_bp.route("/monthly_analysis", methods=["GET"])
 def monthly_analysis():
-    # Get all trucks
-    trucks = list(Truck.query.order_by(Truck.registration.desc()).all())
 
     # Initialize variables
     selected_year = None
@@ -115,13 +113,35 @@ def monthly_analysis():
     else:
         selected_month_number = available_months[0]['month_number']
         selected_year = available_months[0]['year']
+
+    # --- Navigation Logic ---
+    # Create a set of available (year, month) tuples for quick lookup
+    available_year_months = {(m['year'], m['month_number']) for m in available_months}
+    # Calculate previous month for the button link
+    prev_month_year = selected_year
+    prev_month_number = selected_month_number - 1
+    if prev_month_number == 0:
+        prev_month_number = 12
+        prev_month_year -= 1
+    prev_month_val = f"{prev_month_year}-{prev_month_number}"
+    # Calculate next month for the button link
+    next_month_year = selected_year
+    next_month_number = selected_month_number + 1
+    if next_month_number == 13:
+        next_month_number = 1
+        next_month_year += 1
+    next_month_val = f"{next_month_year}-{next_month_number}"
+    # Check if the calculated next month is in our set of available months
+    is_next_month_available = (next_month_year, next_month_number) in available_year_months
+    # --- End of Navigation Logic ---
     
     weeks_for_month = get_weeks_for_month(available_weeks, selected_year, selected_month_number)
     complete_month = is_complete_month(weeks_for_month, selected_year, selected_month_number)
     current_month = MONTH_NAMES[selected_month_number]
-
     month_start_date, month_end_date = get_start_and_end_of_month(selected_year, selected_month_number)
 
+    # Get all trucks
+    trucks = list(Truck.query.order_by(Truck.registration.desc()).all())
     # Get only drivers who were active during the selected month
     drivers = get_active_drivers_for_period(month_start_date, month_end_date)
 
@@ -141,19 +161,16 @@ def monthly_analysis():
         available_weeks=available_weeks,
         selected_year=selected_year,
         selected_month_number=selected_month_number,
-        truck_data = {}
+        truck_data = {},
+        MONTH_NAMES = MONTH_NAMES,
+        prev_month_val=prev_month_val,
+        next_month_val=next_month_val,
+        is_next_month_available=is_next_month_available
     )
 
 
 @analysis_bp.route("/weekly_analysis", methods=["GET"])
 def weekly_analysis():
-
-    today = date.today() # Get today's date within the request context
-    year = int(request.args.get('year', get_week_number_sat_to_fri(today)[0]))
-    week_num = int(request.args.get('week_num', get_week_number_sat_to_fri(today)[1]))
-
-    # Get all trucks
-    trucks = list(Truck.query.order_by(Truck.registration).all())
 
     # Initialize variables
     selected_year = None
@@ -162,6 +179,7 @@ def weekly_analysis():
 
     # Get week numbers (with year) from Payslip table
     available_weeks = get_formatted_payslip_weeks()
+    available_week_start_dates = {week['week_start_date'] for week in available_weeks}
 
     if request.args.get('week_select'):
         # Convert selected week number to start and end date
@@ -171,15 +189,20 @@ def weekly_analysis():
         )
         start_date, end_date = get_start_and_end_of_week(
             selected_year, selected_week_number)        
-        
+
     else:
         # Convert latest week number to start and end date
         selected_week_number = available_weeks[0]['week_number']
         selected_year = available_weeks[0]['year']
         start_date, end_date = get_start_and_end_of_week(selected_year, selected_week_number)
-    
+
     data_available = any(week['year'] == selected_year and week['week_number'] == selected_week_number for week in available_weeks)
-   
+
+    next_week_start_date = start_date + timedelta(days=7)
+    is_next_week_available = next_week_start_date in available_week_start_dates
+
+    # Get all trucks
+    trucks = list(Truck.query.order_by(Truck.registration).all())
     # Get only drivers who were active during the selected week
     drivers = get_active_drivers_for_period(start_date, end_date)
 
@@ -193,11 +216,14 @@ def weekly_analysis():
         'analysis/weekly_analysis.html',
         data_available=data_available,
         month_name=month_name,
+        month_number=month_number,
         weekly_metrics=weekly_metrics,
         selected_week_number=selected_week_number,
         selected_year=selected_year,
         available_weeks=available_weeks, 
         drivers=drivers, 
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        timedelta=timedelta,
+        is_next_week_available=is_next_week_available
     )

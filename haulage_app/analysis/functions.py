@@ -1,4 +1,5 @@
 from sqlalchemy import cast, Integer
+from haulage_app.config import *
 from haulage_app.models import ExpenseOccurrence, Payslip, db, Driver, Truck, Day, Fuel
 from datetime import datetime, timedelta, date
 from haulage_app.functions import(
@@ -14,6 +15,7 @@ from haulage_app.calculations.driver_truck_metrics import (
     calculate_total_metric_dict,
 )
 from pprint import pprint
+from collections import defaultdict
 
 def get_formatted_payslip_weeks():
     """
@@ -154,6 +156,49 @@ def get_expenses_for_period(start_date: date, end_date: date) -> list[ExpenseOcc
         ),
         ExpenseOccurrence.start_date <= end_date).all()
 
+def classify_entities(drivers, trucks, day_entries):
+    """
+    Classifies drivers and trucks as mutually exclusive, non-mutually exclusive, or on holiday.
+
+    Returns:
+        A dictionary containing classified sets of drivers and trucks.
+    """
+    driver_to_trucks = defaultdict(set)
+    truck_to_drivers = defaultdict(set)
+    
+    for day in day_entries:
+        if day.truck is not None:
+            driver_to_trucks[day.driver].add(day.truck)
+            truck_to_drivers[day.truck].add(day.driver)
+
+    exclusive_pairs = {}
+    non_exclusive_drivers = set()
+    holiday_drivers = set()
+
+    for driver in drivers:
+        trucks_driven = driver_to_trucks.get(driver)
+        
+        if not trucks_driven:
+            holiday_drivers.add(driver)
+        elif len(trucks_driven) == 1:
+            truck = next(iter(trucks_driven))
+            if len(truck_to_drivers.get(truck, [])) == 1:
+                exclusive_pairs[driver] = truck
+            else:
+                non_exclusive_drivers.add(driver)
+        else:
+            non_exclusive_drivers.add(driver)
+
+    exclusive_trucks = set(exclusive_pairs.values())
+    non_exclusive_trucks = set(trucks) - exclusive_trucks
+
+    return {
+        'exclusive_pairs': exclusive_pairs,
+        'non_exclusive_drivers': non_exclusive_drivers,
+        'non_exclusive_trucks': non_exclusive_trucks,
+        'holiday_drivers': holiday_drivers,
+    }
+
 def calculate_weekly_metrics(
     drivers: list[Driver], 
     trucks: list[Truck], 
@@ -166,55 +211,107 @@ def calculate_weekly_metrics(
     truck_data = {}
     grand_total_data = {}
 
-    expenses = get_expenses_for_period(start_date, end_date)
+    days = Day.query.filter(
+        Day.date >= start_date,
+        Day.date <= end_date
+    ).all()
+
+    expenses = get_expenses_for_period(start_date, end_date) # This gets expenses for *one* truck
+
+    week_estimated = False
+
+    classified_sets = classify_entities(drivers, trucks, days)
 
     for driver in drivers:
         driver_data[driver.id] = calculate_driver_metrics_week(
             driver, start_date, end_date)
-        
-        driver_data[driver.id]['truck_data'] = None
+
+        if driver_data[driver.id]['wages_estimated'] == True:
+            week_estimated = True
+
+        driver_data[driver.id].setdefault('total_fuel_cost', 0)
+        driver_data[driver.id].setdefault('total_fuel_volume', 0)
+        driver_data[driver.id]['fuel_estimated'] = False
         driver_data[driver.id].setdefault('profit', 0)
         driver_data[driver.id].setdefault('expenses', 0)
+        driver_data[driver.id]['truck_reg'] = None
 
-        for truck in trucks:
-            if driver_data[driver.id]['truck'] is not None and driver_data[driver.id]['truck'].id == truck.id:
-                driver_data[driver.id]['truck_data'] = calculate_truck_metrics_week(
-                    truck, start_date, end_date
-                )
-                if driver_data[driver.id]['truck_data']['total_fuel_cost'] == 0:
-                    waiting_on_mileage_data = True
-                if driver_data[driver.id]['estimated'] == True or driver_data[driver.id]['truck_data']['estimated'] == True:
-                    estimated = True
+        #Determine whether driver is mutually exclusive
+        if driver in classified_sets['exclusive_pairs']:
 
-            truck_data[truck.id] = calculate_truck_metrics_week(
+            truck = classified_sets['exclusive_pairs'][driver]
+
+            #Calculate truck metrics for mutually exclusive driver
+            truck_data = calculate_truck_metrics_week(
                 truck, start_date, end_date
             )
+            fuel_cost = truck_data['total_fuel_cost']
+            fuel_volume = truck_data['total_fuel_volume']
+            fuel_estimated = truck_data['fuel_estimated']
 
-        total_earned = driver_data[driver.id]['total_earned']
-        if driver_data[driver.id]['truck_data'] is not None:
-            total_fuel_cost = driver_data[driver.id]['truck_data']['total_fuel_cost']
+            driver_data[driver.id]['total_fuel_cost'] = fuel_cost
+            driver_data[driver.id]['total_fuel_volume'] = fuel_volume
+            driver_data[driver.id]['fuel_estimated'] = fuel_estimated
+            # truck = truck_data['truck']
+            driver_data[driver.id]['truck_reg'] = truck.registration
+            if fuel_estimated == True:
+                week_estimated = True
+        elif driver in classified_sets['holiday_drivers']:
+            driver_data[driver.id]['truck_reg'] = '**Holiday'
+            week_estimated = True
         else:
-            total_fuel_cost = 0
-        total_cost_to_employer = driver_data[driver.id]['total_cost_to_employer']
-        total_expense = calculate_total_metric_list('cost', expenses)
+            total_mileage = driver_data[driver.id]['total_mileage']
+            estimated_fuel_volume = round(total_mileage / MEDIAN_MILES_PER_LITRE)
+            estimated_fuel_cost = round(estimated_fuel_volume * MEDIAN_POUNDS_PER_LITRE)
 
-        profit = total_earned - total_fuel_cost - total_cost_to_employer - total_expense
-        driver_data[driver.id]['total_expenses'] = total_expense
+            driver_data[driver.id]['total_fuel_volume'] = estimated_fuel_volume
+            driver_data[driver.id]['total_fuel_cost'] = estimated_fuel_cost
+            driver_data[driver.id]['fuel_estimated'] = True
+            driver_data[driver.id]['truck_reg'] = '**Multiple'
+            week_estimated = True
+
+        # for truck in trucks:
+        #     if driver_data[driver.id]['truck'] is not None and driver_data[driver.id]['truck'].id == truck.id:
+        #         driver_data[driver.id]['truck_data'] = calculate_truck_metrics_week(
+        #             truck, start_date, end_date
+        #         )
+        #         # print(driver_data[driver.id]['truck_data']['truck'].id, driver_data[driver.id]['truck_data']['estimated'])
+        #         if driver_data[driver.id]['truck_data']['total_fuel_cost'] == 0:
+        #             waiting_on_mileage_data = True
+        #         if driver_data[driver.id]['estimated'] == True or driver_data[driver.id]['truck_data']['estimated'] == True:
+        #             estimated = True
+
+        #     truck_data[truck.id] = calculate_truck_metrics_week(
+        #         truck, start_date, end_date
+        #     )
+
+        # if driver_data[driver.id]['truck_data'] is not None:
+        #     total_fuel_cost = driver_data[driver.id]['truck_data']['total_fuel_cost']
+        # else:
+        #     total_fuel_cost = 0
+        total_earned = driver_data[driver.id]['total_earned']
+        total_cost_to_employer = driver_data[driver.id]['total_cost_to_employer']
+        total_fuel_cost = driver_data[driver.id]['total_fuel_cost']
+        driver_overhead_allocation = calculate_total_metric_list('cost', expenses) # Calculate total expense from the list for *that one truck*
+
+        profit = total_earned - total_fuel_cost - total_cost_to_employer - driver_overhead_allocation
+        driver_data[driver.id]['total_expenses'] = driver_overhead_allocation
         driver_data[driver.id]['total_profit'] = profit
 
+    #Calculate expenses for all drivers
     number_of_drivers = len(drivers)
-    expenses_for_one_truck = calculate_total_metric_list('cost', expenses)
-    total_expenses = expenses_for_one_truck * number_of_drivers
+    total_expenses_for_week = driver_overhead_allocation * number_of_drivers
 
+    #Aggregate totals for the week
     grand_total_earned = calculate_total_metric_dict('total_earned', driver_data)
     grand_total_wages = calculate_total_metric_dict('total_cost_to_employer', driver_data)
-    grand_total_fuel_volume = calculate_total_metric_dict('total_fuel_volume', truck_data)
-    grand_total_fuel_cost = calculate_total_metric_dict('total_fuel_cost', truck_data)
-    grand_total_profit = grand_total_earned - grand_total_wages - total_expenses - grand_total_fuel_cost
+    grand_total_fuel_volume = calculate_total_metric_dict('total_fuel_volume', driver_data)
+    grand_total_fuel_cost = calculate_total_metric_dict('total_fuel_cost', driver_data)
+    grand_total_profit = grand_total_earned - grand_total_wages - total_expenses_for_week - grand_total_fuel_cost
 
     grand_total_data = {
         'grand_total_earned': grand_total_earned,
-        'grand_total_expenses': total_expenses,
+        'grand_total_expenses': total_expenses_for_week,
         'grand_total_fuel_volume': grand_total_fuel_volume,
         'grand_total_wages': grand_total_wages,
         'grand_total_fuel_cost': grand_total_fuel_cost,
@@ -222,103 +319,123 @@ def calculate_weekly_metrics(
     }
 
     return {
-        'waiting_on_mileage_data': waiting_on_mileage_data,
-        'estimated': estimated,
+        # 'waiting_on_mileage_data': waiting_on_mileage_data,
+        # 'truck_data': truck_data,
         'driver_data': driver_data,
-        'truck_data': truck_data,
-        'grand_total_data': grand_total_data
+        'grand_total_data': grand_total_data,
+        'week_estimated': week_estimated,
     }
 
 def get_weeks_for_month(weeks_data: list, target_year: int, target_month: int) -> list:
     return [week for week in weeks_data if week['year'] == target_year and week['month'] == target_month]
 
-
-def calculate_monthly_metrics(weeks_data: list, drivers: list, trucks: list, target_year: int, target_month: int) -> dict:
+def calculate_monthly_metrics(weeks_data: list, drivers: list, trucks: list, target_year: int, target_month: int) -> dict: 
     month_weeks = get_weeks_for_month(weeks_data, target_year, target_month)
     
+    # Initialize the main dictionary to hold all monthly data
     monthly_totals = {
         'weeks_count': len(month_weeks),
         'grand_total_data': {
-            'estimated': False,
-            'grand_total_earned': 0,
-            'grand_total_expenses': 0,
-            'grand_total_fuel_volume': 0,
-            'grand_total_wages': 0,
-            'grand_total_fuel_cost': 0,
-            'profit': 0,
+            'month_estimated': False,
+            'month_total_earned': 0,
+            'month_total_expenses': 0,
+            'month_total_fuel_volume': 0,
+            'month_total_wages': 0,
+            'month_total_fuel_cost': 0,
+            'month_total_profit': 0,
         },
-        'driver_data': {driver.id: {
-            'estimated': False,
-            'driver': driver,
-            'total_earned': 0,
-            'total_daily_bonus': 0,
-            'total_weekly_bonus': 0,
-            'total_overnight': 0,
-            'total_cost_to_employer': 0,
-            'total_expenses': 0,
-            'total_profit': 0,
-            'truck_assignments': [],
-            'truck_used': None,
-            'truck_data':{
-                'estimated': False,
-                'total_fuel_volume': 0,
-                'total_fuel_cost': 0,
-                'total_mileage': 0,
-            }
-        } for driver in drivers},
+        'week_data': {
+            (week['year'], week['week_number']): {
+                'week_estimated': False,
+                'week_total_earned': 0,
+                'week_total_wages': 0,
+                'week_total_expenses': 0,
+                'week_total_fuel_volume': 0,
+                'week_total_fuel_cost': 0,
+                'week_total_profit': 0,
+                'week_start_date': week['week_start_date'],
+                'week_end_date': week['week_end_date'],
+            } for week in month_weeks
+        },
+        # NOT INCLUDING THE DRIVER TOTALS FOR NOW # 
+        # 'driver_data': {driver.id: {
+        #     'estimated': False,
+        #     'driver': driver,
+        #     'total_earned': 0,
+        #     'total_daily_bonus': 0,
+        #     'total_weekly_bonus': 0,
+        #     'total_overnight': 0,
+        #     'total_cost_to_employer': 0,
+        #     'total_expenses': 0,
+        #     'total_profit': 0,
+        #     'truck_assignments': [],
+        #     'truck_used': None,
+        #     'truck_data':{
+        #         'estimated': False,
+        #         'total_fuel_volume': 0,
+        #         'total_fuel_cost': 0,
+        #         'total_mileage': 0,
+        #     }
+        # } for driver in drivers},
     }
 
-    expected_weeks = get_expected_weeks_in_month(target_year, target_month)
-    start_date, end_date = get_start_and_end_of_week(target_year, expected_weeks['week_numbers'][0])
-    one_week_expenses = calculate_total_metric_list('cost', get_expenses_for_period(start_date, end_date))
-
-    expenses_for_one_truck = one_week_expenses * expected_weeks['total_weeks']
-
-    number_of_drivers = len(drivers)
-    total_expenses = expenses_for_one_truck * number_of_drivers
-
-    monthly_totals['grand_total_data']['grand_total_expenses'] = one_week_expenses * expected_weeks['total_weeks'] * 3
-
+    # Loop through each week that has data for the selected month
     for week in month_weeks:
-        weekly_metrics = calculate_weekly_metrics(drivers, trucks, 
-                                            week['week_start_date'], 
-                                            week['week_end_date'])
+        # Calculate all metrics for the current week
+        weekly_metrics = calculate_weekly_metrics(
+            drivers, 
+            trucks, 
+            week['week_start_date'], 
+            week['week_end_date']
+        )
 
-        grand_total_data = weekly_metrics['grand_total_data']
-        driver_data = weekly_metrics['driver_data']
-        truck_data = weekly_metrics['truck_data']
-        estimated = weekly_metrics['estimated']
-        
-        # Standard totals aggregation
-        monthly_totals['grand_total_data']['grand_total_earned'] += grand_total_data['grand_total_earned']
-        monthly_totals['grand_total_data']['grand_total_fuel_volume'] += grand_total_data['grand_total_fuel_volume']
-        monthly_totals['grand_total_data']['grand_total_wages'] += grand_total_data['grand_total_wages']
-        monthly_totals['grand_total_data']['grand_total_fuel_cost'] += grand_total_data['grand_total_fuel_cost']
-        monthly_totals['grand_total_data']['profit'] += grand_total_data['grand_total_profit']
-        
-        if estimated:
-            monthly_totals['grand_total_data']['estimated'] = True
-        
-        # Aggregate driver data
-        for driver_id, data in driver_data.items():
-            driver_data = monthly_totals['driver_data'][driver_id]
-            driver_data['total_earned'] += data['total_earned']
-            driver_data['total_overnight'] += data['total_overnight']
-            driver_data['total_cost_to_employer'] += data['total_cost_to_employer']
-            driver_data['total_profit'] += data['total_profit']
-            driver_data['total_expenses'] = expenses_for_one_truck
+        weekly_grand_totals = weekly_metrics['grand_total_data']
+        week_key = (week['year'], week['week_number'])
 
-            if data['truck_data'] is not None:
-                truck_data = monthly_totals['driver_data'][driver_id]['truck_data']
-                truck_data['total_fuel_cost'] += data['truck_data']['total_fuel_cost']
-                truck_data['total_fuel_volume'] += data['truck_data']['total_fuel_volume']
-                truck_data['total_mileage'] += data['truck_data']['total_mileage']
+        # --- Populate the data for the specific week ---
+        week_data = monthly_totals['week_data'][week_key]
+        week_data['week_total_earned'] = weekly_grand_totals['grand_total_earned']
+        week_data['week_total_wages'] = weekly_grand_totals['grand_total_wages']
+        week_data['week_total_expenses'] = weekly_grand_totals['grand_total_expenses']
+        week_data['week_total_fuel_volume'] = weekly_grand_totals['grand_total_fuel_volume']
+        week_data['week_total_fuel_cost'] = weekly_grand_totals['grand_total_fuel_cost']
+        week_data['week_total_profit'] = weekly_grand_totals['grand_total_profit']
+        
+        # Mark if the week's data is estimated
+        if weekly_metrics.get('week_estimated', False):
+            week_data['week_estimated'] = True
+            monthly_totals['grand_total_data']['month_estimated'] = True
+        
+        # --- Aggregate the weekly totals into the month's grand totals ---
+        grand_total_data = monthly_totals['grand_total_data']
+        grand_total_data['month_total_earned'] += weekly_grand_totals['grand_total_earned']
+        grand_total_data['month_total_wages'] += weekly_grand_totals['grand_total_wages']
+        grand_total_data['month_total_expenses'] += weekly_grand_totals['grand_total_expenses']
+        grand_total_data['month_total_fuel_volume'] += weekly_grand_totals['grand_total_fuel_volume']
+        grand_total_data['month_total_fuel_cost'] += weekly_grand_totals['grand_total_fuel_cost']
+        grand_total_data['month_total_profit'] += weekly_grand_totals['grand_total_profit']
+
+        # NOT INCLUDING THE DRIVER TOTALS FOR NOW #
+        # # Aggregate driver data
+        # for driver_id, data in driver_data.items():
+        #     driver_data = monthly_totals['driver_data'][driver_id]
+        #     driver_data['total_earned'] += data['total_earned']
+        #     driver_data['total_overnight'] += data['total_overnight']
+        #     driver_data['total_cost_to_employer'] += data['total_cost_to_employer']
+        #     driver_data['total_profit'] += data['total_profit']
+        #     driver_data['total_expenses'] = driver_overhead_allocation
+
+        #     if data['truck_data'] is not None:
+        #         truck_data = monthly_totals['driver_data'][driver_id]['truck_data']
+        #         truck_data['total_fuel_cost'] += data['truck_data']['total_fuel_cost']
+        #         truck_data['total_fuel_volume'] += data['truck_data']['total_fuel_volume']
+        #         truck_data['total_mileage'] += data['truck_data']['total_mileage']
             
-            if data['truck']:
-                driver_data['truck_assignments'].append(data['truck'].id)
+        #     if data['truck']:
+        #         driver_data['truck_assignments'].append(data['truck'].id)
             
-            if data.get('estimated', False):
-                driver_data['estimated'] = True
+        #     if data.get('estimated', False):
+        #         driver_data['estimated'] = True
 
     return monthly_totals
 

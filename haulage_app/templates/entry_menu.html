@@ -1,87 +1,72 @@
 {% extends "std_template.html" %}
 
 
-{% block standard_title %}DATA ENTRY{% endblock %}
+{% block standard_title %}Entry Menu{% endblock %}
 
     {% block standard_content %}
-        <div class="data-entry-menu-container valign-wrapper">
-            <div class="row center-align">
-                <div class="col s12 m6 data-entry-button-container">
-                    <a href="{{ url_for('job.add_job', item_id=0, tab='entry') }}">
-                        <div class="card-panel white lighten-5 indigo-text text-darken-4 z-depth-2">
-                            <i class="large material-icons data-entry-icon row-1">playlist_add</i>
-                            <h3 class="data-entry-title">Add Job</h3>
-                        </div>
+        <div class="container entry-menu-list">
+            <div class="row">
+                <div class="col s12">
+                    <h2 class="entry-group-title">Daily Entries</h2>
+                    <a href="{{ url_for('job.add_job', item_id=0, tab='entry') }}" class="entry-list-item z-depth-1 waves-effect waves-light">
+                        <i class="material-icons indigo-text">playlist_add</i>
+                        <span>Add Job</span>
+                    </a>
+                    <a href="{{ url_for('day.add_day', item_id=0, tab='entry') }}" class="entry-list-item z-depth-1 waves-effect waves-light">
+                        <i class="material-icons indigo-text">restore</i>
+                        <span>Add Day</span>
+                    </a>
+
+                    <h2 class="entry-group-title">Financial Records</h2>
+                    <a href="{{ url_for('fuel.add_fuel', item_id=0, tab='entry') }}" class="entry-list-item z-depth-1 waves-effect waves-light">
+                        <i class="material-icons green-text">local_gas_station</i>
+                        <span>Add Fuel</span>
+                    </a>
+                    <a href="{{ url_for('payslip.add_payslip', item_id=0, tab='entry') }}" class="entry-list-item z-depth-1 waves-effect waves-light">
+                        <i class="material-icons green-text">receipt</i>
+                        <span>Add Payslip</span>
                     </a>
                 </div>
-                <div class="col s12 m6 data-entry-button-container">
-                    <a href="{{ url_for('day.add_day', item_id=0, tab='entry') }}">
-                        <div class="card-panel white lighten-5 indigo-text text-darken-4 z-depth-2">
-                            <i class="large material-icons data-entry-icon row-1">restore</i>
-                            <h3 class="data-entry-title">Add Day End</h3>
-                        </div>
-                    </a>
-                </div>
-                <!-- <div class="col s12 m6 xl4 data-entry-button-container">
-                    <a href="{{ url_for('week.week', item_id=0, tab='entry') }}">
-                        <div class="card-panel white lighten-5 indigo-text text-darken-4 z-depth-2"> 
-                            <i class="large material-icons data-entry-icon row-1">date_range</i>
-                            <h3 class="data-entry-title">Weekly entry</h3>
-                        </div>
-                    </a>
-                </div> -->
-                <!-- SPACER CONTAINER -->
-                <!-- <div class="col xl2"></div> -->
-                <div class="col s12 m6  data-entry-button-container">
-                    <a href="{{ url_for('fuel.add_fuel', item_id=0, tab='entry') }}">
-                        <div class="card-panel white lighten-5 green-text text-darken-4 z-depth-2">
-                            <i class="large material-icons data-entry-icon row-2">local_gas_station</i>
-                            <h3 class="data-entry-title">Add Fuel</h3>
-                        </div>
-                    </a>
-                </div>
-                <div class="col s12 m6 data-entry-button-container">
-                    <a href="{{ url_for('payslip.add_payslip', item_id=0, tab='entry') }}">
-                        <div class="card-panel waves white lighten-5 green-text text-darken-4 z-depth-2">
-                            <i class="large material-icons data-entry-icon row-2">attach_money</i>
-                            <h3 class="data-entry-title">Add Payslip</h3>
-                        </div>
-                    </a>
-                </div>
-                <!-- <div class="col s12 xl6 data-entry-button-container">
-                    <a href="{{ url_for('driver.add_driver', item_id=0, tab='entry') }}">
-                        <div class="main-button btn">
-                            <i class="large material-icons data-entry-icon row-3">person_add</i>
-                            <h3 class="data-entry-title">Add Driver</h3>
-                        </div>
-                    </a>
-                </div>
-                <div class="col s12 xl6 data-entry-button-container">
-                    <a href="{{ url_for('truck.add_truck', item_id=0, tab='entry') }}">
-                        <div class="main-button btn">
-                            <i class="large material-icons data-entry-icon row-3">local_shipping</i>
-                            <h3 class="data-entry-title">Add Truck</h3>
-                        </div>
-                    </a>
-                </div>
-                <div class="col s12 xl6 data-entry-button-container">
-                    <a href="{{ url_for('expense.add_expense', item_id=0, tab='entry') }}">
-                        <div class="main-button btn">
-                            <i class="large material-icons data-entry-icon row-3">none</i>
-                            <h3 class="data-entry-title">Add Expense</h3>
-                        </div>
-                    </a>
-                </div>
-                <div class="col s12 xl6 data-entry-button-container">
-                    <a href="{{ url_for('analysis.weekly_analysis') }}">
-                        <div class="main-button btn">
-                            <i class="large material-icons data-entry-icon row-3">none</i>
-                            <h3 class="data-entry-title">Analysis</h3>
-                        </div>
-                    </a>
-                </div> -->
             </div>
         </div>
-    {% endblock %}
 
-    {% block data_entry %}active{% endblock %}
+        <style>
+            .entry-menu-list {
+                max-width: 600px;
+            }
+            .entry-group-title {
+                font-size: 1.5rem;
+                color: #9e9e9e;
+                text-align: left;
+                margin-top: 40px;
+                margin-bottom: 10px;
+                padding-bottom: 5px;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            .entry-list-item {
+                display: flex;
+                align-items: center;
+                background-color: #fff;
+                color: #333a56;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                text-decoration: none;
+                transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, border-left 0.2s ease-out;
+                border-left: 5px solid transparent;
+            }
+            .entry-list-item:hover {
+                transform: translateX(5px);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+                border-left: 5px solid #fff8eb;
+            }
+            .entry-list-item i {
+                margin-right: 25px;
+                font-size: 2.2rem;
+            }
+            .entry-list-item span {
+                font-size: 1.2rem;
+                font-weight: 500;
+            }
+        </style>
+    {% endblock %}

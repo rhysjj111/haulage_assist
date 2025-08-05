@@ -1,125 +1,373 @@
 {% extends "std_template.html" %}
 
+{% block standard_title %}Weekly Analysis{% endblock %}
 
-{% block standard_title %}WEEKLY ANALYSIS{% endblock %}
+{% block standard_content %}
+<div class="row">
 
-{% block standard_content %} 
-
-{% set positive %}<i class="material-icons green-text tiny bold">add</i>{% endset %}
-{% set negative %}<i class="material-icons red-text tiny bold">remove</i>{% endset %}
-
-<div class="row no-margin">
-    <div class="col s12 m6">
-        <div class="row">
-            <form method="GET">
-                <div class="input-field center-align">
-                    <!-- <label for="week_select">Select Week:</label> -->
-                    <input id="week_select" name="week_select"  type="text" class="datepicker" hidden required>
-                    <!-- <input type="text" id="datepicker" class="datepicker" hidden> -->
-                    <a id="date-trigger" class="waves-effect waves-light btn-large">
-                        <i class="material-icons right">event</i>
-                        Select a date
+    <!-- Left Side Navigation -->
+     
+    <div class="col s12 m3">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Week Navigation</span>
+                <div class="divider"></div>
+                <div class="section center-align">
+                    <h5>Week {{ selected_week_number }}</h5>
+                    <h6>{{ month_name }} {{ selected_year }}</h6>
+                    <a href="{{ url_for('analysis.monthly_analysis', month_select=selected_year ~ '-' ~ month_number) }}" style="font-size: small;" >
+                        View Month
                     </a>
-                    <!-- <span id="date-trigger" style="cursor: pointer;" ><p style="display: flex; align-items: center;">Select a date <i class="material-icons" >event</i></p></span> -->
+                    <p class="grey-text">{{ start_date.strftime('%d %b') }} - {{ end_date.strftime('%d %b') }}</p>
                 </div>
-            </form>
-        </div>
-        <div class="row">
-            <p class="italics grey-text">* Value has been estimated.</p>
-            <h5>Week: {{ selected_week_number }}</h5>
-            <h6>Month: {{ month_name }}</h6>
-            <div class="col m4">
-                <h5>Start date:</h5>
-                <h6>{{ f.display_date_pretty(start_date) }}</h6>
-            </div>
-            <div class="col m4">
-                <h5>End date:</h5>
-                <h6>{{ f.display_date_pretty(end_date) }}</h6>
+
+                <!-- Prev/Next Buttons -->
+                <div class="section center-align">
+                    <div class="row">
+                        <div class="col s6">
+                            <a href="{{ url_for('analysis.weekly_analysis', week_select=(start_date - timedelta(days=7)).strftime('%Y-%m-%d')) }}" class="btn waves-effect waves-light blue darken-2 left"><i class="material-icons">chevron_left</i></a>
+                        </div>
+                        <div class="col s6">
+                            <a id="next-week-btn" 
+                               href="{{ url_for('analysis.weekly_analysis', week_select=(start_date + timedelta(days=7)).strftime('%Y-%m-%d')) }}" 
+                               class="btn waves-effect waves-light blue darken-2 right {% if not is_next_week_available %}disabled{% endif %}">
+                               <i class="material-icons">chevron_right</i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datepicker -->
+                <div class="center-align">
+                     <form method="GET" id="date-form">
+                         <div class="input-field">
+                             <input id="week_select" name="week_select" type="text" class="datepicker" hidden>
+                             <button id="date-trigger" type="button" class="btn waves-effect waves-light blue darken-2">
+                                 <i class="material-icons right">event</i>
+                                 Select Date
+                             </button>
+                         </div>
+                     </form>
+                </div>
+
+
+                 {% if weekly_metrics.week_estimated %}
+                    <p class="italics grey-text center-align">* Some values on this page have been estimated.</p>
+                {% endif %}
             </div>
         </div>
     </div>
 
-    {# if waiting_on_mileage_data or data_available != true or weekly_metrics.grand_total_data.grand_total_earned == 0 %}
-    <div class="col s12 center-align">
-        <h4>No data available</h4>
+    <!-- Right Side Content -->
+    <div class="col s12 m9">
+        
+        <!-- Driver Totals Table -->
+        <div class="card">
+            <div class="card-content" style="position: relative;">
+                <a href="{{ url_for('analysis.monthly_analysis', month_select=selected_year ~ '-' ~ month_number) }}" class="btn-small waves-effect waves-light view-month-btn">
+                    View Month
+                </a>
+                <span class="card-title">Driver Totals</span>
+                <table class="striped responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Driver</th>
+                            <th>Truck</th>
+                            <th class="right-align">Revenue</th>
+                            <th class="right-align">Wages</th>
+                            <th class="right-align">Fuel Cost</th>
+                            <th class="right-align">Expenses</th>
+                            <th class="right-align">Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for id, data in weekly_metrics.driver_data.items() %}
+                        <tr class="driver-row {% if data.truck_reg == '**Holiday' %}on-holiday{% endif %}">
+                            <td>
+                                {{ data.driver_first_name }}
+                                {% if data.worked_days < 5 and data.truck_reg != '**Holiday' %}
+                                    <span class="right new badge blue-grey lighten-1" data-badge-caption="days">{{ data.worked_days }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ data.truck_reg }}</td>
+                            <td class="right-align">{{ f.fd_currency(data.total_earned) }}</td>
+                            <td class="right-align">
+                                {{ f.fd_currency(data.total_cost_to_employer) }}
+                                {% if data.wages_estimated %}*{% endif %}
+                            </td>
+                            <td class="right-align">
+                                {{ f.fd_currency(data.total_fuel_cost) }}
+                                {% if data.fuel_estimated %}*{% endif %}
+                            </td>
+                            <td class="right-align">{{ f.fd_currency(data.total_expenses) }}</td>
+                            <td class="right-align total-row">
+                                {{ f.fd_currency(data.total_profit) }}
+                                <a href="#days-modal-{{ id }}" class="btn-small waves-effect waves-light modal-trigger view-days-btn">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Grand Totals Table -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Grand Totals</span>
+                <table class="striped responsive-table">
+                    <thead>
+                        <!-- <tr>
+                            <th>Metric</th>
+                            <th class="right-align">Value</th>
+                        </tr> -->
+                    </thead>
+                    <tbody>
+                        {% set totals = weekly_metrics.grand_total_data %}
+                        <tr>
+                            <td>Total Revenue</td>
+                            <td class="right-align">{{ f.fd_currency(totals.grand_total_earned) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Driver Wages</td>
+                            <td class="right-align">{{ f.fd_currency(totals.grand_total_wages) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Fuel Cost</td>
+                            <td class="right-align">{{ f.fd_currency(totals.grand_total_fuel_cost) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Expenses</td>
+                            <td class="right-align">{{ f.fd_currency(totals.grand_total_expenses) }}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td>Net Profit</td>
+                            <td class="right-align">{{ f.fd_currency(totals.grand_total_profit) }}</td>
+                        </tr>
+                        <!-- <tr>
+                            <td>Total Fuel Volume</td>
+                            <td class="right-align">{{ f.display_float(totals.grand_total_fuel_volume) }} L</td>
+                        </tr> -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    {% else #}
-    
-    <div class="col s12 m6">
-        <!-- totals card -->
-        <h5>TOTALS</h5>
-        <div class="divider"></div>
-        <div class="col s12">
-            <div class="card wages-card horizontal">
-                <div class="card-stacked">
-                    <div class="card-content">
-                        <span class="card-title"><h5 class="medium-bold">Week: {{ selected_week_number }}, {{month_name}}</h5>
-                            <!-- <i class="material-icons right">more_vert</i> -->
-                            <div class="divider"></div>
-                        </span>
-                        <p class="wages-calc-card-text">
-                            {{positive}} Earned: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_earned) }}<br>
-                            {{negative}} Overheads: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_expenses) }} <br>
-                            {{negative}} Wages: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_wages) }} <br>
-                            {{negative}} Fuel: {{ f.fd_currency_rd(weekly_metrics.grand_total_data.grand_total_fuel_cost) }} <br>
-                        </p>
-                    </div>
-                    <div class="card-action">
-                        <span class="card-footer wages-calc-card-text {{'italics' if estimated}}">
-                            Profit: {{ f.fd_currency(weekly_metrics.grand_total_data.grand_total_profit) }}{{ '*' if weekly_metrics.estimated}}
-                        </span>
-                    </div>
+</div>
+
+<!-- Modals for Daily Breakdowns -->
+{% for id, data in weekly_metrics.driver_data.items() %}
+<div id="days-modal-{{ id }}" class="modal modal-fixed-footer">
+    <div class="modal-content">
+        <h4>Daily Breakdown: {{ data.driver_first_name }}</h4>
+        <p>Week: {{ selected_week_number }} ({{ start_date.strftime('%d %b') }} - {{ end_date.strftime('%d %b') }})</p>
+        <table class="striped responsive-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Registration</th>
+                    <th>Status</th>
+                    <th class="right-align">Mileage</th>
+                    <th class="right-align">Earned</th>
+                    <th class="right-align">Bonus</th>
+                    <th class="center-align">Overnight</th>
+                    <th class="jobs-cell-header">Jobs</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if data.days_summary %}
+                    {% for day in data.days_summary %}
+                    <tr>
+                        <td>{{ day.display_date }}</td>
+                        <td>{{ day.registration }}</td>
+                        <td>{{ day.status|capitalize }}</td>
+                        <td class="right-align">{{ f.display_int(day.total_mileage) }}</td>
+                        <td class="right-align">{{ f.fd_currency(day.total_earned) }}</td>
+                        <td class="right-align">{{ f.fd_currency(day.daily_bonus) }}</td>
+                        <td class="center-align">{{ f.fd_currency(day.overnight_value) }}</td>
+                        <td class="jobs-cell">
+                            {% if day.jobs_summary %}
+                                <table class="job-summary-table">
+                                    <tbody>
+                                        {% for job in day.jobs_summary %}
+                                        <tr>
+                                            <td class="job-location-cell">{{ job.collection }}</td>
+                                            <td><i class="material-icons tiny">arrow_forward</i></td>
+                                            <td class="job-location-cell">{{ job.delivery }}</td>
+                                            <td class="right-align">{{ f.fd_currency(job.earned) }}</td>
+                                        </tr>
+                                        <tr class="job-notes-row">
+                                            {% if job.notes or job.split %}
+                                            <td colspan="2" class="job-notes">{{ job.notes|capitalize }}</td>
+                                            {% endif %}
+                                            {% if job.split %}
+                                            <td colspan="2" class="job-notes">Job Split</td>
+                                            {% endif %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="center-align">No daily data available for this week.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- Weekly Totals Summary -->
+        <div class="weekly-bonus-summary">
+            <div class="row no-margin">
+                <div class="col s4">
+                    <strong>Total Daily Bonus:</strong> {{ f.fd_currency(data.total_daily_bonus) }}
+                </div>
+                <div class="col s4">
+                    <strong>Total Overnight:</strong> {{ f.fd_currency(data.total_overnight) }}
+                </div>
+                <div class="col s4">
+                    <strong>Total Weekly Bonus:</strong> {{ f.fd_currency(data.total_weekly_bonus) }}
                 </div>
             </div>
         </div>
-    </div> 
-</div>
 
-<!-- drivers card -->
-<h5>DRIVERS</h5>
-<div class="divider"></div>
-<div class="row">
-    {% for driver_id, data in weekly_metrics.driver_data.items() %}
-    
-    {{ macros.driver_card(driver_id, data, f) }}
-    
-    {% if loop.index % 3 == 0 %}
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+    </div>
 </div>
-<div class="row">
-    {% endif %}
-    
-    {% endfor %}
-</div>
-{# endif #}
+{% endfor %}
 
+<!-- CSS and JS -->
+<style>
+    .total-row {
+        font-weight: bold;
+    }
+    .card .card-title {
+        font-size: 1.5rem;
+        font-weight: 300;
+    }
+    /* Set the row as the positioning container */
+    .driver-row {
+        position: relative;
+    }
+    /* Position the button absolutely within the row */
+    .driver-row .view-days-btn {
+        position: absolute;
+        right: 15px; /* Adjust distance from the right edge */
+        top: 50%; /* Center vertically */
+        transform: translateY(-50%); /* Fine-tune vertical centering */
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+    }
+    .driver-row:hover .view-days-btn {
+        visibility: visible;
+        opacity: 1;
+    }
+    /* Position for the View Month button */
+    .view-month-btn {
+        position: absolute;
+        top: 20px; /* Materialize card-content padding */
+        right: 24px; /* Materialize card-content padding */
+    }
+    /* Style for holiday rows */
+    .on-holiday {
+        background-color: #f2f2f2 !important; /* Light grey background */
+        color: #9e9e9e; /* Grey out the text */
+    }
+    .on-holiday .view-days-btn {
+        display: none; /* Hide the view button on holiday rows */
+    }
+    /* Modal styling */
+    .modal {
+        width: 85% !important;
+        max-height: 90% !important;
+    }
+    .modal .modal-content {
+        padding-bottom: 0;
+    }
+    .badge{
+        margin-left: 5px;
+    }
+    .jobs-cell, .jobs-cell-header {
+        padding: 0 !important;
+        border-left: 2px solid #e0e0e0; /* Add a visual separator */
+    }
+    .jobs-cell-header {
+        padding-left: 8px !important;
+    }
+    .job-summary-table {
+        width: 100%;
+        border: none;
+    }
+    .job-summary-table td {
+        padding: 6px 8px;
+        border: none;
+        font-size: 0.9rem;
+        vertical-align: top;
+    }
+    .job-location-cell {
+        width: 30%;
+        white-space: normal;
+        word-wrap: break-word;
+    }
+    .job-summary-table td:not(.job-location-cell) {
+        white-space: nowrap;
+    }
+    .job-summary-table i.tiny {
+        vertical-align: middle;
+    }
+    .job-notes-row td {
+        padding-top: 0;
+        padding-left: 12px;
+        font-size: 0.8rem;
+        color: #757575; /* grey-text text-darken-1 */
+        white-space: normal;
+    }
+    .weekly-bonus-summary {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #fafafa; /* a light grey background */
+        border-top: 2px solid #e0e0e0;
+    }
+    .no-margin {
+        margin-bottom: 0;
+    }
+</style>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Re-initialize modals every time since they are dynamically added
+    var modalElems = document.querySelectorAll('.modal');
+    M.Modal.init(modalElems, {
+        endingTop: '5%' // Adjust modal position if needed
+    });
+
+    // --- Datepicker ---
+    const datepickerElem = document.getElementById('week_select');
+    const dateTrigger = document.getElementById('date-trigger');
+    const dateForm = document.getElementById('date-form');
+
+    const datepickerInstance = M.Datepicker.init(datepickerElem, {
+        autoClose: true,
+        format: 'yyyy-mm-dd',
+        firstDay: 6, // Saturday
+        showClearBtn: false,
+        onSelect: function(date) {
+            if (date) {
+                dateForm.submit();
+            }
+        }
+    });
+
+    dateTrigger.addEventListener('click', function() {
+        datepickerInstance.open();
+    });
+});
+</script>
 {% endblock %}
-<!-- trucks card -->
-<!-- <h5>TRUCKS</h5>
-    <div class="divider"></div>
-    <div class="row">
-        {% for truck_id, data in weekly_metrics.truck_data.items() %}
-        
-        {{ macros.truck_card(truck_id, data, f) }}
-        
-        {% if loop.index % 3 == 0 %}
-    </div>
-    <div class="row">
-        {% endif %}
-        
-        {% endfor %}
-    </div> -->
-    <!-- <label for="week_select">Select Week:</label>
-    <select name="week_select" id="week_select" onchange="this.form.submit()">
-        {% for week_data in available_weeks %}
-            {% if selected_week_number == week_data.week_number and selected_year == week_data.year %}
-                <option value="{{ week_data.year }}-{{ week_data.week_number }}" selected>
-                    Week: {{ week_data.week_number }} --- ({{ week_data.week_start_date.strftime('%b') }} {{ week_data.year }})
-                </option>
-            {% else %}
-                <option value="{{ week_data.year }}-{{ week_data.week_number }}">
-                    Week: {{ week_data.week_number }} --- ({{ week_data.week_start_date.strftime('%b') }} {{ week_data.year }})
-                </option>
-            {% endif %}
-            {% endfor %}
-        </select> -->

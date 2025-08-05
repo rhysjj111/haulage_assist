@@ -1,126 +1,168 @@
 {% extends "std_template.html" %}
 
+{% block standard_title %}Monthly Analysis{% endblock %}
 
-{% block standard_title %}MONTHLY ANALYSIS{% endblock %}
-
-{% block standard_content %} 
-
-{% set positive %}<i class="material-icons green-text tiny bold">add</i>{% endset %}
-{% set negative %}<i class="material-icons red-text tiny bold">remove</i>{% endset %}
-
+{% block standard_content %}
 <div class="row">
-    
-    <div class="col s12 m6">
-        <form method="GET">
-            <label for="month_select">Select Month:</label>
-            <select name="month_select" id="month_select" onchange="this.form.submit()">
-                {% for month_data in available_months %}
-                    {% if selected_month_number == month_data.month_number and selected_year == month_data.year %}
-                        <option value="{{ month_data.year }}-{{ month_data.month_number }}" selected>
-                            Month: {{ month_data.month_number }} ({{ month_data.year }})
-                        </option>
-                    {% else %}
-                        <option value="{{ month_data.year }}-{{ month_data.month_number }}">
-                            Month: {{ month_data.month_number }} ({{ month_data.year }})
-                        </option>
-                    {% endif %}
-                {% endfor %}
-            </select>
-        </form>
 
-        <div class="col m6">
-            <h6>Including weeks:</h6>
-            {% for week in weeks_for_month %}
-                <p>Week: {{week.week_number}}<br>
-                    {{f.display_date(week.week_start_date)}} - {{f.display_date(week.week_end_date)}}
-                </p>
-            {% endfor %}
-        </div>
-        <div class="col m6">
-            <h6 class="{{'red-text bold' if monthly_metrics.weeks_count < expected_weeks.total_weeks}}">
-                Total weeks: {{ monthly_metrics.weeks_count }}/{{expected_weeks.total_weeks}}
-            </h6>
-            
-        </div>
-    </div>
-    
-    {% if waiting_on_mileage_data %}
-    <div class="col s12 center-align">
-        <h5>Waiting on fuel data</h5>
-    </div>
-    {% else %}
-    
-    <div class="col s12 m6">
-        <!-- totals card -->
-        <h5>TOTALS</h5>
-        <div class="divider"></div>
-        <div class="col s12">
-            <div class="card wages-card small">
-                <div class="card-content">
-                    <span class="card-title activator"><h5 class="medium-bold">{{month}}</h5>
-                        <!-- <i class="material-icons right">more_vert</i> -->
-                        <div class="divider"></div>
-                    </span>
-                    <p class="wages-calc-card-text">
-                        {% if monthly_metrics.grand_total_data.grand_total_earned > 0 %}
-                        {{positive}} Earned: {{ f.fd_currency_rd(monthly_metrics.grand_total_data.grand_total_earned) }}<br>
-                        {{negative}} Overheads: {{ f.fd_currency_rd(monthly_metrics.grand_total_data.grand_total_expenses) }} <br>
-                        {{negative}} Wages: {{ f.fd_currency_rd(monthly_metrics.grand_total_data.grand_total_wages) }} <br>
-                        {{negative}} Fuel: {{ f.fd_currency_rd(monthly_metrics.grand_total_data.grand_total_fuel_cost) }} <br>
-                    <!-- <p class="small-text italics grey-text">
-                        (Total Fuel Used: {{ f.display_float(monthly_metrics.grand_total_data.grand_total_fuel_volume) }} L)
-                    </p> -->
-                    <br>
-                    </p>
-                    <p class="wages-calc-card-text bold">
-                        Profit: {{ f.fd_currency_rd(monthly_metrics.grand_total_data.profit) }}{{ '*' if monthly_metrics.estimated}} <br>
-                        {% else %}
-                        <p class="wages-calc-card-text">No data available.</p>
-                        {% endif %}
-                    </p>
+    <!-- Left Side Navigation -->
+    <div class="col s12 m3">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Month Navigation</span>
+                <div class="divider"></div>
+                <div class="section center-align">
+                    <h5>{{ month }}</h5>
+                    <h6>{{ selected_year }}</h6>
+                    <h6 class="{{'red-text bold' if monthly_metrics.weeks_count < expected_weeks.total_weeks}}">
+                        Weeks: {{ monthly_metrics.weeks_count }}/{{expected_weeks.total_weeks}}
+                    </h6>
                 </div>
+
+                <!-- Prev/Next Buttons -->
+                <div class="section center-align">
+                    <div class="row">
+                        <div class="col s6">
+                            <a href="{{ url_for('analysis.monthly_analysis', month_select=prev_month_val) }}" class="btn waves-effect waves-light blue darken-2 left"><i class="material-icons">chevron_left</i></a>
+                        </div>
+                        <div class="col s6">
+                            <a href="{{ url_for('analysis.monthly_analysis', month_select=next_month_val) }}" class="btn waves-effect waves-light blue darken-2 right {% if not is_next_month_available %}disabled{% endif %}"><i class="material-icons">chevron_right</i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Month Selector Form -->
+                <div class="section">
+                    <form method="GET" id="month-form">
+                        <div class="input-field">
+                            <select id="month_select" name="month_select" onchange="this.form.submit()">
+                                {% for m in available_months %}
+                                    <option value="{{ m.year }}-{{ m.month_number }}" 
+                                            {% if m.year == selected_year and m.month_number == selected_month_number %}selected{% endif %}>{{ m.year }} - {{ MONTH_NAMES[m.month_number] }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <label>Select a Month</label>
+                        </div>
+                    </form>
+                </div>
+
+                 {% if monthly_metrics.grand_total_data.month_estimated %}
+                    <p class="italics grey-text center-align">* Some values in this month have been estimated.</p>
+                {% endif %}
             </div>
         </div>
-    </div> 
-</div>
-
-<br>
-
-
-<!-- drivers card -->
-<h5>DRIVERS</h5>
-<div class="divider"></div>
-<div class="row">
-    {% for driver_id, data in monthly_metrics.driver_data.items() %}
-    
-    {{ macros.driver_card(driver_id, data, f) }}
-    
-    {% if loop.index % 3 == 0 %}
-</div>
-<div class="row">
-    {% endif %}
-    
-    {% endfor %}
-</div>
-<p class="italics grey-text">* Value has been estimated.</p>
-{% endif %}
-
-
-
-
-{% endblock %}
-<!-- trucks card -->
-<!-- <h5>TRUCKS</h5>
-    <div class="divider"></div>
-    <div class="row">
-        {# for truck_id, data in monthly_metrics.truck_data.items() #}
-        
-        {{ macros.truck_card(truck_id, data, f) }}
-        
-        {# if loop.index % 3 == 0 #}
     </div>
-    <div class="row">
-        {# endif #}
+
+    <!-- Right Side Content -->
+    <div class="col s12 m9">
         
-        {# endfor #}
-    </div> -->
+        <!-- Weekly Breakdown Table -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Weekly Breakdown for {{ month }}</span>
+                <table class="striped responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Week</th>
+                            <th>Dates</th>
+                            <th class="right-align">Revenue</th>
+                            <th class="right-align">Wages</th>
+                            <th class="right-align">Fuel Cost</th>
+                            <th class="right-align">Expenses</th>
+                            <th class="right-align">Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for key, week_data in monthly_metrics.week_data | dictsort %}
+                        <tr class="driver-row"> {# Using same class to reuse hover effect #}
+                            <td>{{ key[1] }}</td>
+                            <td>{{ week_data.week_start_date.strftime('%d %b') }} - {{ week_data.week_end_date.strftime('%d %b') }}</td>
+                            <td class="right-align">{{ f.fd_currency(week_data.week_total_earned) }}</td>
+                            <td class="right-align">{{ f.fd_currency(week_data.week_total_wages) }}</td>
+                            <td class="right-align">{{ f.fd_currency(week_data.week_total_fuel_cost) }}</td>
+                            <td class="right-align">{{ f.fd_currency(week_data.week_total_expenses) }}</td>
+                            <td class="right-align total-row">
+                                {{ f.fd_currency(week_data.week_total_profit) }}
+                                {% if week_data.week_estimated %}*{% endif %}
+                                <a href="{{ url_for('analysis.weekly_analysis', week_select=week_data.week_start_date.strftime('%Y-%m-%d')) }}"
+                                   class="btn-small waves-effect waves-light view-days-btn">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Grand Totals Table -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Monthly Grand Totals</span>
+                <table class="striped responsive-table">
+                    <tbody>
+                        {% set totals = monthly_metrics.grand_total_data %}
+                        <tr>
+                            <td>Total Revenue</td>
+                            <td class="right-align">{{ f.fd_currency(totals.month_total_earned) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Driver Wages</td>
+                            <td class="right-align">{{ f.fd_currency(totals.month_total_wages) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Fuel Cost</td>
+                            <td class="right-align">{{ f.fd_currency(totals.month_total_fuel_cost) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Expenses</td>
+                            <td class="right-align">{{ f.fd_currency(totals.month_total_expenses) }}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td>Net Profit</td>
+                            <td class="right-align">{{ f.fd_currency(totals.month_total_profit) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSS and JS -->
+<style>
+    .total-row {
+        font-weight: bold;
+    }
+    .card .card-title {
+        font-size: 1.5rem;
+        font-weight: 300;
+    }
+    /* Set the row as the positioning container */
+    .driver-row {
+        position: relative;
+    }
+    /* Position the button absolutely within the row */
+    .driver-row .view-days-btn {
+        position: absolute;
+        right: 15px; /* Adjust distance from the right edge */
+        top: 50%; /* Center vertically */
+        transform: translateY(-50%); /* Fine-tune vertical centering */
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+    }
+    .driver-row:hover .view-days-btn {
+        visibility: visible;
+        opacity: 1;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize select dropdown
+    var elems = document.querySelectorAll('select');
+    var instances = M.FormSelect.init(elems);
+});
+</script>
+{% endblock %}

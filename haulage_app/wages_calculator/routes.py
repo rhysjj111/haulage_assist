@@ -1,6 +1,7 @@
 from flask import render_template, request
 from haulage_app import db, f
 from haulage_app.models import Driver, Day, Job, Payslip
+from haulage_app.verification.models import IncorrectMileage, MissingEntryAnomaly, TableName
 from datetime import timedelta, date, datetime
 from haulage_app.wages_calculator import wages_calculator_bp
 from haulage_app.calculations.driver_truck_metrics import (
@@ -24,10 +25,44 @@ def wages_calculator():
     print(start_date, end_date)
 
     driver_data = {}
+    missing_days = False
+    anomalies_present = False
+
+    # Query IncorrectMileage anomalies first (sorted)
+    incorrect_mileage_anomalies = IncorrectMileage.query.filter_by(is_read=False).order_by(
+        IncorrectMileage.year,
+        IncorrectMileage.week_number
+    ).all()
 
     for driver in drivers:
 
         driver_data[driver.id] = calculate_driver_metrics_week(
             driver, start_date, end_date)
 
-    return render_template("wages_calculator.html", driver_data=driver_data, drivers=drivers, start_date=start_date, end_date=end_date)
+        # Check no driver has less than 5 days
+        if len(driver_data[driver.id]['days_summary']) < 5:
+            missing_days = True
+
+    # Query MissingEntryAnomaly anomalies (excluding table_name = 'day', sorted)
+    missing_entry_anomalies = MissingEntryAnomaly.query.filter(
+        MissingEntryAnomaly.is_read == False,
+        MissingEntryAnomaly.table_name != TableName.DAY
+    ).order_by(
+        MissingEntryAnomaly.table_name,
+        MissingEntryAnomaly.date,
+    ).all()
+
+    # Combine them in the order you want
+    anomalies = missing_entry_anomalies + incorrect_mileage_anomalies
+
+    if anomalies:
+        anomalies_present = True
+
+    return render_template("wages_calculator.html", 
+                           driver_data=driver_data, 
+                           drivers=drivers, 
+                           start_date=start_date, 
+                           end_date=end_date, 
+                           missing_days=missing_days,
+                           anomalies_present=anomalies_present,
+                        )
