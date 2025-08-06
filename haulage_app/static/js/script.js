@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function () {
         i18n: {done: "Select"},
         setDefaultDate: true,
         autoClose: true,
+        openOnFocus: false,
     }   
 
     // datepicker initialization
@@ -230,7 +231,18 @@ document.addEventListener('DOMContentLoaded', function () {
     //         }
     //     }
     // });
-    let datepickers = document.querySelectorAll('.datepicker');
+    // Find the input element with the class 'datepicker'
+    const datepickers = document.querySelectorAll('.datepicker');
+
+    // Find the input element with the class 'datepicker'
+    const datepickerInput = document.querySelector('.datepicker');
+
+    // Check if the element exists to prevent errors
+    if (datepickerInput) {
+        // Set the focus on the found input field
+        datepickerInput.focus();
+    } 
+
     datepickers.forEach(picker => {
         // Only initialize when needed
         const initDatepicker = () => {
