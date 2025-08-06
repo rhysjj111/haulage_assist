@@ -801,7 +801,7 @@ from datetime import datetime
             <select name="truck_id" id="truck_id" class="validate" required>
                 {% if fuel.truck_id is defined %}
                     {% for truck in trucks %}
-                        {% if fuel.truck == truck %}
+                        {% if fuel.truck_id == truck.id %}
                             <option value="{{ truck.id }}" selected>{{ truck.registration }}</option>
                         {% else %}
                             <option value="{{ truck.id }}">{{ truck.registration }}</option>

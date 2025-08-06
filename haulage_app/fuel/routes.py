@@ -28,6 +28,7 @@ def add_fuel(item_id, tab):
     if anomaly_id:
         anomaly = MissingEntryAnomaly.query.filter(MissingEntryAnomaly.id == anomaly_id).first()
         fuel['date'] = anomaly.date
+        print(anomaly.truck_id)
         fuel['truck_id'] = anomaly.truck_id
         
     if request.method == "POST":

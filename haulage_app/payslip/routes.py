@@ -24,8 +24,6 @@ def add_payslip(item_id, tab):
     if 'last_payslip_date' in session:
         payslip['date'] = session.pop('last_payslip_date')
 
-        print("222222", payslip['date'])
-
     anomaly_id = request.args.get('anomaly_id')
     if anomaly_id:
         anomaly = MissingEntryAnomaly.query.filter(MissingEntryAnomaly.id == anomaly_id).first()
