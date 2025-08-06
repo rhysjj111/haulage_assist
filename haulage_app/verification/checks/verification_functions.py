@@ -6,6 +6,7 @@ from haulage_app.models import (
     Day, 
     Truck,
     Fuel,
+    DriverEmploymentHistory
 )
 from haulage_app.verification.models import MissingEntryAnomaly, TableName, IncorrectMileage
 from haulage_app.models import db
@@ -55,19 +56,31 @@ def find_missing_payslip_weeks(start_date, end_date):
               with the corresponding missing date as a datetime.date object.
     """
     missing_payslips_by_driver = {}
-    drivers = Driver.query.all()
+    drivers = Driver.query.join(DriverEmploymentHistory).filter(DriverEmploymentHistory.end_date == None).all()
 
     for driver in drivers:
         missing_weeks = []
         current_date = start_date
         
         while current_date <= end_date:
-            friday = get_next_friday_from_date(current_date)
 
-            payslip = Payslip.query.filter(Payslip.date == friday, Payslip.driver_id == driver.id).first()
+            start_of_week = find_previous_saturday(current_date)
+            end_of_week = get_next_friday_from_date(start_of_week)
+
+            driver_is_employed = driver.get_employment_on_date(end_of_week)
             
-            if not payslip:
-                missing_weeks.append(friday)
+            if driver_is_employed:
+                payslip = Payslip.query.filter(
+                    Payslip.date >= start_of_week,
+                    Payslip.date <= end_of_week,
+                    Payslip.driver_id == driver.id
+                ).first()
+                
+                if payslip:
+                    print(start_of_week, end_of_week)
+                
+                if not payslip:
+                    missing_weeks.append(end_of_week)
                 
             current_date += timedelta(days=7)
         if missing_weeks:

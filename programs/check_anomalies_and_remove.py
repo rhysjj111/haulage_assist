@@ -1,6 +1,6 @@
-from haulage_app import db, app
-from haulage_app.models import Day, Fuel, Payslip
-from haulage_app.verification.checks.verification_functions import (
+from ..haulage_app import db, app
+from ..haulage_app.models import Day, Fuel, Payslip
+from ..haulage_app.verification.checks.verification_functions import (
     check_missing_day_has_been_rectified,
     check_missing_fuel_has_been_rectified,
     check_missing_payslip_has_been_rectified,

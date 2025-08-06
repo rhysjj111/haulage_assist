@@ -9,16 +9,16 @@ def init_scheduler(app):
     def run_verification():
         with app.app_context():
             verification_manager.payslip_check()
-            verification_manager.day_check()
-            verification_manager.fuel_check()
-            verification_manager.mileage_check()
+            # verification_manager.day_check()
+            # verification_manager.fuel_check()
+            # verification_manager.mileage_check()
     
     scheduler.add_job(
         func=run_verification,
         # trigger=CronTrigger(day_of_week='fri', hour=13,minute=50),
         # trigger=CronTrigger(hour='11-14'),
-        trigger=CronTrigger(hour='*',minute=0),
-        # trigger=CronTrigger(second='*/30'),
+        # trigger=CronTrigger(minute=1),
+        trigger=CronTrigger(second='*/30'),
         id='weekly_verification',
         name='Run weekly verification checks',
         replace_existing=True
