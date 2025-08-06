@@ -222,16 +222,27 @@
 
         <!-- Weekly Totals Summary -->
         <div class="weekly-bonus-summary">
-            <div class="row no-margin">
+            <div class="row">
                 <div class="col s4">
                     <strong>Total Daily Bonus:</strong> {{ f.fd_currency(data.total_daily_bonus) }}
                 </div>
                 <div class="col s4">
-                    <strong>Total Overnight:</strong> {{ f.fd_currency(data.total_overnight) }}
-                </div>
-                <div class="col s4">
                     <strong>Total Weekly Bonus:</strong> {{ f.fd_currency(data.total_weekly_bonus) }}
                 </div>
+                <div class="col s4">
+                    <strong>Total Overnight:</strong> {{ f.fd_currency(data.total_overnight) }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col s4">
+                    <strong>Total Extras Caluclation:</strong> {{ f.fd_currency(data.weekly_extras) }}
+                </div>
+                <div class="col s4">
+                    <strong>Base Wage:</strong> {{ f.fd_currency(data.driver_wage_parameters.basic_wage) }}
+                </div>
+                <div class="col s4">
+                    <strong>Gross Pay:</strong> {{ f.fd_currency(data.calculated_gross_pay) }}
+                </div>                
             </div>
         </div>
 
