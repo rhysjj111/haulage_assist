@@ -200,15 +200,45 @@ document.addEventListener('DOMContentLoaded', function () {
         openOnFocus: false,
     }   
 
-    // datepicker initialization
-    // let datepickers = document.querySelectorAll('.datepicker');
+    // Avoid scroller affecting number inputs
+    // Select all input elements of type 'number'
+    const numberInputs = document.querySelectorAll('input[type="number"]');
+
+    // Loop through each number input found
+    numberInputs.forEach(input => {
+        // Add a 'wheel' event listener to prevent default scroll behavior
+        input.addEventListener('wheel', function(event) {
+            // Prevent the default action (changing the input value)
+            event.preventDefault();
+            // Optional: If you want to also prevent page scrolling when hovering
+            // over the input, you might need event.stopPropagation() depending on context.
+            // event.stopPropagation();
+        });
+    });
+
+    // Find the input element with the class 'datepicker'
+    const datepickers = document.querySelectorAll('.datepicker');
+
+    // Find the input element with the class 'datepicker'
+    // const datepickerInput = document.querySelector('.datepicker');
+
+    // // Check if the element exists to prevent errors
+    // if (datepickerInput) {
+    //     // Set the focus on the found input field
+    //     datepickerInput.focus();
+    // } 
+
     // datepickers.forEach(picker => {
     //     // Only initialize when needed
     //     const initDatepicker = () => {
     //         if (picker.id === 'week_select') {
-    //             M.Datepicker.init(picker, weekSelectOptions);
+    //             if (!M.Datepicker.getInstance(picker)) {
+    //                 M.Datepicker.init(picker, weekSelectOptions);
+    //             }
     //         } else {
-    //             M.Datepicker.init(picker, defaultOptions);
+    //             if (!M.Datepicker.getInstance(picker)) {
+    //                 M.Datepicker.init(picker, defaultOptions);
+    //             }
     //         }
     //         // Remove event listener after initialization
     //         picker.removeEventListener('focus', initDatepicker);
@@ -216,52 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
     //     // Initialize on focus instead of on page load
     //     picker.addEventListener('focus', initDatepicker);
-        
-    //     // For week_select, handle the trigger button
-    //     if (picker.id === 'week_select') {
-    //         const dateTrigger = document.querySelector('#date-trigger');
-    //         if (dateTrigger) {
-    //             dateTrigger.addEventListener('click', () => {
-    //                 // Initialize if not already done
-    //                 if (!M.Datepicker.getInstance(picker)) {
-    //                     M.Datepicker.init(picker, weekSelectOptions);
-    //                 }
-    //                 M.Datepicker.getInstance(picker).open();
-    //             });
-    //         }
-    //     }
     // });
-    // Find the input element with the class 'datepicker'
-    const datepickers = document.querySelectorAll('.datepicker');
-
-    // Find the input element with the class 'datepicker'
-    const datepickerInput = document.querySelector('.datepicker');
-
-    // Check if the element exists to prevent errors
-    if (datepickerInput) {
-        // Set the focus on the found input field
-        datepickerInput.focus();
-    } 
-
-    datepickers.forEach(picker => {
-        // Only initialize when needed
-        const initDatepicker = () => {
-            if (picker.id === 'week_select') {
-                if (!M.Datepicker.getInstance(picker)) {
-                    M.Datepicker.init(picker, weekSelectOptions);
-                }
-            } else {
-                if (!M.Datepicker.getInstance(picker)) {
-                    M.Datepicker.init(picker, defaultOptions);
-                }
-            }
-            // Remove event listener after initialization
-            picker.removeEventListener('focus', initDatepicker);
-        };
-        
-        // Initialize on focus instead of on page load
-        picker.addEventListener('focus', initDatepicker);
-    });
     
     // Special handling for week_select
     const weekSelect = document.getElementById('week_select');

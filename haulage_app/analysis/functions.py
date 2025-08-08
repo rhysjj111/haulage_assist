@@ -259,6 +259,8 @@ def calculate_weekly_metrics(
         elif driver in classified_sets['holiday_drivers']:
             driver_data[driver.id]['truck_reg'] = '**Holiday'
             week_estimated = True
+            #Remove wages from holiday drivers as holiday pay is included in expenses
+            driver_data[driver.id]['total_cost_to_employer'] = 0
         else:
             total_mileage = driver_data[driver.id]['total_mileage']
             estimated_fuel_volume = round(total_mileage / MEDIAN_MILES_PER_LITRE)

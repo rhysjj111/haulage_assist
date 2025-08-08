@@ -11,16 +11,13 @@ def calculate_fuel_economy(mileage, fuel_volume):
         return round((mileage / fuel_volume) * LITRE_TO_GALLON_MULTIPLIER, 2)
     return 0
 
-
 def calculate_total_metric_list(metric_name, list_of_entries):
     """ Calculate the total of a metric for a list of entries from a query """
     return sum(getattr(item, metric_name) for item in list_of_entries)
 
-
 def calculate_total_metric_dict(metric_name, dict):
     """ Calculate the total of a metric for a list of entries from a query """
     return sum(item[metric_name] for item in dict.values())
-
 
 def calculate_total_mileage(day_entries):
     """ Calculate the total mileage for a list of day entries """
@@ -209,11 +206,10 @@ def calculate_driver_metrics_week(driver, start_date, end_date):
     if payslip_entries:
         actual_total_gross_pay = payslip_entries[0].total_wage
         actual_total_cost_to_employer = payslip_entries[0].total_cost_to_employer
-        
+
         total_gross_pay = actual_total_gross_pay
         total_cost_to_employer = actual_total_cost_to_employer
         wages_estimated = False
-        
 
     return {
         'driver_id': driver.id,

@@ -179,7 +179,8 @@ def weekly_analysis():
 
     # Get week numbers (with year) from Payslip table
     available_weeks = get_formatted_payslip_weeks()
-    available_week_start_dates = {week['week_start_date'] for week in available_weeks}
+    pprint(available_weeks)
+    all_end_dates = [item['week_end_date'] for item in available_weeks]
 
     if request.args.get('week_select'):
         # Convert selected week number to start and end date
@@ -188,7 +189,7 @@ def weekly_analysis():
             date_to_db(selected_week)
         )
         start_date, end_date = get_start_and_end_of_week(
-            selected_year, selected_week_number)        
+            selected_year, selected_week_number)      
 
     else:
         # Convert latest week number to start and end date
@@ -199,7 +200,8 @@ def weekly_analysis():
     data_available = any(week['year'] == selected_year and week['week_number'] == selected_week_number for week in available_weeks)
 
     next_week_start_date = start_date + timedelta(days=7)
-    is_next_week_available = next_week_start_date in available_week_start_dates
+    latest_date = max(all_end_dates)
+    is_next_week_available = next_week_start_date < latest_date
 
     # Get all trucks
     trucks = list(Truck.query.order_by(Truck.registration).all())
