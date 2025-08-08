@@ -228,25 +228,25 @@ document.addEventListener('DOMContentLoaded', function () {
     //     datepickerInput.focus();
     // } 
 
-    // datepickers.forEach(picker => {
-    //     // Only initialize when needed
-    //     const initDatepicker = () => {
-    //         if (picker.id === 'week_select') {
-    //             if (!M.Datepicker.getInstance(picker)) {
-    //                 M.Datepicker.init(picker, weekSelectOptions);
-    //             }
-    //         } else {
-    //             if (!M.Datepicker.getInstance(picker)) {
-    //                 M.Datepicker.init(picker, defaultOptions);
-    //             }
-    //         }
-    //         // Remove event listener after initialization
-    //         picker.removeEventListener('focus', initDatepicker);
-    //     };
+    datepickers.forEach(picker => {
+        // Only initialize when needed
+        const initDatepicker = () => {
+            if (picker.id === 'week_select') {
+                if (!M.Datepicker.getInstance(picker)) {
+                    M.Datepicker.init(picker, weekSelectOptions);
+                }
+            } else {
+                if (!M.Datepicker.getInstance(picker)) {
+                    M.Datepicker.init(picker, defaultOptions);
+                }
+            }
+            // Remove event listener after initialization
+            picker.removeEventListener('focus', initDatepicker);
+        };
         
-    //     // Initialize on focus instead of on page load
-    //     picker.addEventListener('focus', initDatepicker);
-    // });
+        // Initialize on focus instead of on page load
+        picker.addEventListener('focus', initDatepicker);
+    });
     
     // Special handling for week_select
     const weekSelect = document.getElementById('week_select');
