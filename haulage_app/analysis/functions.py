@@ -74,7 +74,6 @@ def get_month_from_week(year: int, week_number: int) -> int:
         int: Month number (1-12)
     """
     start_date = get_start_of_week(year, week_number)
-    # print(year, week_number)
     target_date = start_date + timedelta(days=3) # Tuesday
     return target_date.month
 
@@ -223,6 +222,7 @@ def calculate_weekly_metrics(
     classified_sets = classify_entities(drivers, trucks, days)
 
     for driver in drivers:
+        
         driver_data[driver.id] = calculate_driver_metrics_week(
             driver, start_date, end_date)
 
@@ -235,6 +235,7 @@ def calculate_weekly_metrics(
         driver_data[driver.id].setdefault('profit', 0)
         driver_data[driver.id].setdefault('expenses', 0)
         driver_data[driver.id]['truck_reg'] = None
+
 
         #Determine whether driver is mutually exclusive
         if driver in classified_sets['exclusive_pairs']:
@@ -252,7 +253,6 @@ def calculate_weekly_metrics(
             driver_data[driver.id]['total_fuel_cost'] = fuel_cost
             driver_data[driver.id]['total_fuel_volume'] = fuel_volume
             driver_data[driver.id]['fuel_estimated'] = fuel_estimated
-            # truck = truck_data['truck']
             driver_data[driver.id]['truck_reg'] = truck.registration
             if fuel_estimated == True:
                 week_estimated = True

@@ -14,20 +14,21 @@ from haulage_app.analysis.functions import (
     get_start_and_end_of_week,
 )
 from pprint import pprint
+from haulage_app.analysis.routes import get_active_drivers_for_period
 
 @wages_calculator_bp.route("/wages_calculator", methods=["GET"])
 def wages_calculator():
-    drivers = list(Driver.query.order_by(Driver.first_name).all())
+    # drivers = list(Driver.query.order_by(Driver.first_name).all())
 
     today_year, today_week = get_week_number_sat_to_fri(date.today())
-    print(today_year, today_week)
     start_date, end_date = get_start_and_end_of_week(today_year, today_week)
-    print(start_date, end_date)
 
     driver_data = {}
     missing_days = False
     anomalies_present = False
 
+    drivers = get_active_drivers_for_period(start_date, end_date)
+    
     # Query IncorrectMileage anomalies first (sorted)
     incorrect_mileage_anomalies = IncorrectMileage.query.filter_by(is_read=False).order_by(
         IncorrectMileage.year,

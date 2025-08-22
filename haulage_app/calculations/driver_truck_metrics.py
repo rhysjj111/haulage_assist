@@ -157,7 +157,6 @@ def calculate_driver_wages(day_entries, driver):
     }
     return metrics
 
-
 def calculate_driver_metrics_week(driver, start_date, end_date):
     """ Calculate driver metrics for a given week.
 
@@ -245,12 +244,9 @@ def calculate_driver_metrics_week(driver, start_date, end_date):
         'recorded_days': metrics['recorded_days'],
     }
 
-
 # TRUCK METRICS
 
-
 def calculate_truck_metrics_week(truck, start_date, end_date):
-
     # Query all necessary entries for the week
     day_entries = Day.query.filter(
         Day.truck_id == truck.id,
@@ -274,7 +270,6 @@ def calculate_truck_metrics_week(truck, start_date, end_date):
     total_earned = sum(day.calculate_total_earned() for day in day_entries)
     # total_expenses = calculate_total_metric_list("cost", expense_entries)
     total_mileage = calculate_total_mileage(day_entries)
-
     # Calculate fuel metrics, handling estimation if no fuel entries exist
     fuel_estimated = True
     estimated_total_fuel_volume = round(total_mileage / MEDIAN_MILES_PER_LITRE) if total_mileage > 0 else 0

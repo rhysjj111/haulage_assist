@@ -179,7 +179,6 @@ def weekly_analysis():
 
     # Get week numbers (with year) from Payslip table
     available_weeks = get_formatted_payslip_weeks()
-    pprint(available_weeks)
     all_end_dates = [item['week_end_date'] for item in available_weeks]
 
     if request.args.get('week_select'):
