@@ -28,7 +28,8 @@ def wages_calculator():
     anomalies_present = False
 
     drivers = get_active_drivers_for_period(start_date, end_date)
-    
+    print(drivers)
+
     # Query IncorrectMileage anomalies first (sorted)
     incorrect_mileage_anomalies = IncorrectMileage.query.filter_by(is_read=False).order_by(
         IncorrectMileage.year,

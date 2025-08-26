@@ -17,7 +17,7 @@ def init_scheduler(app):
         func=run_verification,
         # trigger=CronTrigger(day_of_week='fri', hour=13,minute=50),
         # trigger=CronTrigger(hour='11-14'),
-        trigger=CronTrigger(hour='*',minute=0),
+        trigger=CronTrigger(minute=15),
         # trigger=CronTrigger(second='*/30'),
         id='weekly_verification',
         name='Run weekly verification checks',
