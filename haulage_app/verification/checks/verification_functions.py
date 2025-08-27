@@ -263,25 +263,11 @@ def check_missing_day_has_been_rectified(day_entry_id):
         print(f'No missing day anomaly found for driver {driver_id} on {date}')
 
 
-
-
-
-
-
-
 def find_incorrect_mileage(truck_id, year, week_number):
     """
-    Finds incorrect mileage for a given truck and week.
-    Args:
-        truck_id: The truck ID.
-        year: The year of the data (integer).
-        week_number: The week number (integer).
-    Returns:
-        A dictionary containing the truck_id, year, week_number,
-        and a list of dictionaries containing start_mileage, end_mileage,
-        start_date, end_date.
+    Finds incorrect mileage if there is a large discrepancy between days
+    or if a day's start or end mileage is zero.
     """
-    # Calculate the start and end dates for the given week
     start_date, end_date = get_start_and_end_of_week(year, week_number)
 
     day_entries = Day.query.filter(
@@ -297,17 +283,28 @@ def find_incorrect_mileage(truck_id, year, week_number):
     if day_entries:
         previous_end_mileage = None
         previous_date = None
+        previous_day_id = None
+
         for day in day_entries:
-            if previous_end_mileage is None:
-                previous_end_mileage = day.end_mileage
-                previous_date = day.date
-                previous_day_id = day.id
-                continue
-            mileage_diff = abs(day.start_mileage - previous_end_mileage)
-            if (
-                previous_date is not None
-                and mileage_diff > acceptable_mileage_discrepancy
-            ):
+            # --- Consolidated Incorrect Mileage Check ---
+            is_incorrect = False
+
+            # Condition 1: The current day has a zero start or end mileage.
+            # This check is performed for every day, including the first.
+            if day.start_mileage == 0 or day.end_mileage == 0:
+                print('day.id')
+                is_incorrect = True
+
+            # Condition 2: There is a large discrepancy from the previous day.
+            # This check is only performed if there is a previous day.
+            if not is_incorrect and previous_end_mileage is not None:
+                # We can safely perform calculations here
+                mileage_diff = abs(day.start_mileage - previous_end_mileage)
+                if mileage_diff > acceptable_mileage_discrepancy:
+                    is_incorrect = True
+
+            # If any of the above conditions were met, append the record.
+            if is_incorrect:
                 incorrect_mileages.append({
                     'previous_date': previous_date,
                     'previous_end_mileage': previous_end_mileage,
@@ -316,6 +313,8 @@ def find_incorrect_mileage(truck_id, year, week_number):
                     'previous_day_id': previous_day_id,
                     'next_day_id': day.id,
                 })
+
+            # Update previous day's info for the next iteration
             previous_end_mileage = day.end_mileage
             previous_date = day.date
             previous_day_id = day.id
@@ -329,50 +328,59 @@ def find_incorrect_mileage(truck_id, year, week_number):
         'end_date': end_date,
     }
 
-def check_mileage_has_been_rectified(day_entry_id):
-    """Checks if mileage has been rectified for a given day entry.
 
-    Performs check on the week.
-    Loops through incorrect mileages, and checks the date is still present.
-    If the anomaly has been rectified, then the anomaly is removed from the database.
+def check_mileage_has_been_rectified(day_entry_id):
+    """Checks if a specific mileage anomaly has been rectified.
+
+    If the anomaly has been rectified, it is removed from the database.
 
     Args:
-        day_entry_id (int): day entry id
+        day_entry_id (int): The ID of the day entry that was edited.
     """
     day_entry = Day.query.get(day_entry_id)
-    date = day_entry.date
+    if not day_entry:
+        print(f"No Day entry found for ID {day_entry_id}")
+        return
+
     anomaly = IncorrectMileage.query.filter(
         db.or_(
             IncorrectMileage.previous_day_id == day_entry_id,
             IncorrectMileage.next_day_id == day_entry_id
         )
     ).first()
+
     if anomaly:
         week_number = anomaly.week_number
         year = anomaly.year
         truck_id = anomaly.truck_id
-        anomaly_rectified = True
-
-        # run mileage check to see if mileage has been rectified
-        mileage_check = find_incorrect_mileage(truck_id, year, week_number)
-        for data in mileage_check['incorrect_mileages']:
-            if data['previous_date'] == date or data['next_date'] == date:
-                anomaly_rectified = False
         
-        if anomaly_rectified:
+        # Re-run the mileage check to get the current state of errors for the week
+        mileage_check = find_incorrect_mileage(truck_id, year, week_number)
+
+        # --- NEW: More precise check ---
+        # Create a set of current error pairs for efficient lookup
+        current_error_pairs = {
+            (data['previous_day_id'], data['next_day_id'])
+            for data in mileage_check['incorrect_mileages']
+        }
+
+        # Define the specific error pair we are checking for
+        original_anomaly_pair = (anomaly.previous_day_id, anomaly.next_day_id)
+
+        # If the original error pair is NOT in the new list of errors, it's rectified.
+        if original_anomaly_pair not in current_error_pairs:
             try:
                 db.session.delete(anomaly)
                 db.session.commit()
+                print(f'Success: Anomaly involving day ID {day_entry_id} was rectified and has been deleted.')
             except Exception as e:
                 flash('Error deleting anomaly', 'error-msg')
                 print(f'Error deleting anomaly: {e}')
-            else:
-                # flash('Success rectifying anomaly', 'success-msg')
-                print(f'Success deleting anomaly')
         else:
-            print(f'Mileage error for data {date} still present')
+            print(f'Anomaly involving day ID {day_entry_id} still present.')
+            
     else:
-        print('No anomaly found.')
+        print(f'No anomaly found involving day ID {day_entry_id}.')
 
     
 
@@ -440,15 +448,6 @@ def check_all_incorrect_mileages():
 
     return day_entry_output
 
-    
-
-
-
-
-
-
-
-
 
 def check_week_for_missing_day_entries_for_date_range(start_date, end_date):
     """
@@ -490,48 +489,61 @@ def check_week_for_missing_day_entries_for_date_range(start_date, end_date):
 
     return results
 
-
 def process_incorrect_mileages(incorrect_mileage_output):
-
     anomalies_to_add = []
 
-    for data in incorrect_mileage_output:
-        truck_id = data['truck_id']
-        incorrect_mileages = data['incorrect_mileages']
-        week_number = data['week_number']
-        year = data['year']
-
+    for truck_data in incorrect_mileage_output:
+        truck_id = truck_data['truck_id']
+        incorrect_mileages = truck_data['incorrect_mileages']
+        week_number = truck_data['week_number']
+        year = truck_data['year']
         truck = get_truck(truck_id)
 
-        anomalies_to_add = []
-        
-        for data in incorrect_mileages:
-            #Create a new Anomaly instance
-            previous_day_id = data['previous_day_id']
-            next_day_id = data['next_day_id']
+        for mileage_data in incorrect_mileages:
+            # NEW: If there's no previous date, skip this record to avoid
+            # violating the database's NOT NULL constraint.
+            if mileage_data['previous_date'] is None:
+                continue
+
+            previous_day_id = mileage_data['previous_day_id']
+            next_day_id = mileage_data['next_day_id']
+            
             anomaly_already_present = IncorrectMileage.query.filter_by(
                 truck_id=truck_id,
                 previous_day_id=previous_day_id,
                 next_day_id=next_day_id,
             ).first()
-            previous_end_mileage = round(data['previous_end_mileage']/100)
-            next_start_mileage = round(data['next_start_mileage']/100)
 
+            prev_mileage_raw = mileage_data['previous_end_mileage']
+            next_mileage_raw = mileage_data['next_start_mileage']
+            previous_end_mileage = round(prev_mileage_raw / 100) if prev_mileage_raw is not None else 0
+            next_start_mileage = round(next_mileage_raw / 100) if next_mileage_raw is not None else 0
+            
             if not anomaly_already_present:
+                if mileage_data["previous_date"] is not None:
+                    prev_day_desc = f'({display_date_pretty(mileage_data["previous_date"])}) Previous day end miles: {previous_end_mileage:,} mls <br>'
+                else:
+                    prev_day_desc = f'(N/A) Previous day end miles: {previous_end_mileage:,} mls <br>'
+
+                if mileage_data["next_date"] is not None:
+                    next_day_desc = f'({display_date_pretty(mileage_data["next_date"])}) Next day start miles: {next_start_mileage:,} mls'
+                else:
+                    next_day_desc = f'(N/A) Next day start miles: {next_start_mileage:,} mls'
+                
                 anomaly = IncorrectMileage(
-                    description = 
+                    description=
                         f'''
                             <b>{truck.registration}</b><br>
-                            ({display_date_pretty(data["previous_date"])}) Previous day end miles: {previous_end_mileage:,} mls <br>
-                            ({display_date_pretty(data["next_date"])}) Next day start miles: {next_start_mileage:,} mls
+                            {prev_day_desc}
+                            {next_day_desc}
                         ''',
                     week_number=week_number,
                     year=year,
                     truck_id=truck_id,
-                    previous_date=data["previous_date"],
-                    next_date=data["next_date"],
-                    previous_end_mileage=data["previous_end_mileage"],
-                    next_start_mileage=data["next_start_mileage"],
+                    previous_date=mileage_data["previous_date"],
+                    next_date=mileage_data["next_date"],
+                    previous_end_mileage=mileage_data["previous_end_mileage"],
+                    next_start_mileage=mileage_data["next_start_mileage"],
                     previous_day_id=previous_day_id,
                     next_day_id=next_day_id,
                 )
@@ -543,14 +555,17 @@ def process_incorrect_mileages(incorrect_mileage_output):
                 except Exception as e:
                     print(f'Error updating anomaly: {e}')
                 else:
-                    print(f'Success updating anomaly status for missing mileage')  
+                    print(f'Success updating anomaly status for missing mileage')
+    
+    if anomalies_to_add:
         try:
             db.session.add_all(anomalies_to_add)
             db.session.commit()
         except Exception as e:
-            print(f"Error creating anomaly: {e}")
+            print(f"Error creating anomalies: {e}")
         else:
-            print(f'Success entering incorrect mileage entry')
+            print(f'Success entering {len(anomalies_to_add)} incorrect mileage entries')
+
     print('All incorrect mileage entries processed.')
             
 
