@@ -185,6 +185,7 @@ def check_missing_day_has_been_rectified(day_entry_id):
             print(f'Success deleting missing day anomaly for {date}')
     else:
         print(f'No missing day anomaly found for driver {driver_id} on {date}')
+
 def check_missing_day_has_been_rectified(day_entry_id):
     """Checks if a missing day entry has been rectified.
     
@@ -222,7 +223,6 @@ def check_missing_day_has_been_rectified(day_entry_id):
             print(f'Success deleting missing day anomaly for {date}')
     else:
         print(f'No missing day anomaly found for driver {driver_id} on {date}')
-
 
 def check_missing_day_has_been_rectified(day_entry_id):
     """Checks if a missing day entry has been rectified.
@@ -492,6 +492,8 @@ def check_week_for_missing_day_entries_for_date_range(start_date, end_date):
 def process_incorrect_mileages(incorrect_mileage_output):
     anomalies_to_add = []
 
+    five_days_ago = date.today() - timedelta(days=5)
+
     for truck_data in incorrect_mileage_output:
         truck_id = truck_data['truck_id']
         incorrect_mileages = truck_data['incorrect_mileages']
@@ -518,8 +520,10 @@ def process_incorrect_mileages(incorrect_mileage_output):
             next_mileage_raw = mileage_data['next_start_mileage']
             previous_end_mileage = round(prev_mileage_raw / 100) if prev_mileage_raw is not None else 0
             next_start_mileage = round(next_mileage_raw / 100) if next_mileage_raw is not None else 0
+
+            record_date = mileage_data["previous_date"]
             
-            if not anomaly_already_present:
+            if not anomaly_already_present and record_date < five_days_ago:
                 if mileage_data["previous_date"] is not None:
                     prev_day_desc = f'({display_date_pretty(mileage_data["previous_date"])}) Previous day end miles: {previous_end_mileage:,} mls <br>'
                 else:
@@ -651,10 +655,6 @@ def check_all_missing_day_entries():
     day_entry_output = check_week_for_missing_day_entries_for_date_range(start_date, end_date)
 
     return day_entry_output
-
-
-
-
 
 def check_week_for_missing_fuel_data(truck_id, year, week_number):
     """
@@ -788,7 +788,6 @@ def check_all_missing_fuel_data():
     return filtered_results
 
 def process_missing_fuel_data(fuel_consistency_output):
-
     ten_days_ago = date.today() - timedelta(days=10)
     for data in fuel_consistency_output:
         truck_id = data['truck_id']
