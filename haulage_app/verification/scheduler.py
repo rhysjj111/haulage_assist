@@ -25,3 +25,4 @@ def init_scheduler(app):
     )
     
     scheduler.start()
+    # pass

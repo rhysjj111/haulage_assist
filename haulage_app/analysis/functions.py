@@ -295,10 +295,21 @@ def calculate_weekly_metrics(
         total_cost_to_employer = driver_data[driver.id]['total_cost_to_employer']
         total_fuel_cost = driver_data[driver.id]['total_fuel_cost']
         driver_overhead_allocation = calculate_total_metric_list('cost', expenses) # Calculate total expense from the list for *that one truck*
-
         profit = total_earned - total_fuel_cost - total_cost_to_employer - driver_overhead_allocation
+
         driver_data[driver.id]['total_expenses'] = driver_overhead_allocation
         driver_data[driver.id]['total_profit'] = profit
+
+    total_fuel_cost_by_truck = 0
+
+    for truck in trucks:
+
+        truck_data[truck.id] = calculate_truck_metrics_week(
+            truck, start_date, end_date
+        )
+        total_fuel_cost_by_truck += truck_data[truck.id]['total_fuel_cost']
+
+    print(total_fuel_cost_by_truck)
 
     #Calculate expenses for all drivers
     number_of_drivers = len(drivers)
@@ -308,7 +319,7 @@ def calculate_weekly_metrics(
     grand_total_earned = calculate_total_metric_dict('total_earned', driver_data)
     grand_total_wages = calculate_total_metric_dict('total_cost_to_employer', driver_data)
     grand_total_fuel_volume = calculate_total_metric_dict('total_fuel_volume', driver_data)
-    grand_total_fuel_cost = calculate_total_metric_dict('total_fuel_cost', driver_data)
+    grand_total_fuel_cost = total_fuel_cost_by_truck
     grand_total_profit = grand_total_earned - grand_total_wages - total_expenses_for_week - grand_total_fuel_cost
 
     grand_total_data = {
