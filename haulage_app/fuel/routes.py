@@ -69,7 +69,7 @@ def add_fuel(item_id, tab):
     
     return render_template("add_fuel.html", trucks=trucks, list=fuel_entries, tab=tab, fuel=fuel, item_id=item_id, type='fuel')
 
-@fuel_bp.route("/delete_fuel/<int:item_id>")
+@fuel_bp.route("/delete_fuel/<int:item_id>", methods=['POST'])
 def delete_fuel(item_id):
     entry = Fuel.query.get_or_404(item_id)
     db.session.delete(entry)

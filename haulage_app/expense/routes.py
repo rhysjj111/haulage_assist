@@ -38,7 +38,7 @@ def add_expense(item_id, tab):
     return render_template("expense/add_expense.html", tab=tab, list=expenses,
                            expense=expense, item_id=item_id, type='expense')
 
-@expense_bp.route("/delete_expense/<int:item_id>")
+@expense_bp.route("/delete_expense/<int:item_id>", methods=['POST'])
 def delete_expense(item_id):
     expense_occurrence = ExpenseOccurrence.query.get_or_404(item_id)
     expense = expense_occurrence.expense

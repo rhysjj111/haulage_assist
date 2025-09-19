@@ -43,7 +43,7 @@ def add_driver(item_id, tab):
     return render_template("add_driver.html", trucks=trucks, list=drivers, tab=tab, driver=driver, 
                            item_id=item_id, type='driver')
 
-@driver_bp.route("/delete_driver/<int:item_id>")
+@driver_bp.route("/delete_driver/<int:item_id>", methods=['POST'])
 def delete_driver(item_id):
     # entry = db.get_or_404(Driver, item_id)
     # db.session.delete(entry)

@@ -152,7 +152,7 @@ def edit_job(item_id):
         return redirect(url_for("job.add_job", item_id=0, tab='history'))
 
 
-@job_bp.route("/delete_job/<int:item_id>")
+@job_bp.route("/delete_job/<int:item_id>", methods=['POST'])
 def delete_job(item_id):
     if item_id == 0:
         all = db.session.query(Job)

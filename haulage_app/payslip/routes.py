@@ -141,7 +141,7 @@ def add_payslip(item_id, tab):
 #     return render_template("add_payslip.html", drivers=drivers, list=payslips, tab=tab, 
 #                            payslip=payslip, item_id=item_id, type='payslip')
 
-@payslip_bp.route("/delete_payslip/<int:item_id>")
+@payslip_bp.route("/delete_payslip/<int:item_id>", methods=['POST'])
 def delete_payslip(item_id):
     entry = Payslip.query.get_or_404(item_id)
     db.session.delete(entry)

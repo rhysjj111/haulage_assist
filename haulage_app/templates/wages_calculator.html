@@ -47,20 +47,20 @@
                             </td>
                             <td class="right-align">{{ f.fd_currency(data.total_earned) }}</td>
 
-                            {# if anomalies_present or missing_days %}
+                            {% if anomalies_present or missing_days %}
                                 <td colspan="3" class="center-align orange-text text-darken-2">
                                     <i class="material-icons tiny left">warning</i>
                                     Pay cannot be calculated due to anomalies or missing day entries.
                                     <a href="#days-modal-{{ id }}" class="btn-small waves-effect waves-light modal-trigger view-days-btn">View</a>
                                 </td>
-                            {% else #}
+                            {% else %}
                                 <td class="right-align">{{ f.fd_currency(data.weekly_extras) }}</td>
                                 <td class="right-align">{{ f.fd_currency(data.total_overnight) }} ({{ data.overnight_count }})</td>
                                 <td class="right-align total-row">
                                     {{ f.fd_currency(data.total_gross_pay) }}
                                     <a href="#days-modal-{{ id }}" class="btn-small waves-effect waves-light modal-trigger view-days-btn">View</a>
                                 </td>
-                            {# endif #}
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>

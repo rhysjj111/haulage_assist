@@ -18,7 +18,6 @@ from haulage_app.analysis.routes import get_active_drivers_for_period
 
 @wages_calculator_bp.route("/wages_calculator", methods=["GET"])
 def wages_calculator():
-    # drivers = list(Driver.query.order_by(Driver.first_name).all())
 
     today_year, today_week = get_week_number_sat_to_fri(date.today())
     start_date, end_date = get_start_and_end_of_week(today_year, today_week)
@@ -28,7 +27,6 @@ def wages_calculator():
     anomalies_present = False
 
     drivers = get_active_drivers_for_period(start_date, end_date)
-    print(drivers)
 
     # Query IncorrectMileage anomalies first (sorted)
     incorrect_mileage_anomalies = IncorrectMileage.query.filter_by(is_read=False).order_by(

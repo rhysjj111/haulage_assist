@@ -159,7 +159,7 @@ def add_day(item_id, tab):
             return redirect(url_for("day.add_day", item_id=0, tab='entry'))
     return render_template("add_day.html", **template_data)
 
-@day_bp.route("/delete_day/<int:item_id>")
+@day_bp.route("/delete_day/<int:item_id>", methods=['POST'])
 def delete_day(item_id):
     if item_id == 0:
         all = db.session.query(Day)
@@ -181,7 +181,6 @@ def delete_day(item_id):
 
 @day_bp.route("/edit_day/<int:item_id>", methods=["POST"])
 def edit_day(item_id):
-
     entry = Day.query.get_or_404(item_id)
     referrer = request.referrer
     is_week_page = '/week/' in referrer
