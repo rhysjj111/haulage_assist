@@ -24,6 +24,12 @@ from haulage_app.verification.checks.verification_functions import(
     find_incorrect_mileage,
     check_all_incorrect_mileages,
 )
+from haulage_app.analysis.functions import(
+    get_start_and_end_of_week,
+    get_start_of_week,
+    find_previous_saturday,
+    get_week_number_sat_to_fri,
+)
 from datetime import timedelta, date, datetime
 from haulage_app.notification import notification_bp
 # from haulage_app.notification.models import TimeframeEnum, ErrorTypeEnum, FaultAreaEnum, Notification
@@ -79,21 +85,25 @@ def inject_notification():
         # Combine them in the order you want
         anomalies = missing_entry_anomalies + incorrect_mileage_anomalies
 
+        hacked_date_tuple = (2025, 38)
+
         for anomaly in anomalies:
             if anomaly.type == 'incorrect_mileage':
                 entry_table = 'day'
+                date_tuple = (anomaly.year, anomaly.week_number)
             else:
                 entry_table = anomaly.table_name.value
+                date_tuple = get_week_number_sat_to_fri(anomaly.date)
 
-            date_tuple = (anomaly.year, anomaly.week_number) if anomaly.year is not None and anomaly.week_number is not None else None
-            
-            anomaly_info = {
-                "id": anomaly.id,
-                "date": date_tuple,
-                "details": anomaly.description,
-                "entry_table": entry_table
-            }
-            notifications.append(anomaly_info)
+            if date_tuple > hacked_date_tuple:
+
+                anomaly_info = {
+                    "id": anomaly.id,
+                    "date": date_tuple,
+                    "details": anomaly.description,
+                    "entry_table": entry_table
+                }
+                notifications.append(anomaly_info)
 
         return {'notifications': notifications}
     
