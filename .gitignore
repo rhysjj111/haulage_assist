@@ -1,7 +1,7 @@
 core.Microsoft*
 core.mongo*
 core.python*
-.venv.py
+.venv
 !migrations/env.py
 __pycache__/
 *.py[cod]
