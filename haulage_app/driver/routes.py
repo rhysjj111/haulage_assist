@@ -174,7 +174,7 @@ def edit_employment_history(driver_id, record_id):
     
     return redirect(url_for("driver.driver_employment_history", driver_id=driver_id))
 
-@driver_bp.route("/<int:driver_id>/employment_history/<int:record_id>/delete")
+@driver_bp.route("/<int:driver_id>/employment_history/<int:record_id>/delete", methods=["POST"])
 def delete_employment_history(driver_id, record_id):
     """Delete an employment history record"""
     driver = Driver.query.get_or_404(driver_id)
