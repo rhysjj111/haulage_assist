@@ -108,6 +108,4 @@ def inject_notification():
         return {'notifications': notifications}
     
     except Exception as e:
-        # Log the error or handle it appropriately
-        print(f"Error in inject_notification: {e}")
         return {'notifications': []}

@@ -21,6 +21,7 @@ from haulage_app.analysis.functions import(
 )
 from functools import lru_cache
 from flask import flash
+import logging
 
 @lru_cache(maxsize=128)
 def get_driver(driver_id):
@@ -30,6 +31,9 @@ def get_driver(driver_id):
 def get_truck(truck_id):
     return Truck.query.get(truck_id)
 
+# Configure logging at the top of the file
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 def get_next_friday_from_date(start_date):
     """
     Calculates the Friday of the week for a given date.
@@ -38,7 +42,7 @@ def get_next_friday_from_date(start_date):
     Returns:
         A datetime.date object representing the Friday of the week.
     """
-    days_ahead = (4 - start_date.weekday()) % 7  # 4 corresponds to Friday
+    days_ahead = (4 - start_date.weekday()) % 7 # 4 corresponds to Friday
 
     return start_date + timedelta(days=days_ahead)
 
@@ -77,7 +81,7 @@ def find_missing_payslip_weeks(start_date, end_date):
                 ).first()
                 
                 if payslip:
-                    print(start_of_week, end_of_week)
+                    logging.info(f"Payslip found for driver {driver.id} for week ending {end_of_week}")
                 
                 if not payslip:
                     missing_weeks.append(end_of_week)
@@ -87,8 +91,6 @@ def find_missing_payslip_weeks(start_date, end_date):
             missing_payslips_by_driver[driver.id] = missing_weeks
 
     return missing_payslips_by_driver
-
-
 
 def get_all_missing_payslip_weeks():
     """
@@ -101,6 +103,7 @@ def get_all_missing_payslip_weeks():
     last_payslip = Payslip.query.order_by(Payslip.date.desc()).first()
     
     if not first_payslip or not last_payslip:
+        logging.info("No payslip data found to check.")
         return []
 
     return find_missing_payslip_weeks(first_payslip.date, last_payslip.date)
@@ -159,7 +162,7 @@ def check_missing_day_has_been_rectified(day_entry_id):
     """
     day_entry = Day.query.get(day_entry_id)
     if not day_entry:
-        print(f"No day entry found with ID {day_entry_id}")
+        logging.info(f"No day entry found with ID {day_entry_id}")
         return
         
     date = day_entry.date
@@ -179,89 +182,12 @@ def check_missing_day_has_been_rectified(day_entry_id):
             db.session.commit()
         except Exception as e:
             flash('Error deleting anomaly', 'error-msg')
-            print(f'Error deleting anomaly: {e}')
+            logging.error(f'Error deleting anomaly: {e}')
         else:
             # flash('Success rectifying missing day anomaly', 'success-msg')
-            print(f'Success deleting missing day anomaly for {date}')
+            logging.info(f'Success deleting missing day anomaly for {date}')
     else:
-        print(f'No missing day anomaly found for driver {driver_id} on {date}')
-
-def check_missing_day_has_been_rectified(day_entry_id):
-    """Checks if a missing day entry has been rectified.
-    
-    Performs check on the week containing the day entry.
-    If the day entry now exists, the anomaly is removed from the database.
-    
-    Args:
-        day_entry_id (int): The ID of the day entry that was created to rectify the anomaly
-    """
-    day_entry = Day.query.get(day_entry_id)
-    if not day_entry:
-        print(f"No day entry found with ID {day_entry_id}")
-        return
-        
-    date = day_entry.date
-    driver_id = day_entry.driver_id
-    
-    # Find the anomaly for this date and driver
-    anomaly = MissingEntryAnomaly.query.filter(
-        MissingEntryAnomaly.date == date,
-        MissingEntryAnomaly.driver_id == driver_id,
-        MissingEntryAnomaly.table_name == TableName.DAY
-    ).first()
-    
-    if anomaly:
-        # The day entry now exists, so the anomaly has been rectified
-        try:
-            db.session.delete(anomaly)
-            db.session.commit()
-        except Exception as e:
-            flash('Error deleting anomaly', 'error-msg')
-            print(f'Error deleting anomaly: {e}')
-        else:
-            # flash('Success rectifying missing day anomaly', 'success-msg')
-            print(f'Success deleting missing day anomaly for {date}')
-    else:
-        print(f'No missing day anomaly found for driver {driver_id} on {date}')
-
-def check_missing_day_has_been_rectified(day_entry_id):
-    """Checks if a missing day entry has been rectified.
-    
-    Performs check on the week containing the day entry.
-    If the day entry now exists, the anomaly is removed from the database.
-    
-    Args:
-        day_entry_id (int): The ID of the day entry that was created to rectify the anomaly
-    """
-    day_entry = Day.query.get(day_entry_id)
-    if not day_entry:
-        print(f"No day entry found with ID {day_entry_id}")
-        return
-        
-    date = day_entry.date
-    driver_id = day_entry.driver_id
-    
-    # Find the anomaly for this date and driver
-    anomaly = MissingEntryAnomaly.query.filter(
-        MissingEntryAnomaly.date == date,
-        MissingEntryAnomaly.driver_id == driver_id,
-        MissingEntryAnomaly.table_name == TableName.DAY
-    ).first()
-    
-    if anomaly:
-        # The day entry now exists, so the anomaly has been rectified
-        try:
-            db.session.delete(anomaly)
-            db.session.commit()
-        except Exception as e:
-            flash('Error deleting anomaly', 'error-msg')
-            print(f'Error deleting anomaly: {e}')
-        else:
-            # flash('Success adding missing day anomaly', 'success-msg')
-            print(f'Success deleting missing day anomaly for {date}')
-    else:
-        print(f'No missing day anomaly found for driver {driver_id} on {date}')
-
+        logging.info(f'No missing day anomaly found for driver {driver_id} on {date}')
 
 def find_incorrect_mileage(truck_id, year, week_number):
     """
@@ -292,7 +218,7 @@ def find_incorrect_mileage(truck_id, year, week_number):
             # Condition 1: The current day has a zero start or end mileage.
             # This check is performed for every day, including the first.
             if day.start_mileage == 0 or day.end_mileage == 0:
-                print('day.id')
+                logging.info(f"Day ID {day.id} has a zero mileage entry.")
                 is_incorrect = True
 
             # Condition 2: There is a large discrepancy from the previous day.
@@ -339,7 +265,7 @@ def check_mileage_has_been_rectified(day_entry_id):
     """
     day_entry = Day.query.get(day_entry_id)
     if not day_entry:
-        print(f"No Day entry found for ID {day_entry_id}")
+        logging.info(f"No Day entry found for ID {day_entry_id}")
         return
 
     anomaly = IncorrectMileage.query.filter(
@@ -372,15 +298,15 @@ def check_mileage_has_been_rectified(day_entry_id):
             try:
                 db.session.delete(anomaly)
                 db.session.commit()
-                print(f'Success: Anomaly involving day ID {day_entry_id} was rectified and has been deleted.')
+                logging.info(f'Success: Anomaly involving day ID {day_entry_id} was rectified and has been deleted.')
             except Exception as e:
                 flash('Error deleting anomaly', 'error-msg')
-                print(f'Error deleting anomaly: {e}')
+                logging.error(f'Error deleting anomaly: {e}')
         else:
-            print(f'Anomaly involving day ID {day_entry_id} still present.')
+            logging.info(f'Anomaly involving day ID {day_entry_id} still present.')
             
     else:
-        print(f'No anomaly found involving day ID {day_entry_id}.')
+        logging.info(f'No anomaly found involving day ID {day_entry_id}.')
 
     
 
@@ -437,7 +363,7 @@ def check_all_incorrect_mileages():
     max_date_result = Day.query.order_by(Day.date.desc()).first()
 
     if not min_date_result or not max_date_result:
-        print("No data found in the Day table.")
+        logging.info("No data found in the Day table.")
         return []
 
     start_date = min_date_result.date
@@ -557,22 +483,21 @@ def process_incorrect_mileages(incorrect_mileage_output):
                     anomaly_already_present.is_recurring = True
                     db.session.commit()
                 except Exception as e:
-                    print(f'Error updating anomaly: {e}')
+                    logging.error(f'Error updating anomaly: {e}')
                 else:
-                    print(f'Success updating anomaly status for missing mileage')
+                    logging.info(f'Success updating anomaly status for missing mileage')
     
     if anomalies_to_add:
         try:
             db.session.add_all(anomalies_to_add)
             db.session.commit()
         except Exception as e:
-            print(f"Error creating anomalies: {e}")
+            logging.error(f"Error creating anomalies: {e}")
         else:
-            print(f'Success entering {len(anomalies_to_add)} incorrect mileage entries')
+            logging.info(f'Success entering {len(anomalies_to_add)} incorrect mileage entries')
 
-    print('All incorrect mileage entries processed.')
-            
-
+    logging.info('All incorrect mileage entries processed.')
+             
 
 def process_missing_day_entries(day_entry_output):
 
@@ -620,17 +545,17 @@ def process_missing_day_entries(day_entry_output):
                     anomaly_already_present.is_recurring = True
                     db.session.commit()
                 except Exception as e:
-                    print(f'Error updating anomaly: {e}')
+                    logging.error(f'Error updating anomaly: {e}')
                 else:
-                    print(f'Success updating anomaly {date_obj}, {driver.full_name}')
+                    logging.info(f'Success updating anomaly {date_obj}, {driver.full_name}')
         try:
             db.session.add_all(anomalies_to_add)
             db.session.commit()
         except Exception as e:
-            print(f"Error creating missing day anomaly: {e}")
+            logging.error(f"Error creating missing day anomaly: {e}")
         else:
-            print(f'Success processing missing day anomalies')
-    print('All day entries processed.')
+            logging.info(f'Success processing missing day anomalies')
+    logging.info('All day entries processed.')
 
 def check_all_missing_day_entries():
     """
@@ -645,7 +570,7 @@ def check_all_missing_day_entries():
     max_date_result = Day.query.order_by(Day.date.desc()).first()
 
     if not min_date_result or not max_date_result:
-        print("No data found in the Day table.")
+        logging.info("No data found in the Day table.")
         return []
 
     start_date = min_date_result.date
@@ -773,7 +698,7 @@ def check_all_missing_fuel_data():
     max_date_result = Day.query.order_by(Day.date.desc()).first()
 
     if not min_date_result or not max_date_result:
-        print("No data found in the Day table.")
+        logging.info("No data found in the Day table.")
         return []
 
     start_date = min_date_result.date
@@ -817,9 +742,9 @@ def process_missing_fuel_data(fuel_consistency_output):
                     db.session.add(anomaly)
                     db.session.commit()
                 except Exception as e:
-                    print(f"Error creating anomaly: {e}")
+                    logging.error(f"Error creating anomaly: {e}")
                 else:
-                    print(f'Success entering anomaly {date_obj}, {truck.registration}')
+                    logging.info(f'Success entering anomaly {date_obj}, {truck.registration}')
             elif not anomaly_already_present:
                 pass
             else:
@@ -831,10 +756,10 @@ def process_missing_fuel_data(fuel_consistency_output):
                             anomaly_already_present.is_recurring = True
                             db.session.commit()
                         except Exception as e:
-                            print(f'Error updating anomaly: {e}')
-                    else:
-                        pass
-    print('All fuel entries processed.')
+                            logging.error(f'Error updating anomaly: {e}')
+                        else:
+                            pass
+    logging.info('All fuel entries processed.')
 
 def check_missing_fuel_has_been_rectified(fuel_entry_id):
     """Checks if a missing fuel entry anomaly has been rectified.
@@ -847,7 +772,7 @@ def check_missing_fuel_has_been_rectified(fuel_entry_id):
     """
     fuel_entry = Fuel.query.get(fuel_entry_id)
     if not fuel_entry:
-        print(f"No fuel entry found with ID {fuel_entry_id}")
+        logging.info(f"No fuel entry found with ID {fuel_entry_id}")
         return
         
     date = fuel_entry.date
@@ -867,12 +792,12 @@ def check_missing_fuel_has_been_rectified(fuel_entry_id):
             db.session.commit()
         except Exception as e:
             flash('Error deleting anomaly', 'error-msg')
-            print(f'Error deleting anomaly: {e}')
+            logging.error(f'Error deleting anomaly: {e}')
         else:
             # flash('Success rectifying missing fuel anomaly', 'success-msg')
-            print(f'Success deleting missing fuel anomaly for truck {truck_id} on {date}')
+            logging.info(f'Success deleting missing fuel anomaly for truck {truck_id} on {date}')
     else:
-        print(f'No missing fuel anomaly found for truck {truck_id} on {date}')
+        logging.info(f'No missing fuel anomaly found for truck {truck_id} on {date}')
 
 def process_missing_payslips(missing_payslips_output):
     """
@@ -925,7 +850,7 @@ def process_missing_payslips(missing_payslips_output):
                         db.session.commit()
                     else:
                         pass
-    print("ALL Missing payslips processed")
+    logging.info("ALL Missing payslips processed")
 
 def check_missing_payslip_has_been_rectified(payslip_id):
     """Checks if a missing payslip anomaly has been rectified.
@@ -938,7 +863,7 @@ def check_missing_payslip_has_been_rectified(payslip_id):
     """
     payslip = Payslip.query.get(payslip_id)
     if not payslip:
-        print(f"No payslip found with ID {payslip_id}")
+        logging.info(f"No payslip found with ID {payslip_id}")
         return
         
     date = payslip.date
@@ -958,15 +883,9 @@ def check_missing_payslip_has_been_rectified(payslip_id):
             db.session.commit()
         except Exception as e:
             flash('Error deleting anomaly', 'error-msg')
-            print(f'Error deleting anomaly: {e}')
+            logging.error(f'Error deleting anomaly: {e}')
         else:
             # flash('Success rectifying missing payslip anomaly', 'success-msg')
-            print(f'Success deleting missing payslip anomaly for driver {driver_id} on {date}')
+            logging.info(f'Success deleting missing payslip anomaly for driver {driver_id} on {date}')
     else:
-        print(f'No missing payslip anomaly found for driver {driver_id} on {date}')
-
-
-
-
-
-
+        logging.info(f'No missing payslip anomaly found for driver {driver_id} on {date}')

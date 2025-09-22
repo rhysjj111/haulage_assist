@@ -45,3 +45,4 @@ urllib3==2.2.3
 Werkzeug==3.0.1
 WTForms==3.2.1
 WTForms-SQLAlchemy==0.4.2
+gunicorn
