@@ -89,7 +89,9 @@
                     <p>{{ item }} will be deleted permanently.</p>
                 </div>
                 <div class="modal-footer">
-                    <a href="{{ url_for(type+'.delete_'+type, item_id=item.id)}}" class="btn red">Delete</a>
+                    <form action="{{ url_for(type+'.delete_'+type, item_id=item.id) }}" method="post" style="display:inline;">
+                        <button type="submit" class="btn red">Delete</button>
+                    </form>
                     <a class="modal-close btn grey">Cancel</a>
                 </div>
             </div>
