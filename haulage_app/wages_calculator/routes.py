@@ -55,7 +55,24 @@ def wages_calculator():
     # Combine them in the order you want
     anomalies = missing_entry_anomalies + incorrect_mileage_anomalies
 
-    if anomalies:
+    anomalies_after_hack = []
+
+    hacked_date_tuple = (2025, 38)
+
+    for anomaly in anomalies:
+        if anomaly.type == 'incorrect_mileage':
+            entry_table = 'day'
+            date_tuple = (anomaly.year, anomaly.week_number)
+        else:
+            entry_table = anomaly.table_name.value
+            date_tuple = get_week_number_sat_to_fri(anomaly.date)
+
+        if date_tuple > hacked_date_tuple:
+            anomalies_after_hack.append(anomaly)
+
+    # print(anomalies)
+
+    if anomalies_after_hack:
         anomalies_present = True
 
     return render_template("wages_calculator.html", 
