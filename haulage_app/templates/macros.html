@@ -218,6 +218,21 @@ from datetime import datetime
 
 
 
+{% macro driver_options(drivers, selected_driver_id=none, existing_driver=none) %}
+    {% set choices = drivers|list %}
+    {% set driver_ids = choices|map(attribute='id')|map('string')|list %}
+    {% if existing_driver is not none and existing_driver.id|string not in driver_ids %}
+        {% set choices = choices + [existing_driver] %}
+    {% endif %}
+    {% if selected_driver_id is none or selected_driver_id|string == '' %}
+        <option value="" disabled selected>Please select</option>
+    {% endif %}
+    {% for choice_driver in choices|sort(attribute='first_name,last_name', case_sensitive=true) %}
+        <option value="{{ choice_driver.id }}"{% if selected_driver_id is not none and selected_driver_id|string == choice_driver.id|string %} selected{% endif %}>{{ choice_driver.full_name }}</option>
+    {% endfor %}
+{% endmacro %}
+
+
 {% macro day(type, day, components, f) %}
     <!-- status -->
     <div class="row">
@@ -259,20 +274,7 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
             <select name="driver_id" id="driver_id" class="validate" required>
-                {% if day.driver_id is defined %}
-                    {% for driver in components.drivers %}
-                        {% if day.driver_id|int == driver.id|int %}
-                            <option value="{{ driver.id }}" selected>{{ driver.full_name }}</option>
-                        {% else %}
-                            <option value="{{ driver.id }}">{{ driver.full_name }}</option>
-                        {% endif %}
-                    {% endfor %}        
-                {% else %}
-                    <option value="" disabled selected>Please select</option>
-                    {% for driver in components.drivers %}
-                        <option value="{{ driver.id }}" >{{ driver.full_name }}</option>
-                    {% endfor %}   
-                {% endif %}
+                {{ driver_options(components.drivers, day.driver_id|default(none), day.driver|default(none) if type == 'edit' else none) }}
             </select>
             <label for="driver_id">Driver:</label>
         </div>
@@ -532,11 +534,7 @@ from datetime import datetime
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->
             <input id="date_cd" name="date_cd"  type="text" class="datepicker" required
                 {% if job is defined and type == 'edit' %} 
-                    {% for day in components.days %}
-                        {% if job.day_id == day.id %}
-                            value="{{ day.date }}"
-                        {% endif %}
-                    {% endfor %}
+                    value="{{ job.day.date }}"
                 {% elif job is defined %}
                     value="{{job.date_cd}}"
                 {% endif %}
@@ -550,37 +548,12 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
             <select name="driver_id" id="driver_id" class="validate" required>
-                <!-- Check if job object exists (will only exist for edit and if form has an error) -->
-                {% if job != {} %}
-                    {% for driver in components.drivers %}
-                        <!-- Check if form has been repopulated due to an error -->
-                        {% if job.driver_id is defined %}
-                            {% if job.driver_id|string == driver.id|string %}
-                                <option value="{{ driver.id }}" selected>{{ driver.full_name }} </option>
-                            {% else %}
-                                <option value="{{ driver.id }}">{{ driver.full_name }}</option>
-                            {% endif %}
-                        <!-- Else, we are populating an edit form (job.driver_id is not available in this
-                         case and we must loop through the list of day entries.) -->
-                        {% else %}
-                            {% for day in components.days %}
-                                {% if job.day_id == day.id %}
-                                    {% if day.driver_id|int == driver.id|int %}
-                                        <option value="{{ driver.id }}" selected>{{ driver.full_name }}</option>
-                                    {% elif job.driver_id == driver.id %}
-                                        <option value="{{ driver.id }}" selected>{{ driver.full_name }}</option>
-                                    {% else %}
-                                        <option value="{{ driver.id }}">{{ driver.full_name }}</option>
-                                    {% endif %}
-                                {% endif %}
-                            {% endfor %}
-                        {% endif %}
-                    {% endfor %}        
+                {% if job.driver_id is defined %}
+                    {{ driver_options(components.drivers, job.driver_id) }}
+                {% elif type == 'edit' %}
+                    {{ driver_options(components.drivers, job.day.driver_id, job.day.driver) }}
                 {% else %}
-                    <option value="" disabled selected>Please select</option>
-                    {% for driver in components.drivers %}
-                        <option value="{{ driver.id|int }}" >{{ driver.full_name }}{{ job.day_id }}{{ day.id }}</option>
-                    {% endfor %}   
+                    {{ driver_options(components.drivers) }}
                 {% endif %}
             </select>
             <label for="driver_id">Driver:</label>
@@ -717,20 +690,7 @@ from datetime import datetime
         <div class="input-field col s12">
             <!-- <i class="fas fa-calendar prefix light-blue-text text-darken-4"></i> -->  
             <select name="driver_id" id="driver_id" class="validate" required>
-                {% if payslip.driver_id is defined %}
-                    {% for driver in drivers %}
-                        {% if payslip.driver_id|int == driver.id|int %}
-                            <option value="{{ driver.id }}" selected>{{ driver.full_name }}</option>
-                        {% else %}
-                            <option value="{{ driver.id }}">{{ driver.full_name }}</option>
-                        {% endif %}
-                    {% endfor %}        
-                {% else %}
-                    <option value="" disabled selected>Please select</option>
-                    {% for driver in drivers %}
-                            <option value="{{ driver.id }}" >{{ driver.full_name }}</option>
-                    {% endfor %}   
-                {% endif %}
+                {{ driver_options(drivers, payslip.driver_id|default(none), payslip.driver|default(none) if type == 'edit' else none) }}
             </select>
             <label for="driver_id">Select Driver:</label>
         </div>

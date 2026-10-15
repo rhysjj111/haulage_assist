@@ -6,6 +6,7 @@ from haulage_app.analysis.functions import get_start_and_end_of_week
 from haulage_app.day import day_bp
 from pprint import pprint
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload, selectinload
 from haulage_app.verification.checks.verification_functions import(
     check_mileage_has_been_rectified,
     check_missing_day_has_been_rectified,
@@ -18,15 +19,22 @@ from haulage_app.functions import(
     date_to_db,
     get_week_number_sat_to_fri,
 )
-from collections import defaultdict
 from haulage_app.day.forms import DayForm
+from haulage_app.driver.choices import get_entry_drivers, with_selected_driver
+
+RECENT_ENTRIES_PER_DRIVER = 30
 
 @day_bp.route("/add_day/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_day(item_id, tab):
-    drivers = list(Driver.query.order_by(Driver.first_name).all())
+    drivers = get_entry_drivers()
     trucks = list(Truck.query.order_by(Truck.registration).all())
-    days = list(Day.query.order_by(Day.date).all())
     components = {'drivers':drivers, 'trucks':trucks}
+    truck_choices = [(truck.id, truck.registration) for truck in trucks]
+    history_query = Day.query.options(
+        joinedload(Day.driver),
+        joinedload(Day.truck),
+        selectinload(Day.jobs),
+    )
 
     anomaly_id = request.args.get('anomaly_id')
     day = {}
@@ -39,7 +47,7 @@ def add_day(item_id, tab):
             previous_date = f.display_date(anomaly.previous_date)
             next_date = f.display_date(anomaly.next_date)
 
-            day_entries = Day.query.filter(
+            day_entries = history_query.filter(
                 db.or_(
                     Day.date == anomaly.previous_date,
                     Day.date == anomaly.next_date
@@ -54,66 +62,80 @@ def add_day(item_id, tab):
             start_week_date = start_week_date  - timedelta(days=5)
             end_week_date = end_week_date + timedelta(days=5)
 
-            day_entries = Day.query.filter(
+            day_entries = history_query.filter(
                 Day.date.between(start_week_date, end_week_date),
                 Day.driver_id == anomaly.driver_id
             ).all()
 
     else:
+        # Select the newest entries per driver before prioritizing missing mileage.
+        ranked_days = db.session.query(
+            Day.id,
+            db.func.row_number().over(
+                partition_by=Day.driver_id,
+                order_by=(Day.date.desc(), Day.id.desc()),
+            ).label('entry_rank'),
+        ).subquery()
         day_entries = list(
-            Day.query.join(Driver)
+            history_query.join(Driver)
+            .join(ranked_days, Day.id == ranked_days.c.id)
+            .filter(ranked_days.c.entry_rank <= RECENT_ENTRIES_PER_DRIVER)
             .order_by(
                 db.case(
                     (db.and_(Day.status == 'working', Day.start_mileage == 0), 0),
                     (db.and_(Day.status == 'working', Day.end_mileage == 0), 1),
                     else_=2
                 ),
-                Day.date.desc()
+                Day.date.desc(),
+                Day.id.desc(),
             ).all()
         )
 
+    visible_weeks = set()
     for entry in day_entries:
         date_obj = entry.date
         year, week_number = get_week_number_sat_to_fri(date_obj)
         entry.week_number = week_number
         entry.year = year
-    # weekly modal creation
-    weekly_data = defaultdict(lambda: defaultdict(list))
+        visible_weeks.add((entry.driver_id, year, week_number))
 
-    for day_entry in days:
-        date_obj = day_entry.date
-        driver_id = day_entry.driver_id
-        year, week_number = get_week_number_sat_to_fri(date_obj)
-
-        weekly_data[driver_id][(year, week_number)].append(day_entry)
+    # Fetch complete weeks for the visible entries, including days just outside
+    # the history cutoff. Older, unrelated weekly editors are not built.
+    week_filters = []
+    for driver_id, year, week_number in sorted(visible_weeks):
+        start_date = get_start_of_week(year, week_number)
+        week_filters.append(db.and_(
+            Day.driver_id == driver_id,
+            Day.date.between(start_date, start_date + timedelta(days=6)),
+        ))
+    days = (
+        Day.query.filter(db.or_(*week_filters)).all()
+        if week_filters else []
+    )
+    days_by_driver_date = {(entry.driver_id, entry.date): entry for entry in days}
 
     driver_weeks_forms = {}
-    #Drill into outer dict
-    for driver_id, weeks_data in weekly_data.items():
-        driver_weeks_forms[driver_id] = {}
-        #Drill into week number, day entries next layer of dict
-        for (year, week_number), entries in weeks_data.items():
-            start_date = get_start_of_week(year, week_number)
-            week_dates = [start_date + timedelta(days=i) for i in range(7)]
-            forms = {}
+    for driver_id, year, week_number in sorted(visible_weeks):
+        start_date = get_start_of_week(year, week_number)
+        week_dates = [start_date + timedelta(days=i) for i in range(7)]
+        forms = {}
 
-            for day_date in week_dates:
-                #Search for day entry with matching date
-                entry_for_day = next((e for e in entries if e.date == day_date), None)
-                if entry_for_day:
-                    form = DayForm(prefix=f'{driver_id}-{day_date}')
-                    form.id.data = entry_for_day.id
-                    form.date.data = entry_for_day.date
-                    form.start_mileage.data = entry_for_day.start_mileage if entry_for_day.start_mileage is not None else 0
-                    form.end_mileage.data = entry_for_day.end_mileage if entry_for_day.end_mileage is not None else 0
-                    form.fuel.data = entry_for_day.fuel
-                    form.overnight.data = entry_for_day.overnight
-                    form.status.data = entry_for_day.status
-                    form.truck.data = entry_for_day.truck_id
-                    forms[day_date] = form
-                else:
-                    forms[day_date] = None
-            driver_weeks_forms[driver_id][(year, week_number)] = (week_dates, forms)    
+        for day_date in week_dates:
+            entry_for_day = days_by_driver_date.get((driver_id, day_date))
+            if entry_for_day:
+                form = DayForm(prefix=f'{driver_id}-{day_date}', truck_choices=truck_choices)
+                form.id.data = entry_for_day.id
+                form.date.data = entry_for_day.date
+                form.start_mileage.data = entry_for_day.start_mileage if entry_for_day.start_mileage is not None else 0
+                form.end_mileage.data = entry_for_day.end_mileage if entry_for_day.end_mileage is not None else 0
+                form.fuel.data = entry_for_day.fuel
+                form.overnight.data = entry_for_day.overnight
+                form.status.data = entry_for_day.status
+                form.truck.data = entry_for_day.truck_id
+                forms[day_date] = form
+            else:
+                forms[day_date] = None
+        driver_weeks_forms.setdefault(driver_id, {})[(year, week_number)] = (week_dates, forms)
     
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
@@ -124,6 +146,7 @@ def add_day(item_id, tab):
         "item_id": item_id,
         "type": 'day',
         "driver_weeks_forms": driver_weeks_forms,
+        "recent_entries_limit": None if anomaly_id else RECENT_ENTRIES_PER_DRIVER,
         "day": day       # Initially an empty dictionary for form data
     }
 
@@ -157,6 +180,10 @@ def add_day(item_id, tab):
             flash(f"Entry Success: {new_entry.driver.full_name} - {f.display_date(new_entry.date)}", "success-msg")
             check_missing_day_has_been_rectified(new_entry.id)
             return redirect(url_for("day.add_day", item_id=0, tab='entry'))
+    template_data["entry_components"] = {
+        **components,
+        'drivers': with_selected_driver(drivers, template_data['day'].get('driver_id')),
+    }
     return render_template("add_day.html", **template_data)
 
 @day_bp.route("/delete_day/<int:item_id>", methods=['POST'])
