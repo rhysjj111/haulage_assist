@@ -4,6 +4,8 @@ from haulage_app.models import Driver, Payslip, Day
 from haulage_app.verification.models import MissingEntryAnomaly
 from haulage_app.payslip import payslip_bp
 from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlalchemy.orm import joinedload
+from haulage_app.driver.choices import get_entry_drivers, with_selected_driver
 from haulage_app.verification.checks.verification_functions import(
     check_missing_payslip_has_been_rectified,
 )
@@ -15,8 +17,8 @@ from haulage_app.functions import(
 @payslip_bp.route("/add_payslip/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_payslip(item_id, tab):
 
-    drivers = list(Driver.query.order_by(Driver.first_name).all())
-    payslips = list(Payslip.query.order_by(Payslip.date.desc()).all())
+    drivers = get_entry_drivers()
+    payslips = list(Payslip.query.options(joinedload(Payslip.driver)).order_by(Payslip.date.desc()).all())
     payslip = {}
 
     # On GET request, check session for data from a previous successful submission
@@ -77,7 +79,9 @@ def add_payslip(item_id, tab):
             payslip = request.form
 
     # This is the destination for all GET requests and any failed POST requests
-    return render_template("add_payslip.html", drivers=drivers, list=payslips, tab=tab, 
+    return render_template("add_payslip.html", drivers=drivers,
+                           entry_drivers=with_selected_driver(drivers, payslip.get('driver_id')),
+                           list=payslips, tab=tab,
                            payslip=payslip, item_id=item_id, type='payslip')
 
 

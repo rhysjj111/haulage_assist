@@ -4,14 +4,17 @@ from haulage_app.models import Driver, Day, Job, Truck
 from haulage_app.job import job_bp
 from datetime import datetime, timedelta
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import contains_eager
+from haulage_app.driver.choices import get_entry_drivers, with_selected_driver
 
 
 @job_bp.route("/add_job/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_job(item_id, tab):
-    drivers = list(Driver.query.order_by(Driver.first_name).all())
+    drivers = get_entry_drivers()
     trucks = list(Truck.query.order_by(Truck.registration).all())
-    days = list(Day.query.order_by(Day.date).all())
-    jobs = list(Job.query.join(Day).join(Driver).order_by(
+    jobs = list(Job.query.join(Day).join(Driver).options(
+        contains_eager(Job.day).contains_eager(Day.driver)
+    ).order_by(
         Job.id.desc(),
         Day.date.desc(),
         Driver.first_name,
@@ -19,7 +22,7 @@ def add_job(item_id, tab):
     )
     #empty dictionary to be filled with users previous answers if there
     #are any issues with data submitted
-    components = {'drivers': drivers, 'days': days, 'jobs': jobs}
+    components = {'drivers': drivers, 'jobs': jobs}
     job = {}
     dates = {}
     day_not_present = {}
@@ -118,6 +121,7 @@ def add_job(item_id, tab):
         trucks=trucks,
         list=jobs,
         components=components,
+        entry_components={**components, 'drivers': with_selected_driver(drivers, job.get('driver_id'))},
         tab=tab,
         job=job,
         item_id=item_id,

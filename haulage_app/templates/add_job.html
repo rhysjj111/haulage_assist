@@ -7,7 +7,7 @@
     {% block entry_form_title %}Add a Job:{% endblock %}
         {% block entry_form_questions %}
             <form method="post" action="{{ url_for('job.add_job', item_id=0, tab='entry') }}">
-                {{ macros[type]('add', job, components, f) }}
+                {{ macros[type]('add', job, entry_components, f) }}
             </form>
         {% endblock %}
 

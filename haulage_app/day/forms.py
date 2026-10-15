@@ -76,8 +76,6 @@ class TruckField(SelectField):
             coerce=int,  # Convert the value to integer (truck_id)
             **kwargs
         )
-        # Dynamically load truck choices when the form is instantiated
-        self.choices = [(truck.id, truck.registration) for truck in Truck.query.all()]
     
 # class TruckSelectWidget(Select):
 #     def __call__(self, field, **kwargs):
@@ -125,6 +123,12 @@ class FloatField(IntegerField):
         return 0
 
 class DayForm(FlaskForm):
+    def __init__(self, *args, truck_choices=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if truck_choices is None:
+            truck_choices = [(truck.id, truck.registration) for truck in Truck.query.all()]
+        self.truck.choices = truck_choices
+
     id = HiddenField('ID')
     date = DateField('Date', widget=DatePickerWidget(), validators=[Optional()])
     start_mileage = FloatField('Start Mileage', validators=[Optional()])
