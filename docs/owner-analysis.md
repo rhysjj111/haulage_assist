@@ -82,8 +82,10 @@ Two additive migrations follow the previous head:
 1. `859d6ebe2110` → `7e9c2a41b6d8`: owner overhead settings/snapshots.
 2. `7e9c2a41b6d8` → `b2e7a9c4106f`: issue explanations and weekly signoffs.
 
-They do not seed configuration or change existing entry/payroll records. The
-current Procfile does not automatically run migrations. Before a live release,
+They do not seed configuration or change existing entry/payroll records. This
+branch adds a Heroku release phase to apply pending migrations before a new web
+release starts. Future pending migrations will also run during release. Follow
+the [deployment and rollback procedure](owner-analysis-deployment.md). Before a live release,
 check the live revision/schema, obtain a fresh backup, rehearse on a separate
 restored copy and agree the migration/deployment sequence. Do not stamp a database
 or replay legacy migrations without checking its actual state. Rolling code back
@@ -127,6 +129,7 @@ spending/litres, per-driver figures/status counts and per-truck fuel totals.
 These checks establish arithmetic and migration behaviour for this historical
 archive. They do not establish current live schema/data completeness or the
 accuracy of the original receipts/payroll entries. Historical overhead settings
-were left unknown, so no estimated result or final review was invented. A fresh
-backup and confirmed effective overhead history are still required for current
-real-data verification before deployment.
+were left unknown, so no estimated result or final review was invented. Those
+historical checks do not replace the live preflight, fresh pre-release backup
+and confirmed effective overhead history described in the deployment procedure.
+Uploaded backups and private financial comparison results are not committed.
