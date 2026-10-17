@@ -1,0 +1,71 @@
+{% macro money(value) -%}{% if value is not none %}£{{ '%.2f'|format(value / 100) }}{% else %}—{% endif %}{%- endmacro %}
+
+<section aria-label="{{ 'Driver' if breakdown.kind == 'driver' else 'Truck' }} analysis">
+  {% if report.completed_week_count is defined and not report.completed_week_count %}<p class="owner-notice">No completed payroll weeks yet. Figures will appear after the first included payroll week has finished.</p>{% endif %}
+  <form class="owner-filter" method="get" action="{{ breakdown.filter_action }}">
+    {% for name, value in breakdown.filter_fields.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    <div>
+      <label for="owner-entity-filter">{{ 'Driver' if breakdown.kind == 'driver' else 'Truck' }}</label>
+      <select class="browser-default" id="owner-entity-filter" name="{{ 'driver_id' if breakdown.kind == 'driver' else 'truck_id' }}">
+        <option value="all"{% if breakdown.selected_id is none %} selected{% endif %}>All {{ 'drivers' if breakdown.kind == 'driver' else 'trucks' }}</option>
+        {% for item in breakdown.options %}<option value="{{ item.id }}"{% if breakdown.selected_id == item.id %} selected{% endif %}>{{ item.label }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="owner-button">Show {{ 'driver' if breakdown.kind == 'driver' else 'truck' }}</button>
+  </form>
+  {% if breakdown.kind == 'driver' %}
+    <p class="owner-muted owner-small">Earnings and wage costs follow the driver recorded on each entry. Blank days remain unknown. Drivers who have since left are included when they have records in this period.</p>
+  {% else %}
+    <p class="owner-muted owner-small">Fuel spending and litres purchased follow the truck recorded on each receipt, including receipts without a linked day. These are purchases during the period.</p>
+  {% endif %}
+  <div class="owner-breakdown-grid">
+    {% for item in breakdown.rows %}
+    <article class="owner-card">
+      <h2>{{ item.driver_name if breakdown.kind == 'driver' else item.truck_registration }}</h2>
+      <div class="owner-breakdown-metrics">
+      {% if breakdown.kind == 'driver' %}
+        <div class="owner-metric"><span class="owner-metric-label">Recorded earnings</span><strong class="owner-metric-value">{{ money(item.earnings) }}</strong></div>
+        <div class="owner-metric"><span class="owner-metric-label">Employer wage cost</span><strong class="owner-metric-value">{% if item.payroll_pending and not item.payslip_ids %}Pending{% else %}{{ money(item.employer_cost) }}{% endif %}</strong>{% if item.payroll_pending and item.payslip_ids %}<span class="owner-small owner-muted">Recorded subtotal · payroll pending</span>{% endif %}</div>
+        <div class="owner-metric"><span class="owner-metric-label">Working days</span><strong class="owner-metric-value">{{ item.working_days }}</strong></div>
+        <div class="owner-metric"><span class="owner-metric-label">Earnings per working day</span><strong class="owner-metric-value">{{ money(item.average_earnings_per_working_day) }}</strong></div>
+        <div class="owner-metric"><span class="owner-metric-label">Holiday days</span><strong class="owner-metric-value">{{ item.holiday_days }}</strong></div>
+        <div class="owner-metric"><span class="owner-metric-label">Absent days</span><strong class="owner-metric-value">{{ item.absent_days }}</strong></div>
+      {% else %}
+        <div class="owner-metric"><span class="owner-metric-label">Fuel spending</span><strong class="owner-metric-value">{{ money(item.fuel_spending) }}</strong></div>
+        <div class="owner-metric"><span class="owner-metric-label">Litres purchased</span><strong class="owner-metric-value">{{ '%.2f'|format(item.fuel_volume / 100) }} L</strong></div>
+        <div class="owner-metric"><span class="owner-metric-label">Fuel entries</span><strong class="owner-metric-value">{{ item.fuel_entry_count }}</strong></div>
+      {% endif %}
+      </div>
+      {% if item.entries_pending|default(false) %}<p class="owner-notice owner-small">Entries may still be missing for this driver. Recorded totals may change.</p>{% endif %}
+      {% if item.fuel_pending|default(false) %}<p class="owner-notice owner-small">Fuel checks are outstanding for this truck. Recorded purchases may be incomplete.</p>{% endif %}
+    </article>
+    {% else %}<div class="owner-card"><p>No {{ 'driver' if breakdown.kind == 'driver' else 'truck' }} records for the selected period.</p></div>{% endfor %}
+  </div>
+
+  {% if breakdown.kind == 'truck' %}
+  <section class="owner-card" style="margin-top: 1rem;">
+    <h2>Standard overhead allowance</h2>
+    <p class="owner-muted owner-small">This is the standard weekly allowance per truck. The fleet overhead total is shown in Overview. Historical settings record the truck count, rather than which registrations were included.</p>
+    <ul class="owner-list">
+      {% for week in breakdown.allowance_weeks %}<li>{{ week.week_start.strftime('%d %b %Y') }} – {{ week.week_end.strftime('%d %b %Y') }}: <strong>{{ money(week.allowance_per_truck) }}{% if week.allowance_per_truck is not none %} per truck{% else %} Not configured{% endif %}</strong></li>
+      {% else %}<li>No completed payroll weeks yet.</li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section class="owner-card" style="margin-top: 1rem;">
+    <h2>Relevant checks</h2>
+    <p class="owner-muted owner-small">The review status covers the whole period. Open the relevant week to correct an entry, add an explanation or verify a check.</p>
+    {% for issue in breakdown.issues %}
+      <div class="owner-issue">
+        <div class="owner-issue-title">{{ issue.title|default(issue.label|default(issue.code|default('Check'))) }}</div>
+        {% if issue.message|default('') %}<p>{{ issue.message }}</p>{% endif %}
+        {% if issue.context_label|default('') %}<p class="owner-small owner-muted">{{ issue.context_label }}</p>{% endif %}
+        {% if issue.week_start|default(none) %}<p class="owner-small owner-muted">Week {{ issue.week_start.strftime('%d %b %Y') }} – {{ issue.week_end.strftime('%d %b %Y') }}</p>{% endif %}
+        {% if issue.verified|default(false) %}<span class="owner-badge owner-badge-checked">Verified</span>{% endif %}
+      </div>
+    {% else %}<p>No outstanding checks for this selection.</p>{% endfor %}
+    {% if breakdown.weekly_links %}<div class="owner-week-links">{% for week in breakdown.weekly_links %}<a class="owner-button owner-button-secondary" href="{{ week.url }}">Open week {{ week.week_start.strftime('%d %b') }}</a>{% endfor %}</div>{% endif %}
+    {% if breakdown.history %}<details><summary>Explanations and verification history</summary>{% for entry in breakdown.history %}<div class="owner-history-entry"><p class="owner-small owner-muted">{{ entry.label|default(entry.action|default('Note')) }}{% if entry.context_label|default('') %} · {{ entry.context_label }}{% endif %}{% if entry.week_start|default(none) %} · Week {{ entry.week_start.strftime('%d %b %Y') }}{% endif %}{% if entry.created_at_label|default('') %} · {{ entry.created_at_label }}{% endif %}</p><p class="owner-note">{{ entry.note|default('') }}</p></div>{% endfor %}</details>{% endif %}
+  </section>
+</section>

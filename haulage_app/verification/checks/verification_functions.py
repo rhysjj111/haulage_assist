@@ -20,6 +20,7 @@ from haulage_app.analysis.functions import(
     get_week_number_sat_to_fri,
 )
 from functools import lru_cache
+from haulage_app.verification.checks.period_rules import missing_fuel_dates
 from flask import flash
 import logging
 
@@ -636,12 +637,8 @@ def check_week_for_missing_fuel_data(truck_id, year, week_number):
         "missing_invoice_dates": [],
     }
 
-    if difference > 0:
-        unique_day_entry_fuel_dates = list(set(day_entry_fuel_dates) - set(fuel_entry_dates))
-        result["missing_invoice_dates"] = unique_day_entry_fuel_dates
-        return result
-    else:
-        return result
+    result["missing_invoice_dates"] = missing_fuel_dates(day_entry_fuel_dates, fuel_entry_dates)
+    return result
 
 def check_week_for_missing_fuel_data_for_date_range(start_date, end_date):
     """

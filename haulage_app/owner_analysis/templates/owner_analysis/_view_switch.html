@@ -1,0 +1,5 @@
+<div class="owner-segmented" aria-label="Analysis view">
+  {% for key, label in [('overview', 'Overview'), ('drivers', 'Drivers'), ('trucks', 'Trucks')] %}
+    <a href="{{ view_links[key] }}"{% if analysis_view == key %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</div>

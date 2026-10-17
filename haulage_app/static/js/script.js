@@ -515,6 +515,7 @@ const splitInput = document.querySelector('#split');
 const lever = document.querySelector('.lever');
 const nwdInput = document.querySelector('#date_nwd')
 const nwdContainer = document.querySelector('.nwd-container');
+if (lever && splitInput && nwdInput && nwdContainer) {
 lever.addEventListener('click', () => {
     if (splitInput.checked) {
         nwdContainer.classList.add('hide');
@@ -523,6 +524,7 @@ lever.addEventListener('click', () => {
         nwdContainer.classList.remove('hide');
         nwdInput.setAttribute('required','');
     }
-})
+});
+}
 
 

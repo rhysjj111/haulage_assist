@@ -527,7 +527,7 @@ from datetime import datetime
 
 
 
-{% macro job(type, job, components, f) %}
+{% macro job(type, job, components, f, allow_split=true) %}
     <!-- date -->
     <div class="row">
         <div class="input-field col s12">
@@ -622,7 +622,7 @@ from datetime import datetime
         </div>
     </div>
 
-    {% if type == 'add' %}
+    {% if type == 'add' and allow_split %}
         <!-- split -->
         <div class="row">
             <div class="input-field col s12">
@@ -1194,6 +1194,7 @@ from datetime import datetime
         <li><div class="divider"></div></li>
         <li><a class="subheader">Tools</a></li>
         <li><a href="{{ url_for('wages_calculator.wages_calculator') }}"><i class="material-icons">attach_money</i>Wages Calculator</a></li>
+        <li><a href="{{ url_for('owner_analysis.weekly') }}"><i class="material-icons">assessment</i>Owner Analysis</a></li>
         <li class="">
             <!-- <ul class="collapsible collapsible-accordion">
                 <li>

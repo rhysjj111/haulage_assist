@@ -1,5 +1,8 @@
 # A wage calculator for the drivers of a haulage business.
 
+Owner Analysis implementation, setup, database changes and verification are
+documented in [docs/owner-analysis.md](docs/owner-analysis.md).
+
 Live site: https://jjcalc-d6c8df6b66e9.herokuapp.com/ <br>
 Github: https://github.com/rhysjj111/PROJECT3_WAGE_CALCULATOR
 
@@ -164,9 +167,9 @@ from wages_calc import db, app
 ```
 dropdb postgres
 createdb postgres
-PGPASSWORD=pe30b956095b85dbcc858ca8a88003bb1687004d3bfb5a855fa3780ae5904c238 pg_dump -h c3l5o0rb2a6o4l.cluster-czz5s0kz4scl.eu-west-1.rds.amazonaws.com -U u1gn7p79ue8ef3 dau2n8i4dqe30h | psql -h localhost -U user postgres
+pg_dump "$SOURCE_DATABASE_URL" | psql "$LOCAL_TEST_DATABASE_URL"
 ```
-- Insert DATABASE PASSWORD into the command above. I have left all other details such as host name etc. of my current database.
+- Set SOURCE_DATABASE_URL and LOCAL_TEST_DATABASE_URL privately before running the command. Never commit connection passwords.
 
 ##### Handling the development environment postgres connection issues
 - When trying to connect to the postgres database and you encounter:

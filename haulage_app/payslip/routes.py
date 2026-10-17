@@ -16,6 +16,9 @@ from haulage_app.functions import(
 
 @payslip_bp.route("/add_payslip/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_payslip(item_id, tab):
+    if request.args.get('owner_context') or request.form.get('owner_context'):
+        from haulage_app.owner_analysis.corrections import owner_entry_response
+        return owner_entry_response('payslip', item_id, tab)
 
     drivers = get_entry_drivers()
     payslips = list(Payslip.query.options(joinedload(Payslip.driver)).order_by(Payslip.date.desc()).all())
@@ -147,6 +150,9 @@ def add_payslip(item_id, tab):
 
 @payslip_bp.route("/delete_payslip/<int:item_id>", methods=['POST'])
 def delete_payslip(item_id):
+    if request.args.get('owner_context') or request.form.get('owner_context'):
+        from haulage_app.owner_analysis.corrections import owner_mutation_response
+        return owner_mutation_response('payslip', item_id, action='delete')
     entry = Payslip.query.get_or_404(item_id)
     db.session.delete(entry)
     db.session.commit()
@@ -155,6 +161,9 @@ def delete_payslip(item_id):
 
 @payslip_bp.route("/edit_payslip/<int:item_id>", methods=["POST"])
 def edit_payslip(item_id):
+    if request.args.get('owner_context') or request.form.get('owner_context'):
+        from haulage_app.owner_analysis.corrections import owner_mutation_response
+        return owner_mutation_response('payslip', item_id, action='edit')
     entry = Payslip.query.get_or_404(item_id)
     try:
         entry.date = request.form.get("date")

@@ -13,6 +13,9 @@ from sqlalchemy.exc import NoResultFound
 
 @fuel_bp.route("/add_fuel/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_fuel(item_id, tab):
+    if request.args.get('owner_context') or request.form.get('owner_context'):
+        from haulage_app.owner_analysis.corrections import owner_entry_response
+        return owner_entry_response('fuel', item_id, tab)
     trucks = list(Truck.query.order_by(Truck.registration).all())
     fuel_entries = list(Fuel.query.order_by(Fuel.date.desc()).all())
     #empty dictionary to be filled with users previous answers if there
@@ -71,6 +74,9 @@ def add_fuel(item_id, tab):
 
 @fuel_bp.route("/delete_fuel/<int:item_id>", methods=['POST'])
 def delete_fuel(item_id):
+    if request.args.get('owner_context') or request.form.get('owner_context'):
+        from haulage_app.owner_analysis.corrections import owner_mutation_response
+        return owner_mutation_response('fuel', item_id, action='delete')
     entry = Fuel.query.get_or_404(item_id)
     db.session.delete(entry)
     db.session.commit()
@@ -79,6 +85,9 @@ def delete_fuel(item_id):
 
 @fuel_bp.route("/edit_fuel/<int:item_id>", methods=["POST"])
 def edit_fuel(item_id):
+    if request.args.get('owner_context') or request.form.get('owner_context'):
+        from haulage_app.owner_analysis.corrections import owner_mutation_response
+        return owner_mutation_response('fuel', item_id, action='edit')
     entry = Fuel.query.get_or_404(item_id)
     try:
         entry.date = request.form.get("date")
