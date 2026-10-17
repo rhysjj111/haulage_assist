@@ -26,6 +26,9 @@ RECENT_ENTRIES_PER_DRIVER = 30
 
 @day_bp.route("/add_day/<int:item_id>/<tab>", methods=["GET", "POST"])
 def add_day(item_id, tab):
+    if request.args.get('owner_context') or request.form.get('owner_context'):
+        from haulage_app.owner_analysis.corrections import owner_entry_response
+        return owner_entry_response('day', item_id, tab)
     drivers = get_entry_drivers()
     trucks = list(Truck.query.order_by(Truck.registration).all())
     components = {'drivers':drivers, 'trucks':trucks}
@@ -188,6 +191,9 @@ def add_day(item_id, tab):
 
 @day_bp.route("/delete_day/<int:item_id>", methods=['POST'])
 def delete_day(item_id):
+    if request.args.get('owner_context') or request.form.get('owner_context'):
+        from haulage_app.owner_analysis.corrections import owner_mutation_response
+        return owner_mutation_response('day', item_id, action='delete')
     if item_id == 0:
         all = db.session.query(Day)
         all.delete()
@@ -208,6 +214,9 @@ def delete_day(item_id):
 
 @day_bp.route("/edit_day/<int:item_id>", methods=["POST"])
 def edit_day(item_id):
+    if request.args.get('owner_context') or request.form.get('owner_context'):
+        from haulage_app.owner_analysis.corrections import owner_mutation_response
+        return owner_mutation_response('day', item_id, action='edit')
     entry = Day.query.get_or_404(item_id)
     referrer = request.referrer
     is_week_page = '/week/' in referrer

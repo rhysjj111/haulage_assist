@@ -47,11 +47,16 @@ blueprints = [expense_bp, api_bp, driver_bp, day_bp, truck_bp,
 for blueprint in blueprints:
     app.register_blueprint(blueprint)
 
+from haulage_app.owner_analysis import owner_analysis_bp
+from haulage_app.owner_analysis import routes as owner_analysis_routes
+app.register_blueprint(owner_analysis_bp)
+
 from haulage_app.verification.scheduler import init_scheduler
 
 init_scheduler(app)
 
 from haulage_app.verification import models
+from haulage_app.owner_analysis import models as owner_analysis_models
 
 # with app.app_context():
 #     db.create_all()

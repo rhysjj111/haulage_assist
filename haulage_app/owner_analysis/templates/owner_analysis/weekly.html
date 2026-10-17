@@ -1,0 +1,144 @@
+{% extends 'std_template.html' %}
+{% macro money(value) -%}{% if value is not none %}£{{ '%.2f'|format(value / 100) }}{% else %}—{% endif %}{%- endmacro %}
+{% macro badge(state) -%}<span class="owner-badge owner-badge-{{ state }}">{{ {'checked': 'Checked', 'needs_review': 'Needs review', 'not_reviewed': 'Not reviewed', 'outdated': 'Review out of date', 'in_progress': 'In progress', 'future': 'Future week'}[state]|default(state|replace('_', ' ')|capitalize) }}</span>{%- endmacro %}
+{% macro csrf(form, unique_id) -%}{% if form.csrf_token is defined %}{{ form.csrf_token(id=unique_id) }}{% endif %}{%- endmacro %}
+{% macro hidden(form, prefix) -%}{% for field in form %}{% if field.type in ['HiddenField', 'CSRFTokenField'] %}{{ field(id=prefix ~ '-' ~ field.name) }}{% endif %}{% endfor %}{%- endmacro %}
+{% block standard_title %}<span class="owner-page-title">Owner Analysis</span>{% endblock %}
+{% block standard_content %}
+{% include 'owner_analysis/_styles.html' %}
+<div class="owner-analysis">
+  <div class="owner-toolbar">
+    <div class="owner-segmented" aria-label="Period type">
+      <a href="{{ url_for('owner_analysis.weekly', week_start=report.week_start.isoformat(), **view_args) }}" aria-current="page">Weekly</a>
+      <a href="{{ url_for('owner_analysis.monthly', month=selected_month, week_start=report.week_start.isoformat(), **view_args) }}">Monthly</a>
+    </div>
+    {% include 'owner_analysis/_view_switch.html' %}
+  </div>
+  <form class="owner-filter" method="get" action="{{ url_for('owner_analysis.weekly') }}">
+    {% for name, value in view_args.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    <div><label for="owner-week-date">Choose a date in the payroll week</label><input id="owner-week-date" name="week_start" type="date" value="{{ report.week_start.isoformat() }}" required></div>
+    <button type="submit" class="owner-button">Show week</button>
+  </form>
+  <div class="owner-period-nav" aria-label="Week navigation">
+    {% if previous_week %}<a href="{{ url_for('owner_analysis.weekly', week_start=previous_week, **view_args) }}">← Previous week</a>{% else %}<span class="owner-nav-disabled">← Previous week</span>{% endif %}
+    <a href="{{ url_for('owner_analysis.weekly', **view_args) }}">Current week</a>
+    {% if next_week %}<a href="{{ url_for('owner_analysis.weekly', week_start=next_week, **view_args) }}">Next week →</a>{% else %}<span class="owner-nav-disabled">Next week →</span>{% endif %}
+  </div>
+  <div class="owner-period-title">
+    <h2>{{ report.week_start.strftime('%d %B %Y') }} – {{ report.week_end.strftime('%d %B %Y') }}</h2>
+    {{ badge(report.review_status) }}
+    {% if report.period_state == 'in_progress' %}<p class="owner-muted owner-small">Week so far. Entries dated after {{ report.as_of.strftime('%d %b %Y') }} are excluded. Final review is available after this payroll week ends.</p>{% elif report.period_state == 'future' %}<p class="owner-muted owner-small">This payroll week has not started. Figures remain provisional.</p>{% endif %}
+  </div>
+
+  {% if analysis_view != 'overview' %}
+    {% include 'owner_analysis/_breakdowns.html' %}
+  {% else %}
+  <section class="owner-card" aria-label="Weekly figures">
+    <h2>Weekly overview</h2>
+    <div class="owner-metrics">
+      <div class="owner-metric"><span class="owner-metric-label">Recorded earnings</span><strong class="owner-metric-value">{{ money(report.earnings) }}</strong></div>
+      <div class="owner-metric"><span class="owner-metric-label">Fuel spending</span><strong class="owner-metric-value">{{ money(report.fuel_spending) }}</strong></div>
+      <div class="owner-metric"><span class="owner-metric-label">Employer wage cost</span><strong class="owner-metric-value">{% if report.payroll_pending and report.employer_cost == 0 %}Pending{% else %}{{ money(report.employer_cost) }}{% endif %}</strong>{% if report.payroll_pending and report.employer_cost != 0 %}<span class="owner-small owner-muted">Recorded subtotal · payroll pending</span>{% endif %}</div>
+      <div class="owner-metric"><span class="owner-metric-label">Estimated overheads</span><strong class="owner-metric-value">{{ money(report.overheads) }}</strong></div>
+    </div>
+    <p class="owner-muted owner-small">Earnings include jobs and additional day earnings. Fuel is spending recorded during this week. Wage cost comes from recorded payslips. Overheads use the weekly allowance and truck count, including trucks that did not go out.</p>
+    <div class="owner-result"><span>Estimated operating result</span><strong>{{ money(report.estimated_operating_result) }}</strong></div>
+    {% if report.estimated_operating_result is none %}<p class="owner-notice">The estimated operating result is unavailable until the required entries and overhead settings are complete. Recorded totals above may still be incomplete.</p>{% endif %}
+    {% if report.payroll_pending|default(false) %}<p class="owner-muted owner-small">Payroll is pending for one or more drivers.</p>{% endif %}
+  </section>
+
+  <section class="owner-card" aria-label="Holiday and absence context">
+    <h2>Holidays and absences</h2>
+    {% for absence in report.absence_summary %}
+      <p><strong>{{ absence.driver_name|default(absence.name) }}</strong>: {{ absence.holiday_days }} holiday {{ 'day' if absence.holiday_days == 1 else 'days' }}, {{ absence.absent_days }} absent {{ 'day' if absence.absent_days == 1 else 'days' }}.</p>
+      {% if absence.holiday_dates %}<p class="owner-muted owner-small">Holiday: {% for day in absence.holiday_dates %}{{ day.strftime('%d %b') }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+      {% if absence.absent_dates %}<p class="owner-muted owner-small">Absent: {% for day in absence.absent_dates %}{{ day.strftime('%d %b') }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+    {% else %}<p>No holidays or absences recorded for this week.</p>{% endfor %}
+    <p class="owner-muted owner-small">A blank day remains unknown. A driver being away does not confirm that their truck was unused.</p>
+  </section>
+
+  <section class="owner-card" id="weekly-checks">
+    <div class="owner-card-heading"><h2>Checks for this week</h2><span class="owner-badge">{{ report.outstanding_issues|length }} outstanding</span></div>
+    <p class="owner-muted owner-small">Correct an entry where needed, or add a short explanation when the figures have been checked. Changes to the underlying records can reopen a check.</p>
+    {% for issue in report.issues %}
+      <article class="owner-issue" id="check-{{ loop.index }}">
+        <div class="owner-card-heading"><h3>{{ issue.title|default(issue.label|default(issue.code|replace('_', ' ')|capitalize)) }}</h3>{% if issue.resolved %}<span class="owner-badge owner-badge-checked">Verified</span>{% elif not issue.blocking %}<span class="owner-badge">Information</span>{% endif %}</div>
+        <p>{{ issue.message }}</p>
+        {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
+        {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
+        {% if issue.verification|default(none) and issue.verification.note %}<p class="owner-note">{{ issue.verification.note }}</p>{% endif %}
+        {% if issue.correction_url|default(none) %}<a href="{{ issue.correction_url }}" class="owner-button owner-button-secondary">Correct entry</a>{% endif %}
+        {% if issue.fuel_flag_correction_url|default(none) %}<a href="{{ issue.fuel_flag_correction_url }}" class="owner-button owner-button-secondary">Correct fuel flag</a>{% endif %}
+        {% if issue.can_verify and verification_form|default(none) and not issue.resolved %}
+        <details><summary>Explain or verify this check</summary>
+          <form method="post" action="{{ url_for('owner_analysis.verify_issue') }}">
+            {{ csrf(verification_form, 'verify-csrf-' ~ loop.index) }}
+            <input type="hidden" name="week_start" value="{{ report.week_start.isoformat() }}">
+            <input type="hidden" name="issue_key" value="{{ issue.key }}">
+            <input type="hidden" name="fingerprint" value="{{ issue.fingerprint }}">
+            <label for="verify-note-{{ loop.index }}">Brief explanation</label>{{ verification_form.note(id='verify-note-' ~ loop.index) }}
+            <label for="verify-decision-{{ loop.index }}">Confirmation</label>
+            <select class="browser-default" name="decision" id="verify-decision-{{ loop.index }}">{% for decision in issue.verification_decisions %}<option value="{{ decision }}">{{ 'Confirmed no payroll cost for this week' if decision == 'confirmed_zero' else 'Checked and verified' }}</option>{% endfor %}</select>
+            <button type="submit" class="owner-button">Verify check</button>
+          </form>
+        </details>
+        {% elif not issue.resolved and issue.blocking %}<p class="owner-muted owner-small">This check needs the source entry or settings to be corrected.</p>{% endif %}
+        {% if issue.can_mark_absence|default(false) and absence_form|default(none) and not issue.resolved %}
+        <details><summary>Record Holiday or Absent</summary>
+          <form method="post" action="{{ url_for('owner_analysis.record_absence') }}">
+            {{ csrf(absence_form, 'absence-csrf-' ~ loop.index) }}
+            <input type="hidden" name="week_start" value="{{ report.week_start.isoformat() }}">
+            <input type="hidden" name="fingerprint" value="{{ issue.fingerprint }}">
+            <input type="hidden" name="driver_id" value="{{ issue.driver_id }}">
+            <input type="hidden" name="absent_date" value="{{ issue.on_date|default(issue.date) }}">
+            <label for="absence-status-{{ loop.index }}">Day status</label>{{ absence_form.status(id='absence-status-' ~ loop.index, class_='browser-default') }}
+            <label for="absence-note-{{ loop.index }}">Brief note</label>{{ absence_form.note(id='absence-note-' ~ loop.index) }}
+            <button type="submit" class="owner-button">Record day status</button>
+          </form>
+        </details>
+        {% endif %}
+      </article>
+    {% else %}<p>No checks found for this week.{% if report.review_status == 'checked' %} This week has been reviewed.{% else %} A finished week still needs an explicit final review.{% endif %}</p>{% endfor %}
+  </section>
+
+  <section class="owner-card" id="owner-overheads">
+    <h2>Weekly overhead settings</h2>
+    <p class="owner-muted owner-small">Enter the allowance once; it carries forward until a new setting starts. Choose the first payroll week affected by a change. Earlier weeks keep their previous settings.</p>
+    {% if overhead_form|default(none) %}
+    <form method="post" action="{{ url_for('owner_analysis.save_overheads') }}">
+      {{ hidden(overhead_form, 'overhead') }}
+      <div class="owner-form-grid">
+        <div><label for="{{ overhead_form.effective_week_start.id }}">First payroll week (Saturday)</label>{{ overhead_form.effective_week_start() }}</div>
+        <div><label for="{{ overhead_form.truck_count.id }}">Truck count</label>{{ overhead_form.truck_count() }}</div>
+        <div><label for="{{ overhead_form.allowance_per_truck.id }}">Weekly allowance per truck (£)</label>{{ overhead_form.allowance_per_truck() }}</div>
+      </div>
+      {% for name, errors in overhead_form.errors.items() %}{% for error in errors %}<p class="owner-error-list">{{ error }}</p>{% endfor %}{% endfor %}
+      <button type="submit" class="owner-button">Save overhead settings</button>
+    </form>
+    {% endif %}
+  </section>
+
+  <section class="owner-card" id="weekly-review">
+    <h2>Notes and review</h2>
+    {% if note_form|default(none) %}<details><summary>Add a note for this week</summary><form method="post" action="{{ url_for('owner_analysis.week_note') }}">{{ hidden(note_form, 'week-note') }}<label for="week-note-text">Brief note</label>{{ note_form.note(id='week-note-text') }}<button type="submit" class="owner-button owner-button-secondary">Save note</button></form></details>{% endif %}
+    {% if report.period_state == 'finished' %}
+      {% if review_form|default(none) %}
+      <form method="post" action="{{ url_for('owner_analysis.review_week') }}">
+        {{ hidden(review_form, 'week-review') }}
+        <p>Confirm that you have checked the underlying records before marking this week as checked.</p>
+        <label class="owner-checkbox">{{ review_form.earnings_checked() }}<span>Earnings checked</span></label>
+        <label class="owner-checkbox">{{ review_form.fuel_checked() }}<span>Fuel receipts checked</span></label>
+        <label class="owner-checkbox">{{ review_form.payroll_checked() }}<span>Payroll checked</span></label>
+        <label for="week-review-text">Review note (optional)</label>{{ review_form.note(id='week-review-text') }}
+        <button type="submit" class="owner-button"{% if report.outstanding_issues %} disabled{% endif %}>Mark week as checked</button>
+        {% if report.outstanding_issues %}<p class="owner-muted owner-small">Resolve or verify the outstanding checks before completing the review.</p>{% endif %}
+      </form>
+      {% endif %}
+    {% else %}<p class="owner-muted">This week can be reviewed after its final Friday has finished.</p>{% endif %}
+    {% if report.reviewed_at_label|default('') %}<p class="owner-muted owner-small">Reviewed {{ report.reviewed_at_label }}.</p>{% endif %}
+    {% if report.week_review_outdated|default(false) %}<p class="owner-notice">Records or settings have changed since the last review. Check the updated figures and review this week again.</p>{% endif %}
+    {% if report.verification_history %}<details><summary>Explanations and verification history</summary>{% for entry in report.verification_history %}<div class="owner-history-entry"><p class="owner-small owner-muted">{{ entry.label|default(entry.decision|default('Note')) }}{% if entry.context_label|default('') %} · {{ entry.context_label }}{% endif %}{% if entry.created_at_label|default('') %} · {{ entry.created_at_label }}{% endif %}{% if entry.status|default('') %} · {{ entry.status|replace('_', ' ')|capitalize }}{% endif %}</p><p class="owner-note">{{ entry.note }}</p></div>{% endfor %}</details>{% endif %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
