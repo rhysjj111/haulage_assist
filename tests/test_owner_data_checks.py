@@ -133,7 +133,7 @@ class OwnerDataChecksTests(OwnerTestCase):
                     response, context = self.get_page(base + suffix)
                     self.assertNotRegex(response.text, r'<form\b[^>]*method=["\']post["\']')
                     for label in ("Explain or verify this check", "Mark week as checked",
-                                  "Explanations and verification history", "Correct entry", "Record Holiday or Absent"):
+                                  "Explanations and verification history", "Review check", "Record Holiday or Absent"):
                         self.assertNotIn(label, response.text)
                     self.assertNotIn("owner_context=", response.text)
                     self.assertIn("View checks", response.text)

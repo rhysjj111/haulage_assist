@@ -1,0 +1,94 @@
+{# Dedicated Data Checks forms; values are already in pounds, litres and miles. #}
+{% macro numeric_field(name, label, value='', required=false, help_text=none) %}
+  <div class="owner-edit-field">
+    <label for="owner-{{ name }}">{{ label }}{% if not required %} <span class="owner-field-optional">optional</span>{% endif %}</label>
+    <input id="owner-{{ name }}" name="{{ name }}" type="text" inputmode="decimal" value="{{ value if value is not none else '' }}" {% if required %}required{% endif %}{% if help_text %} aria-describedby="owner-{{ name }}-help"{% endif %}>
+    {% if help_text %}<p id="owner-{{ name }}-help" class="owner-field-help">{{ help_text }}</p>{% endif %}
+  </div>
+{% endmacro %}
+{% macro truck_select(trucks, selected, required=true) %}
+  <div class="owner-edit-field">
+    <label for="owner-truck_id">Truck</label>
+    <select id="owner-truck_id" name="truck_id" class="browser-default" {% if required %}required{% endif %}>
+      <option value="" {% if not selected %}selected{% endif %}>Choose a truck</option>
+      {% for truck in trucks %}<option value="{{ truck.id }}" {% if selected|string == truck.id|string %}selected{% endif %}>{{ truck.registration }}</option>{% endfor %}
+    </select>
+  </div>
+{% endmacro %}
+
+{% set date_name = 'date_cd' if kind == 'job' else 'date' %}
+{% if kind in ['day', 'job', 'fuel', 'payslip'] %}
+  {% if correction_driver %}<input type="hidden" name="driver_id" value="{{ correction_driver.id }}">{% endif %}
+  {% if mode == 'add' %}
+    <input type="hidden" name="{{ date_name }}" value="{{ correction_date }}">
+    {% if kind == 'fuel' %}<input type="hidden" name="truck_id" value="{{ correction_truck.id }}">{% endif %}
+  {% else %}
+    <div class="owner-edit-field">
+      <label for="owner-correction-date">{{ 'Job date' if kind == 'job' else 'Receipt date' if kind == 'fuel' else 'Payslip date' if kind == 'payslip' else 'Day date' }}</label>
+      <input id="owner-correction-date" name="{{ date_name }}" type="date" min="{{ week.isoformat() }}" max="{{ week_end.isoformat() }}" value="{{ values.get(date_name, correction_date) }}" required aria-describedby="owner-correction-date-help">
+      <p id="owner-correction-date-help" class="owner-field-help">Keep this entry in the selected payroll week.{% if kind == 'job' %} It must have a Working day for this driver.{% endif %}</p>
+    </div>
+  {% endif %}
+{% endif %}
+
+{% if kind == 'day' %}
+  <div class="owner-edit-field">
+    <label for="owner-day-status">Day status</label>
+    <select id="owner-day-status" name="status" class="browser-default" required aria-controls="owner-working-fields">
+      {% if values.get('status', 'working') not in ['working', 'holiday', 'absent'] %}<option value="{{ values.get('status') }}" selected>Choose Working, Holiday or Absent</option>{% endif %}
+      {% for status, label in [('working', 'Working'), ('holiday', 'Holiday'), ('absent', 'Absent')] %}<option value="{{ status }}" {% if values.get('status', 'working') == status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <p class="owner-field-help" id="owner-working-help">Truck, mileage, overnight and fuel details apply to Working days only. Holiday and Absent clear these day details, additional earnings and extra wages. Existing jobs are not removed.</p>
+  <fieldset id="owner-working-fields" class="owner-working-fields" data-owner-working-fields aria-describedby="owner-working-help">
+    <legend>Working day details</legend>
+    {{ truck_select(trucks, values.get('truck_id'), required=false) }}
+    <div class="owner-edit-fields-pair">
+      {{ numeric_field('start_mileage', 'Start mileage (miles)', values.get('start_mileage', '')) }}
+      {{ numeric_field('end_mileage', 'End mileage (miles)', values.get('end_mileage', '')) }}
+    </div>
+    <div class="owner-edit-checks">
+      <label class="owner-native-check" for="owner-overnight"><input id="owner-overnight" name="overnight" type="checkbox" {% if values.get('overnight') %}checked{% endif %}> Overnight away</label>
+      <label class="owner-native-check" for="owner-fuel"><input id="owner-fuel" name="fuel" type="checkbox" {% if values.get('fuel') %}checked{% endif %}> Fuel bought this day</label>
+    </div>
+    {{ numeric_field('additional_earned', 'Additional earnings (£)', values.get('additional_earned', ''), help_text='Business earnings for this day in addition to its jobs.') }}
+    {{ numeric_field('additional_wages', 'Additional driver wages (£)', values.get('additional_wages', '')) }}
+  </fieldset>
+{% elif kind == 'job' %}
+  {{ numeric_field('earned', 'Job earnings (£)', values.get('earned', ''), required=true) }}
+  <div class="owner-edit-fields-pair">
+    <div class="owner-edit-field"><label for="owner-collection">Collection</label><input id="owner-collection" name="collection" type="text" maxlength="24" value="{{ values.get('collection', '') or '' }}" required></div>
+    <div class="owner-edit-field"><label for="owner-delivery">Delivery</label><input id="owner-delivery" name="delivery" type="text" maxlength="24" value="{{ values.get('delivery', '') or '' }}" required></div>
+  </div>
+  <div class="owner-edit-field">
+    <label for="owner-job-notes">Job note <span class="owner-field-optional">optional</span></label>
+    <select id="owner-job-notes" name="notes" class="browser-default">
+      {% set selected_note = values.get('notes') or '' %}
+      {% set note_options = ['', 'Multi-drop', 'Cancellation', 'Return', 'Co-load', 'Waiting time'] %}
+      {% if selected_note and selected_note not in note_options %}<option value="{{ selected_note }}" selected>{{ selected_note }}</option>{% endif %}
+      {% for note in note_options %}<option value="{{ note }}" {% if note == selected_note %}selected{% endif %}>{{ note or 'None' }}</option>{% endfor %}
+    </select>
+  </div>
+{% elif kind == 'fuel' %}
+  {% if mode == 'edit' %}{{ truck_select(trucks, values.get('truck_id')) }}{% endif %}
+  <div class="owner-edit-field">
+    <label for="owner-fuel-card">Fuel card</label>
+    <select id="owner-fuel-card" name="fuel_card_name" class="browser-default" required>
+      {% set selected_card = values.get('fuel_card_name') or '' %}
+      {% set fuel_cards = ['Silvey', 'Fuel Card Services', 'UK Fuels', 'The Fuel Card Company', 'The Fuel Store'] %}
+      <option value="" {% if not selected_card %}selected{% endif %}>Choose a fuel card</option>
+      {% if selected_card and selected_card not in fuel_cards %}<option value="{{ selected_card }}" selected>{{ selected_card }}</option>{% endif %}
+      {% for card in fuel_cards %}<option value="{{ card }}" {% if card == selected_card %}selected{% endif %}>{{ card }}</option>{% endfor %}
+    </select>
+  </div>
+  {{ numeric_field('fuel_volume', 'Fuel volume (litres)', values.get('fuel_volume', ''), required=true) }}
+  {{ numeric_field('fuel_cost', 'Receipt cost (£)', values.get('fuel_cost', ''), required=true) }}
+{% elif kind == 'payslip' %}
+  {{ numeric_field('total_wage', 'Total wage (£)', values.get('total_wage', ''), required=true) }}
+  {{ numeric_field('total_cost_to_employer', 'Total employer cost (£)', values.get('total_cost_to_employer', ''), required=true, help_text='Enter the full employer cost from this payslip, including the wage.') }}
+{% elif kind == 'fuel_flag' %}
+  <div class="owner-correction-notice">
+    <p>Use this when the day was marked as having bought fuel by mistake.</p>
+    <p>It clears the fuel marker for this truck and date. It does not add a receipt or fuel cost.</p>
+  </div>
+{% endif %}

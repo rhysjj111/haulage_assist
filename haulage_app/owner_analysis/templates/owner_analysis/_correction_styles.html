@@ -1,0 +1,48 @@
+<style>
+  .owner-correction-card { background: white; border: 1px solid #dce3e6; border-top: 4px solid #3c6c91; border-radius: .35rem; padding: 1.2rem 1.4rem; }
+  .owner-correction-card h5 { margin: .15rem 0 .65rem; font-size: 1.5rem; }
+  .owner-correction-week { color: #54636a; font-size: .85rem; margin: .3rem 0 1rem; }
+  .owner-correction-identity { background: #f2f6f8; border-radius: .3rem; padding: .8rem 1rem; margin: 0 0 1.15rem; display: flex; flex-wrap: wrap; column-gap: 1.75rem; row-gap: .5rem; }
+  .owner-correction-identity dt, .owner-duplicate-values dt { color: #54636a; font-size: .8rem; }
+  .owner-correction-identity dd { margin: .15rem 0 0; font-weight: 600; }
+  .owner-correction-editor .owner-edit-field { margin-bottom: 1rem; min-width: 0; }
+  .owner-correction-editor .owner-edit-field > label { display: block; color: #293e4b; font-size: .9rem; font-weight: 600; margin-bottom: .35rem; }
+  .owner-correction-editor .owner-field-optional { font-size: .75rem; color: #63727b; font-weight: 400; margin-left: .2rem; }
+  .owner-correction-editor .owner-edit-field > input, .owner-correction-editor .owner-edit-field > select { box-sizing: border-box; width: 100%; height: 2.85rem; border: 1px solid #b9c7ce; border-radius: .25rem; padding: .55rem .65rem; background: white; color: #233642; font: inherit; font-size: .95rem; margin: 0; box-shadow: none; }
+  .owner-correction-editor .owner-edit-field > select { display: block; }
+  .owner-correction-editor .owner-edit-field > input:focus, .owner-correction-editor .owner-edit-field > select:focus { border-color: #32648b; outline: 2px solid #b9d4e9; outline-offset: 1px; box-shadow: none; }
+  .owner-correction-editor .owner-edit-field > input:invalid:not(:focus):not(:placeholder-shown) { box-shadow: none; }
+  .owner-correction-card .owner-field-help { color: #54636a; font-size: .8rem; margin: .4rem 0 .8rem; line-height: 1.55; }
+  .owner-correction-editor .owner-edit-fields-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: .8rem; }
+  .owner-working-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+  .owner-working-fields > legend { font-weight: 600; font-size: 1rem; padding: 0; margin: .7rem 0 .8rem; }
+  .owner-working-fields[hidden] { display: none !important; }
+  .owner-correction-editor .owner-edit-checks { display: flex; flex-wrap: wrap; column-gap: 1.3rem; row-gap: .8rem; margin: .2rem 0 1rem; }
+  .owner-correction-editor .owner-native-check { display: flex; align-items: flex-start; gap: .55rem; color: #293e4b; font-size: .9rem; line-height: 1.5; cursor: pointer; }
+  .owner-correction-editor input[type="checkbox"] { opacity: 1 !important; pointer-events: auto !important; position: static !important; width: 1.05rem; height: 1.05rem; margin: .12rem 0 0; flex: 0 0 auto; accent-color: #32648b; }
+  .owner-correction-actions { border-top: 1px solid #e2e8ec; padding-top: 1rem; margin-top: 1.1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+  .owner-edit-button { border: 1px solid #32648b; border-radius: .25rem; background: #32648b; color: white; padding: .7rem 1rem; font: inherit; font-size: .9rem; font-weight: 600; line-height: 1.3; cursor: pointer; }
+  .owner-edit-button:hover { background: #254e6d; }
+  .owner-edit-button:focus-visible, .owner-edit-cancel:focus-visible, .owner-duplicate-removal > summary:focus-visible { outline: 3px solid #93bedc; outline-offset: 3px; }
+  .owner-edit-button-danger { background: #aa3434; border-color: #aa3434; margin: .9rem 0 .4rem; }
+  .owner-edit-button-danger:hover { background: #852828; }
+  .owner-edit-button-secondary { background: white; color: #32648b; }
+  .owner-edit-button-secondary:hover { background: #edf3f7; }
+  .owner-correction-notice, .owner-correction-error { border-left: 3px solid #c58a29; background: #fff7e7; padding: .8rem 1rem; margin-bottom: 1.1rem; font-size: .9rem; }
+  .owner-correction-notice p { margin: .2rem 0 .55rem; }
+  .owner-correction-error { border-color: #aa3434; background: #fff1f0; color: #852828; }
+  .owner-duplicate-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
+  .owner-duplicate-record { border: 1px solid #cfdbe1; border-radius: .3rem; padding: .85rem; min-width: 0; }
+  .owner-duplicate-record h6 { font-size: 1.05rem; font-weight: 600; margin: .1rem 0 .8rem; }
+  .owner-duplicate-values { margin: 0; }
+  .owner-duplicate-values > div { margin-bottom: .6rem; }
+  .owner-duplicate-values dd { font-variant-numeric: tabular-nums; margin: .1rem 0 0; font-weight: 600; }
+  .owner-duplicate-record > p, .owner-duplicate-removal { font-size: .85rem; }
+  .owner-duplicate-removal { border-top: 1px solid #e2e8ec; padding-top: .7rem; }
+  .owner-duplicate-removal > summary { cursor: pointer; color: #852828; }
+  .owner-duplicate-removal .owner-edit-button { font-size: .8rem; padding: .65rem .75rem; }
+  @media (max-width: 600px) {
+    .owner-correction-card { padding: 1rem; }
+    .owner-duplicate-comparison, .owner-correction-editor .owner-edit-fields-pair { grid-template-columns: 1fr; }
+  }
+</style>

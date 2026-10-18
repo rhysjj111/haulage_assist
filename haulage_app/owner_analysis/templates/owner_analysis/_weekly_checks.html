@@ -1,6 +1,4 @@
 {% set week_id = week.week_start.isoformat() %}
-{% set verification_form = week.forms.verification %}
-{% set absence_form = week.forms.absence %}
 {% set note_form = week.forms.note %}
 {% set review_form = week.forms.review %}
 <section class="owner-card" id="week-{{ week_id }}" aria-labelledby="week-heading-{{ week_id }}">
@@ -17,39 +15,9 @@
     <p>{{ issue.message }}</p>
     {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
     {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
-    {% if issue.investigation_url|default(none) %}<a href="{{ issue.investigation_url }}" class="owner-button owner-button-secondary">View week details</a>{% endif %}
-    {% if issue.correction_url|default(none) %}<a href="{{ issue.correction_url }}" class="owner-button owner-button-secondary">Correct entry</a>{% endif %}
-    {% if issue.fuel_flag_correction_url|default(none) %}<a href="{{ issue.fuel_flag_correction_url }}" class="owner-button owner-button-secondary">Correct fuel flag</a>{% endif %}
-    {% if issue.can_verify and verification_form %}
-    <details><summary>Explain or verify this check</summary>
-      <form method="post" action="{{ url_for('owner_analysis.verify_issue') }}">
-        {{ csrf(verification_form, 'verify-csrf-' ~ issue_id) }}
-        <input id="verify-week-{{ issue_id }}" type="hidden" name="week_start" value="{{ week_id }}">
-        <input id="verify-key-{{ issue_id }}" type="hidden" name="issue_key" value="{{ issue.key }}">
-        <input id="verify-fingerprint-{{ issue_id }}" type="hidden" name="fingerprint" value="{{ issue.fingerprint }}">
-        {% if verification_form.review_context is defined %}{{ verification_form.review_context(id='verify-context-' ~ issue_id) }}{% endif %}
-        <label for="verify-note-{{ issue_id }}">Brief explanation</label>{{ verification_form.note(id='verify-note-' ~ issue_id) }}
-        <label for="verify-decision-{{ issue_id }}">Confirmation</label>
-        <select class="browser-default" name="decision" id="verify-decision-{{ issue_id }}">{% for decision in issue.verification_decisions %}<option value="{{ decision }}">{{ 'Confirmed no payroll cost for this week' if decision == 'confirmed_zero' else 'Checked and verified' }}</option>{% endfor %}</select>
-        <button type="submit" class="owner-button">Verify check</button>
-      </form>
-    </details>
-    {% elif issue.blocking %}<p class="owner-muted owner-small">This check needs the source entry or settings to be corrected. An explanation alone cannot complete missing financial information.</p>{% endif %}
-    {% if issue.can_mark_absence|default(false) and absence_form %}
-    <details><summary>Record Holiday or Absent</summary>
-      <form method="post" action="{{ url_for('owner_analysis.record_absence') }}">
-        {{ csrf(absence_form, 'absence-csrf-' ~ issue_id) }}
-        <input id="absence-week-{{ issue_id }}" type="hidden" name="week_start" value="{{ week_id }}">
-        <input id="absence-fingerprint-{{ issue_id }}" type="hidden" name="fingerprint" value="{{ issue.fingerprint }}">
-        <input id="absence-driver-{{ issue_id }}" type="hidden" name="driver_id" value="{{ issue.driver_id }}">
-        <input id="absence-date-{{ issue_id }}" type="hidden" name="absent_date" value="{{ issue.on_date|default(issue.date) }}">
-        {% if absence_form.review_context is defined %}{{ absence_form.review_context(id='absence-context-' ~ issue_id) }}{% endif %}
-        <label for="absence-status-{{ issue_id }}">Day status</label>{{ absence_form.status(id='absence-status-' ~ issue_id, class_='browser-default') }}
-        <label for="absence-note-{{ issue_id }}">Brief note</label>{{ absence_form.note(id='absence-note-' ~ issue_id) }}
-        <button type="submit" class="owner-button">Record day status</button>
-      </form>
-    </details>
-    {% endif %}
+    {% with action_forms=week.forms, action_week=week.week_start, actions_expanded=false, show_investigation_link=true %}
+      {% include 'owner_analysis/_issue_actions.html' %}
+    {% endwith %}
   </article>
   {% else %}
   <p>No outstanding checks for this week.{% if week.review_status == 'checked' %} This week has been reviewed.{% elif week.period_state == 'finished' %} It still needs an explicit final review.{% else %} Final review is available after the week ends.{% endif %}</p>

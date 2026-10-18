@@ -1,0 +1,57 @@
+{# Shared actions use the same guarded endpoints on Data Checks and beside week details. #}
+{% set verification_form = action_forms.verification %}
+{% set absence_form = action_forms.absence %}
+{% set action_week_id = action_week.isoformat() %}
+{% set correction_label = {'missing_overhead_settings': 'Set truck and overheads', 'missing_day': 'Add day', 'working_day_without_earnings': 'Add job earnings', 'missing_fuel_receipt': 'Add fuel receipt', 'missing_payslip': 'Add payslip', 'multiple_payslips': 'Review payslips'}.get(issue.code, {'day': 'Review day', 'job': 'Edit job', 'fuel': 'Review fuel receipt', 'payslip': 'Review payslip'}.get(issue.record_type|default(''), 'Correct entry')) %}
+
+{% if issue.resolved|default(false) %}
+  <p class="owner-notice"><strong>Already verified</strong>{% if issue.verification.created_at_label|default('') %} · {{ issue.verification.created_at_label }}{% endif %}</p>
+  {% if issue.verification.note %}<p class="owner-note">{{ issue.verification.note }}</p>{% endif %}
+  <p class="owner-muted owner-small">This check is resolved for the current records. Changes to its source entries can reopen it.</p>
+{% else %}
+  <div class="owner-week-links owner-investigation-actions">
+    {% if show_investigation_link|default(false) and issue.investigation_url|default(none) %}<a href="{{ issue.investigation_url }}" class="owner-button owner-button-secondary">Review check</a>{% endif %}
+    {% if issue.correction_url|default(none) %}<a href="{{ issue.correction_url }}" class="owner-button{% if not actions_expanded|default(false) %} owner-button-secondary{% endif %}">{{ correction_label }}</a>{% endif %}
+    {% if issue.fuel_flag_correction_url|default(none) %}<a href="{{ issue.fuel_flag_correction_url }}" class="owner-button owner-button-secondary">Review fuel purchase flag</a>{% endif %}
+  </div>
+
+  {% if issue.can_verify and verification_form %}
+  <details{% if actions_expanded|default(false) %} open{% endif %}>
+    <summary>Explain or verify this check</summary>
+    <form method="post" action="{{ url_for('owner_analysis.verify_issue') }}">
+      {% if verification_form.csrf_token is defined %}{{ verification_form.csrf_token(id='verify-csrf-' ~ issue_id) }}{% endif %}
+      <input id="verify-week-{{ issue_id }}" type="hidden" name="week_start" value="{{ action_week_id }}">
+      <input id="verify-key-{{ issue_id }}" type="hidden" name="issue_key" value="{{ issue.key }}">
+      <input id="verify-fingerprint-{{ issue_id }}" type="hidden" name="fingerprint" value="{{ issue.fingerprint }}">
+      {% if verification_form.review_context is defined %}{{ verification_form.review_context(id='verify-context-' ~ issue_id) }}{% endif %}
+      {% if issue.can_confirm_zero|default(false) %}<p class="owner-muted owner-small">Add the payslip if there was a payroll cost. Only confirm zero after checking that no employer wage cost is due for this driver and week.</p>{% else %}<p class="owner-muted owner-small">Check the recorded details, then explain why they are correct. Correct an incorrect entry before verifying it.</p>{% endif %}
+      <label for="verify-note-{{ issue_id }}">What did you check?</label>{{ verification_form.note(id='verify-note-' ~ issue_id, required=true, maxlength=4000) }}
+      {% if issue.verification_decisions|length == 1 %}
+        <input type="hidden" id="verify-decision-{{ issue_id }}" name="decision" value="{{ issue.verification_decisions[0] }}">
+      {% else %}
+        <label for="verify-decision-{{ issue_id }}">Confirmation</label>
+        <select class="browser-default" name="decision" id="verify-decision-{{ issue_id }}">{% for decision in issue.verification_decisions %}<option value="{{ decision }}">{{ 'Confirmed no payroll cost for this week' if decision == 'confirmed_zero' else 'Checked and verified' }}</option>{% endfor %}</select>
+      {% endif %}
+      <button type="submit" class="owner-button">{{ 'Confirm no payroll cost' if issue.can_confirm_zero|default(false) else 'Verify check' }}</button>
+    </form>
+  </details>
+  {% elif issue.blocking %}<p class="owner-muted owner-small">This check needs the source entry or settings to be corrected. An explanation alone cannot complete missing financial information.</p>{% endif %}
+
+  {% if issue.can_mark_absence|default(false) and absence_form %}
+  <details{% if actions_expanded|default(false) %} open{% endif %}>
+    <summary>Record Holiday or Absent</summary>
+    <form method="post" action="{{ url_for('owner_analysis.record_absence') }}">
+      {% if absence_form.csrf_token is defined %}{{ absence_form.csrf_token(id='absence-csrf-' ~ issue_id) }}{% endif %}
+      <input id="absence-week-{{ issue_id }}" type="hidden" name="week_start" value="{{ action_week_id }}">
+      <input id="absence-fingerprint-{{ issue_id }}" type="hidden" name="fingerprint" value="{{ issue.fingerprint }}">
+      <input id="absence-driver-{{ issue_id }}" type="hidden" name="driver_id" value="{{ issue.driver_id }}">
+      <input id="absence-date-{{ issue_id }}" type="hidden" name="absent_date" value="{{ issue.on_date|default(issue.date) }}">
+      {% if absence_form.review_context is defined %}{{ absence_form.review_context(id='absence-context-' ~ issue_id) }}{% endif %}
+      <p class="owner-muted owner-small">Use this only after confirming the driver was off on this date. A missing entry is not automatically an absence.</p>
+      <label for="absence-status-{{ issue_id }}">Day status</label>{{ absence_form.status(id='absence-status-' ~ issue_id, class_='browser-default') }}
+      <label for="absence-note-{{ issue_id }}">Brief explanation</label>{{ absence_form.note(id='absence-note-' ~ issue_id, required=true, maxlength=4000) }}
+      <button type="submit" class="owner-button">Record day status</button>
+    </form>
+  </details>
+  {% endif %}
+{% endif %}

@@ -2,6 +2,7 @@
 
 from datetime import date, timedelta
 from html import unescape
+from html.parser import HTMLParser
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlencode, urlsplit
 
@@ -10,6 +11,26 @@ from sqlalchemy import event, func, select, text
 from owner_test_support import OwnerTestCase, app, db
 from haulage_app.models import Day, Job
 from haulage_app.owner_analysis.navigation import review_context_for
+
+
+class _ActionForms(HTMLParser):
+    def __init__(self, html):
+        super().__init__()
+        self.forms = []
+        self.current = None
+        self.feed(html)
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "form":
+            self.current = dict(attrs, values={})
+            self.forms.append(self.current)
+        elif tag == "input" and self.current is not None and "name" in attrs:
+            self.current["values"][attrs["name"]] = attrs.get("value", "")
+
+    def handle_endtag(self, tag):
+        if tag == "form":
+            self.current = None
 
 
 class OwnerInvestigationPageTests(OwnerTestCase):
@@ -68,7 +89,7 @@ class OwnerInvestigationPageTests(OwnerTestCase):
                 self.assertNotIn("truck_id", parse_qs(target.query))
                 self.assertIn(unescape(issue["investigation_url"]), unescape(response.text))
 
-    def test_missing_payslip_opens_driver_week_with_all_payslips_and_no_mutation_form(self):
+    def test_missing_payslip_opens_driver_week_with_bound_review_action_and_no_record_editor(self):
         response, context = self.get_page(self.investigate())
         evidence = context["week_context"]
         self.assertEqual(evidence["scope"], "driver")
@@ -81,8 +102,59 @@ class OwnerInvestigationPageTests(OwnerTestCase):
         self.assertIn("Bob", response.text)
         self.assertIn("Week at a glance", response.text)
         self.assertIn("Payslips for this week", response.text)
-        self.assertNotRegex(response.text, r'<form\b[^>]*method=["\']post["\']')
+        forms = [form for form in _ActionForms(response.text).forms
+                 if form.get("method", "").lower() == "post"]
+        self.assertEqual([urlsplit(form["action"]).path for form in forms], ["/owner-analysis/verify"])
+        action = forms[0]["values"]
+        self.assertEqual(action["week_start"], "2026-10-03")
+        self.assertEqual(action["issue_key"], context["issue"]["key"])
+        self.assertEqual(action["fingerprint"], context["issue"]["fingerprint"])
+        self.assertEqual(action["decision"], "confirmed_zero",
+                         'The payroll action must explicitly confirm zero employer cost')
+        self.assertNotIn('name="total_wage"', response.text)
+        self.assertNotIn('name="total_cost_to_employer"', response.text)
         self.assertEqual(self.client.post(self.investigate()).status_code, 405)
+
+    def test_investigation_missing_day_actions_bind_date_and_preserve_monthly_driver_return(self):
+        page = "/owner-analysis/checks/monthly?month=2026-10&week_start=2026-10-10&view=drivers&driver_id=2"
+        issue = self.issue("missing_day", page=page, driver_id=1, date=date(2026, 10, 6))
+        response, context = self.get_page(issue["investigation_url"])
+        forms = {urlsplit(form["action"]).path: form for form in _ActionForms(response.text).forms
+                 if form.get("method", "").lower() == "post"}
+        self.assertEqual(set(forms), {"/owner-analysis/absence"},
+                         'A missing source day must be recorded, rather than explained away')
+        absence = forms["/owner-analysis/absence"]
+        payload = dict(absence["values"], status="holiday", note="Holiday checked with dispatch.")
+        self.assertEqual(payload["driver_id"], "1")
+        self.assertEqual(payload["absent_date"], "2026-10-06")
+        self.assertEqual(payload["fingerprint"], issue["fingerprint"])
+        self.assertTrue(payload["review_context"])
+        self.assertNotIn('name="start_mileage"', response.text)
+        saved = self.client.post(absence["action"], data=payload)
+        self.assertEqual(saved.status_code, 303, saved.text)
+        target = self.assert_destination(saved.location, "/owner-analysis/checks/monthly", month="2026-10",
+            week_start="2026-10-10", view="drivers", driver_id=2)
+        self.assertEqual(target.fragment, "week-2026-10-03")
+        self.assertEqual(Day.query.filter_by(driver_id=1, date=date(2026, 10, 6)).one().status, "holiday")
+        self.assertEqual(self.client.get(issue["investigation_url"]).status_code, 404)
+
+    def test_rendered_payroll_verification_checks_stale_source_and_hides_completed_action(self):
+        path = self.investigate()
+        response, context = self.get_page(path)
+        form = next(form for form in _ActionForms(response.text).forms
+                    if urlsplit(form.get("action", "")).path == "/owner-analysis/verify")
+        self.assertEqual(form["values"]["decision"], "confirmed_zero")
+        payload = dict(form["values"], decision="confirmed_zero", note="Checked: no payroll cost due.")
+        rejected = self.client.post(form["action"], data=dict(payload, fingerprint="0" * 64))
+        self.assertEqual(rejected.status_code, 303)
+        self.assertFalse(self.issue("missing_payslip", driver_id=1)["resolved"])
+        saved = self.client.post(form["action"], data=payload)
+        self.assertEqual(saved.status_code, 303, saved.text)
+        response, context = self.get_page(path)
+        self.assertTrue(context["issue"]["resolved"])
+        self.assertIn("Checked: no payroll cost due.", response.text)
+        self.assertFalse(any(form.get("method", "").lower() == "post"
+                             for form in _ActionForms(response.text).forms))
 
     def test_missing_day_is_explicit_unknown_and_highlights_the_investigated_date(self):
         path = self.investigate("missing_day", driver_id=1, date=date(2026, 10, 6))

@@ -394,12 +394,14 @@ def investigate():
         issue = next((item for item in report["issues"] if item["key"] == key), None)
         if issue is None:
             abort(404, description="This check is no longer present. Reopen Data Checks for the updated week.")
+        _add_check_forms(report, token)
         details = build_week_context(week, report["review_basis"], driver_id=issue.get("driver_id"),
             truck_id=issue.get("truck_id"), on_date=issue.get("date"),
             target_type=issue.get("record_type"), target_id=issue.get("record_id"),
             as_of=report["as_of"], include_nearby=include_nearby)
         args = {"week_start": week.isoformat(), "issue_key": key, "review_context": token}
         return render_template("owner_analysis/investigate.html", report=report, issue=issue,
+            action_forms=report["forms"],
             week_context=details, week=week, week_end=report["week_end"],
             back_url=review_checks_url(week, token), back_label="Back to Data Checks",
             correction_url=issue.get("correction_url"),

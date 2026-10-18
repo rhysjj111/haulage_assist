@@ -13,11 +13,10 @@
       {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
       {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
       <p class="owner-muted owner-small">Payroll week: {{ week_context.week_start.strftime('%d %b') }} – {{ week_context.week_end.strftime('%d %b %Y') }}.</p>
-      <div class="owner-investigation-actions">
-        {% if correction_url|default(issue.correction_url|default(none)) %}<a class="owner-button" href="{{ correction_url|default(issue.correction_url) }}">Correct entry</a>{% endif %}
-        {% if issue.fuel_flag_correction_url|default(none) %}<a class="owner-button owner-button-secondary" href="{{ issue.fuel_flag_correction_url }}">Correct fuel flag</a>{% endif %}
-      </div>
-      <p class="owner-muted owner-small" style="margin-top:1rem">Review the weekly details alongside this check. Explanations, day-status actions and final weekly review remain on Data Checks.</p>
+      {% with action_week=report.week_start, issue_id='selected-' ~ report.week_start.isoformat(), actions_expanded=true, show_investigation_link=false %}
+        {% include 'owner_analysis/_issue_actions.html' %}
+      {% endwith %}
+      <p class="owner-muted owner-small" style="margin-top:1rem">After saving, you will return to Data Checks. Complete the final weekly review there once all checks are resolved.</p>
     </section>
     {% include 'owner_analysis/_week_context.html' %}
   </div>

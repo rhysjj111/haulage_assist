@@ -36,6 +36,18 @@ _FIELDS = {
     'payslips': ('id', 'date', 'driver_id', 'day_id', 'total_wage', 'total_cost_to_employer'),
 }
 _KEYS = {'day': 'days', 'job': 'jobs', 'fuel': 'fuel_entries', 'payslip': 'payslips'}
+_DECIMAL_FIELDS = {
+    'day': ('start_mileage', 'end_mileage', 'additional_earned', 'additional_wages'),
+    'job': ('earned',),
+    'fuel': ('fuel_volume', 'fuel_cost'),
+    'payslip': ('total_wage', 'total_cost_to_employer'),
+}
+_FIELD_LABELS = {
+    'start_mileage': 'start mileage', 'end_mileage': 'end mileage',
+    'additional_earned': 'additional earnings', 'additional_wages': 'additional wages',
+    'earned': 'job earnings', 'fuel_volume': 'fuel volume', 'fuel_cost': 'fuel cost',
+    'total_wage': 'wage', 'total_cost_to_employer': 'employer wage cost',
+}
 
 
 def _normal(value):
@@ -217,7 +229,8 @@ def _decimal_value(name):
         if not parsed.is_finite() or parsed != parsed.quantize(Decimal('.01')):
             raise ValueError()
     except (InvalidOperation, ValueError):
-        raise ValueError(f'Please enter {name.replace("_", " ")} as a number with at most two decimal places.')
+        label = _FIELD_LABELS.get(name, name.replace('_', ' '))
+        raise ValueError(f'Please enter {label} as a number with at most two decimal places.')
     return value
 
 
@@ -344,8 +357,8 @@ def _save(payload, basis, week, item_id):
 
 
 def _render(context, error=None):
-    # Include reused macros and the application's notification context processor
-    # in the read-only scope as well as the bounded source queries.
+    # Include template rendering and the application's notification context
+    # processor in the read-only scope as well as bounded source queries.
     with db.session.no_autoflush:
         return _render_form(context, error=error)
 
@@ -356,22 +369,34 @@ def _nearby_requested():
     return request.args.get('nearby') == '1'
 
 
+def _form_values(payload, scope, *, error=None):
+    """Use human units once on GET; retain submitted text after a rejected save."""
+    if request.method == 'POST' and error:
+        return request.form.to_dict()
+    kind, mode = payload['kind'], payload['mode']
+    values = dict(scope['records'][0]) if mode == 'edit' else {
+        key: payload[key] for key in ('driver_id', 'truck_id', 'date') if key in payload}
+    if kind == 'job':
+        day = scope['days'][0] if mode == 'edit' else None
+        values['date_cd'] = day['date'] if day else values.pop('date')
+        values['driver_id'] = day['driver_id'] if day else payload['driver_id']
+    if kind == 'day' and mode == 'add':
+        values['status'] = 'working'
+    for field in _DECIMAL_FIELDS.get(kind, ()):
+        if field in values:
+            values[field] = format(Decimal(values[field] or 0) / 100, '.2f')
+    return values
+
+
 def _render_form(context, error=None):
     token, payload, week, basis, scope = context
     kind, mode = payload['kind'], payload['mode']
     form = CorrectionForm()
     form.owner_context.data = token
     entry = None
-    values = {}
     if mode == 'edit':
         entry = db.session.get(_MODELS[kind], payload['record_id'])
-        values = entry
-    elif mode == 'add' and kind != 'fuel_flag':
-        values = {key: payload[key] for key in ('driver_id', 'truck_id', 'date') if key in payload}
-        if kind == 'job':
-            values['date_cd'] = values.pop('date')
-        if kind == 'day':
-            values['status'] = 'working'
+    values = _form_values(payload, scope, error=error)
     drivers = []
     trucks = []
     driver_id = payload.get('driver_id')
@@ -383,11 +408,8 @@ def _render_form(context, error=None):
         driver = db.session.get(Driver, driver_id)
         if driver is not None:
             drivers.append(driver)
-    if kind in ('day', 'fuel'):
+    if kind == 'day' or (kind == 'fuel' and mode == 'edit'):
         trucks = db.session.execute(select(Truck).order_by(Truck.registration)).scalars().all()
-    if request.method == 'POST' and error:
-        # Posted monetary values are pounds already; do not divide them again.
-        values = request.form
     split_read_only = kind == 'job' and entry is not None and entry.split
     group_rows = []
     if mode == 'group':
@@ -401,6 +423,7 @@ def _render_form(context, error=None):
         on_date = entry.day.date if kind == 'job' else entry.date
         if kind in ('day', 'fuel'):
             truck_id = entry.truck_id
+    truck = db.session.get(Truck, truck_id) if truck_id is not None else None
     include_nearby = _nearby_requested()
     details = build_week_context(week, basis, driver_id=driver_id, truck_id=truck_id,
         on_date=on_date, target_type=kind, target_id=payload.get('record_id'),
@@ -408,13 +431,17 @@ def _render_form(context, error=None):
     endpoint = f'{"fuel" if kind == "fuel_flag" else kind}.add_{"fuel" if kind == "fuel_flag" else kind}'
     args = dict(item_id=payload.get('record_id', 0), tab='edit' if mode == 'edit' else 'entry', owner_context=token)
     return render_template('owner_correction_entry.html', kind=kind, mode=mode, entry=entry, values=values,
-            drivers=drivers, trucks=trucks, form=form, token=token, week=week, week_end=week_end(week),
+            trucks=trucks, form=form, token=token, week=week, week_end=week_end(week),
             back_url=checks_url(week, payload.get('review_context')),
+            correction_driver={'id': driver_id, 'name': drivers[0].full_name if drivers else f'Driver {driver_id}'}
+                              if driver_id is not None else None,
+            correction_truck={'id': truck_id, 'registration': truck.registration if truck else f'Truck {truck_id}'}
+                             if truck_id is not None else None,
+            correction_date=on_date.isoformat() if on_date is not None else None,
             week_context=details,
             nearby_url=url_for(endpoint, **args, nearby='1', _anchor='nearby-payslips') if driver_id is not None else None,
             nearby_hide_url=url_for(endpoint, **args),
             error=error, split_read_only=split_read_only, group_rows=group_rows,
-            macro_type='edit' if mode == 'edit' and not error else 'add',
             action=url_for(endpoint, **args, **({'nearby': '1'} if include_nearby else {})))
 
 
@@ -457,6 +484,8 @@ def owner_mutation_response(kind, item_id, action='edit'):
         abort(400, 'Invalid correction form. Reload the page and try again.')
     if kind != 'payslip' or payload['mode'] != 'group':
         abort(400, 'Only a duplicate payslip selected in this correction can be deleted.')
+    if request.form.get('confirm_delete') != 'yes':
+        return _render(context, error='Confirm that this payslip is a duplicate before deleting it.'), 400
     entry = db.session.get(Payslip, item_id)
     db.session.delete(entry)
     db.session.commit()

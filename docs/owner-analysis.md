@@ -98,8 +98,9 @@ Adding another note preserves earlier notes; lengthy notes have a short preview
 and an expandable full version. Per-issue explanations and verification history
 stay on Data Checks.
 
-Each check has a read-only **View week details** link. The same investigation
-panel appears beside the existing correction forms on desktop. It shows all
+Each check has a **Review check** link with the available correction and review
+actions beside the weekly evidence. The same read-only investigation panel
+appears beside the correction forms on desktop. It shows all
 seven dates, actual Working/Holiday/Absent entries and explicit unknown gaps,
 recorded trucks, jobs/additional earnings, and the selected week's payslips for
 all drivers. The selected date, driver and record are highlighted. Dates after
@@ -113,14 +114,28 @@ records stay separate from the selected week's figures. Already-recorded
 future-dated nearby slips are visible and labelled, to help identify a mistaken
 pay date. No nearby history query is run on initial page loading. The subject
 comes from the actual check or signed correction, not independent driver/truck
-query overrides. Further simplification of individual correction forms is a
-separate later step.
+query overrides.
+
+The selected check can be explained/verified or have a confirmed Holiday/Absent
+day recorded without leaving the weekly evidence. These use the same guarded
+actions as Data Checks, including required explanations, CSRF, source-value
+fingerprints and signed return navigation. Verification is offered only where
+the rule permits it. A confirmed-zero payroll decision is explicitly labelled;
+already verified checks show the saved explanation without another action form.
+Final weekly signoff remains on Data Checks.
 
 Legitimate exceptions require an explanation. Missing days require an actual Day
 record (Working, Holiday or Absent). Unknown fuel and overhead costs cannot be
 dismissed by a note. A mistaken fuel flag can be corrected without inventing a
-purchase. Existing forms are reused through signed, record-specific correction
-links. Historical inactive drivers remain eligible only for the exact correction.
+purchase. Dedicated correction forms use signed, record-specific links with clear
+units, save/cancel actions and a fixed driver identity. Missing-entry dates and
+the truck on a missing-fuel check are fixed; existing-entry dates can only move within
+the same payroll week. Money, mileage and litres are displayed in human units
+once, and rejected submissions retain the entered text. Working-day controls are
+shown only for Working status; changing to Holiday/Absent explains that day
+details and additional amounts are cleared while existing jobs are retained.
+Duplicate payslips can be compared, with an explicit duplicate confirmation
+required before deletion. Historical inactive drivers remain eligible only for the exact correction.
 Split-job allocation edits remain read-only to avoid breaking both allocations.
 
 Verification and review history is append-only and independent of legacy alert
