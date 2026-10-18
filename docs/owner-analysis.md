@@ -57,6 +57,10 @@ Analysis and contextual back links retain their selected report/check period.
   as missing or absent. Actual recorded weekend work still counts. Period employment or recorded Day/Payslip entries determine
   membership, preserving drivers who have since left. Daily averages divide
   recorded earnings by recorded Working days; zero Working days means no average.
+- Overview hides Holidays and absences when none are recorded. Otherwise it
+  shows one compact row per driver with nonzero counts only, such as “2 days
+  holiday · 1 day absent”. Monthly counts use the same completed payroll weeks
+  as the figures. Dated statuses remain available in the driver details.
 - Truck rows show recorded fuel spending, purchased litres and receipt counts.
   A referenced truck with no receipts has zero recorded purchases; this does not
   establish downtime. The standard per-truck weekly allowance is displayed

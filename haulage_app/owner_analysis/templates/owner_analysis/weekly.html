@@ -50,15 +50,7 @@
     <p class="owner-muted owner-small">Earnings include jobs and additional day earnings. Wages are the employer cost on recorded payslips; fuel is recorded spending. The overhead allowance includes trucks that did not go out.</p>
   </section>
 
-  <section class="owner-card" aria-label="Holiday and absence context">
-    <h2>Holidays and absences</h2>
-    {% for absence in report.absence_summary %}
-      <p><strong>{{ absence.driver_name|default(absence.name) }}</strong>: {{ absence.holiday_days }} holiday {{ 'day' if absence.holiday_days == 1 else 'days' }}, {{ absence.absent_days }} absent {{ 'day' if absence.absent_days == 1 else 'days' }}.</p>
-      {% if absence.holiday_dates %}<p class="owner-muted owner-small">Holiday: {% for day in absence.holiday_dates %}{{ day.strftime('%d %b') }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
-      {% if absence.absent_dates %}<p class="owner-muted owner-small">Absent: {% for day in absence.absent_dates %}{{ day.strftime('%d %b') }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
-    {% else %}<p>No holidays or absences recorded for this week.</p>{% endfor %}
-    <p class="owner-muted owner-small">Missing weekday entries remain unknown; unrecorded weekends are not scheduled. A driver being away does not confirm that their truck was unused.</p>
-  </section>
+  {% include 'owner_analysis/_absence_summary.html' %}
 
   {% endif %}
   {% include 'owner_analysis/_business_notes.html' %}
