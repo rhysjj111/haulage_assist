@@ -6,8 +6,11 @@
     <h2 id="week-heading-{{ week_id }}">{{ week.week_start.strftime('%d %b %Y') }} – {{ week.week_end.strftime('%d %b %Y') }}</h2>
     {{ badge(week.review_status) }}
   </div>
+  {% if week.period_state == 'finished' and week.review_status != 'checked' %}
+  <p class="owner-muted owner-small">Usual review: {{ week.review_window_start.strftime('%a %d %b') }} – {{ week.review_due_date.strftime('%a %d %b %Y') }}.{% if week.review_overdue and week.outstanding_issues %} <strong>Records are overdue for review.</strong>{% elif week.outstanding_issues %} Records may still be arriving.{% endif %} You can complete the review earlier once the records are ready.</p>
+  {% endif %}
   <div class="owner-card-heading"><h3>Outstanding checks</h3><span class="owner-badge">{{ week.outstanding_issues|length }} outstanding</span></div>
-  {% if week.outstanding_issues %}<p class="owner-muted owner-small">Financial and missing-entry checks appear first. Changes to records or settings can reopen a check.</p>{% endif %}
+  {% if week.outstanding_issues %}<p class="owner-muted owner-small">Financial and missing-entry checks. Changes to records or settings can reopen a check.</p>{% endif %}
   {% set missing_groups = namespace(drivers=[]) %}
   {% for issue in week.outstanding_issues %}
   {% set issue_id = week_id ~ '-' ~ loop.index %}
@@ -29,6 +32,16 @@
   {% else %}
   <p>No outstanding checks for this week.{% if week.review_status == 'checked' %} This week has been reviewed.{% elif week.period_state == 'finished' %} It still needs an explicit final review.{% else %} Final review is available after the week ends.{% endif %}</p>
   {% endfor %}
+
+  {% if week.optional_issues %}
+  <details class="owner-optional-checks" data-owner-optional-checks>
+    <summary>Other checks ({{ week.optional_issues|length }})</summary>
+    <p class="owner-muted owner-small">Mileage and truck-assignment details. These do not affect the outstanding count or prevent weekly sign-off.</p>
+    {% for issue in week.optional_issues %}
+      {% with issue_id=week_id ~ '-optional-' ~ loop.index %}{% include 'owner_analysis/_check_summary.html' %}{% endwith %}
+    {% endfor %}
+  </details>
+  {% endif %}
 
   <div class="owner-issue" id="review-{{ week_id }}">
     <h3>Weekly notes and review</h3>
@@ -62,7 +75,7 @@
     <details><summary>Explanations and verification history</summary>
       {% for entry in week.verification_history %}
       <div class="owner-history-entry">
-        <p class="owner-small owner-muted">{{ entry.label|default(entry.decision|default('Note')) }}{% if entry.context_label|default('') %} · {{ entry.context_label }}{% endif %}{% if entry.created_at_label|default('') %} · {{ entry.created_at_label }}{% endif %}{% if entry.status|default('') %} · {{ entry.status|replace('_', ' ')|capitalize }}{% endif %}</p>
+        <p class="owner-small owner-muted">{{ entry.label|default(entry.decision|default('Note')) }}{% if entry.decision_label|default('') %} · {{ entry.decision_label }}{% endif %}{% if entry.context_label|default('') %} · {{ entry.context_label }}{% endif %}{% if entry.created_at_label|default('') %} · {{ entry.created_at_label }}{% endif %}{% if entry.status|default('') %} · {{ entry.status|replace('_', ' ')|capitalize }}{% endif %}</p>
         {% if entry.note %}<p class="owner-note">{{ entry.note }}</p>{% endif %}
       </div>
       {% endfor %}

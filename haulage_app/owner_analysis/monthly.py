@@ -24,11 +24,15 @@ def get_monthly_report(year, month, *, as_of=None):
     period_state = "future" if as_of < expected_start else "in_progress" if as_of <= expected_end else "finished"
     outstanding = [dict(issue, week_start=week["week_start"], week_end=week["week_end"])
                    for week in weeks for issue in week["outstanding_issues"]]
+    optional = [dict(issue, week_start=week["week_start"], week_end=week["week_end"])
+                for week in weeks for issue in week["optional_issues"]]
     history = [dict(entry, week_start=week["week_start"], week_end=week["week_end"])
                for week in weeks for entry in week["verification_history"]]
     all_checked = bool(weeks) and all(week["review_status"] == "checked" for week in weeks)
-    if outstanding or any(week["review_status"] in {"needs_review", "outdated"} for week in weeks):
+    if any(week["review_status"] in {"needs_review", "outdated"} for week in weeks):
         review_status = "needs_review"
+    elif outstanding:
+        review_status = "awaiting_records"
     elif all_checked:
         review_status = "checked"
     else:
@@ -78,6 +82,8 @@ def get_monthly_report(year, month, *, as_of=None):
         "fuel_volume": sum(week.get("fuel_volume", 0) for week in weeks),
         "employer_cost": sum(week["employer_cost"] for week in weeks),
         "overheads": overheads, "estimated_operating_result": result,
-        "absence_summary": absence_summary, "outstanding_issues": outstanding, "verification_history": history,
+        "absence_summary": absence_summary, "outstanding_issues": outstanding, "optional_issues": optional,
+        "all_outstanding_issues": outstanding + optional, "verification_history": history,
+        "outstanding_count": len(outstanding), "optional_check_count": len(optional),
         "drivers": dict(sorted(drivers.items())), "trucks": dict(sorted(trucks.items())),
     }

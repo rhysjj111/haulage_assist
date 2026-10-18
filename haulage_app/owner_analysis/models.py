@@ -100,7 +100,7 @@ class OwnerIssueVerification(db.Model):
     source_fingerprint: Mapped[str] = mapped_column(db.String(64), nullable=False)
     created_at = mapped_column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
     __table_args__ = (
-        db.CheckConstraint("decision IN ('verified', 'confirmed_zero', 'note')", name="ck_owner_issue_decision"),
+        db.CheckConstraint("decision IN ('verified', 'confirmed_zero', 'note', 'dismissed', 'awaiting_invoice')", name="ck_owner_issue_decision"),
         db.CheckConstraint("length(trim(note)) > 0", name="ck_owner_issue_note_required"),
         db.CheckConstraint("length(source_fingerprint) = 64", name="ck_owner_issue_fingerprint_length"),
         db.Index("ix_owner_issue_verification_week_scope", "week_start", "scope_key"),
@@ -118,7 +118,7 @@ class OwnerIssueVerification(db.Model):
 
     @validates("decision")
     def validate_decision(self, key, value):
-        if value not in {"verified", "confirmed_zero", "note"}:
+        if value not in {"verified", "confirmed_zero", "note", "dismissed", "awaiting_invoice"}:
             raise ValueError("Invalid verification decision")
         return value
 

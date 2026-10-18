@@ -10,6 +10,7 @@ reset, migration-stamping or production mode.
 from datetime import date, datetime, timedelta
 import os
 from pathlib import Path
+import re
 import sys
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
@@ -284,11 +285,55 @@ def setup_review_database(connection, metadata, *, today):
             columns = {column["name"] for column in inspector.get_columns(table.name)}
             if set(table.columns.keys()) - columns:
                 raise RuntimeError(f"Existing review table {table.name} has an incompatible schema; no changes made.")
+        decisions_updated = update_review_issue_decisions(connection)
         cleanup = clean_legacy_sample_weekends(connection, metadata.tables)
         return dict(seeded=False, sample_weekends_removed=cleanup["removed"],
-                    sample_weekends_cleanup_skipped=not cleanup["recognised"])
+                    sample_weekends_cleanup_skipped=not cleanup["recognised"],
+                    issue_decisions_updated=decisions_updated)
     metadata.create_all(bind=connection)
     return seed_review_data(connection, metadata.tables, today=today)
+
+
+def update_review_issue_decisions(connection):
+    """Widen only the known review decision CHECK; never run legacy migrations.
+
+    Existing Codespace schemas were created directly from model metadata, without
+    an Alembic revision. The main entry point's review-only connection guards
+    remain mandatory; callers own this transaction. Unknown constraints fail
+    closed before any schema or sample-data change.
+    """
+    from alembic.operations import Operations
+    from alembic.runtime.migration import MigrationContext
+    from sqlalchemy import inspect
+
+    name = "ck_owner_issue_decision"
+    constraints = [item for item in inspect(connection).get_check_constraints(
+        "owner_issue_verification") if item["name"] == name]
+    if len(constraints) != 1:
+        raise RuntimeError("Review decision constraint is missing or incompatible; no changes made.")
+
+    # PostgreSQL reflects IN as = ANY(ARRAY[...]) and explicit text casts.
+    # Remove only its known casts/parentheses/spacing, then require a complete
+    # known expression. Extra predicates, values and operators are refused.
+    expression = constraints[0]["sqltext"].lower().replace('"decision"', "decision")
+    expression = re.sub(r"::(?:character varying|text)(?:\[\])?", "", expression)
+    expression = re.sub(r"[\s()]", "", expression)
+    old_values = "'verified','confirmed_zero','note'"
+    new_values = old_values + ",'dismissed','awaiting_invoice'"
+
+    def known(values):
+        return {"decisionin" + values, "decision=anyarray[" + values + "]"}
+
+    if expression in known(new_values):
+        return False
+    if expression not in known(old_values):
+        raise RuntimeError("Review decision constraint is incompatible; no changes made.")
+    with Operations.context(MigrationContext.configure(connection)):
+        from alembic import op
+        with op.batch_alter_table("owner_issue_verification") as batch:
+            batch.drop_constraint(name, type_="check")
+            batch.create_check_constraint(name, "decision IN (" + new_values + ")")
+    return True
 
 
 def main():
@@ -313,6 +358,8 @@ def main():
                 )
         if not result["seeded"]:
             print("Review database already exists; it was not reseeded.")
+            if result.get("issue_decisions_updated"):
+                print("Updated the review decision options; existing notes, records and edits were preserved.")
             if result["sample_weekends_removed"]:
                 print(f"Removed {result['sample_weekends_removed']} unchanged synthetic weekend absences from the original sample data.")
                 print("All other records and edits were preserved.")

@@ -44,7 +44,9 @@ class IssueVerificationForm(ReviewContextForm):
     issue_key = HiddenField(validators=[InputRequired(), Length(max=255)])
     fingerprint = HiddenField(validators=[InputRequired(), Length(min=64, max=64)])
     decision = SelectField("Decision", choices=[("verified", "Verified"),
-                                                ("confirmed_zero", "Confirmed no employer wage cost")])
+                                                ("confirmed_zero", "Confirmed no employer wage cost"),
+                                                ("dismissed", "Dismissed with explanation"),
+                                                ("awaiting_invoice", "Awaiting fuel invoice")])
     note = TextAreaField("What was checked?", validators=[InputRequired(), Length(max=4000)])
 
 

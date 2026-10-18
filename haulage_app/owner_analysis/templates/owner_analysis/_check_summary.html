@@ -5,10 +5,16 @@
       {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
       {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
       <p class="owner-small">{{ issue.message }}</p>
+      {% if issue.awaiting_invoice|default(false) %}<p class="owner-note owner-small">{{ issue.current_note|truncate(160, true) }}</p>{% endif %}
     {% endif %}
   </div>
   <div class="owner-check-action">
-    {% if not compact_missing_day|default(false) %}{% if issue.blocking %}<span class="owner-badge owner-badge-needs_review">Needs attention</span>{% else %}<span class="owner-badge">Information</span>{% endif %}{% endif %}
+    {% if not compact_missing_day|default(false) %}
+      {% if issue.awaiting_invoice|default(false) %}<span class="owner-badge owner-badge-awaiting_records">Awaiting invoice</span>
+      {% elif issue.optional|default(false) %}<span class="owner-badge">Information</span>
+      {% elif week.review_overdue %}<span class="owner-badge owner-badge-needs_review">Needs attention</span>
+      {% else %}<span class="owner-badge owner-badge-awaiting_records">To review</span>{% endif %}
+    {% endif %}
     <a href="{{ issue.review_url|default(issue.investigation_url) }}" class="owner-button owner-button-secondary" aria-describedby="check-title-{{ issue_id }}">Review</a>
   </div>
 </article>

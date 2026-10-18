@@ -19,10 +19,10 @@
 {% set date_name = 'date_cd' if kind == 'job' else 'date' %}
 {% if kind in ['day', 'job', 'fuel', 'payslip'] %}
   {% if correction_driver %}<input type="hidden" name="driver_id" value="{{ correction_driver.id }}">{% endif %}
-  {% if mode == 'add' or (kind == 'payslip' and issue|default(none) and issue.code == 'multiple_payslips') %}
+  {% if mode == 'add' or (kind == 'payslip' and issue|default(none) and issue.code == 'multiple_payslips') or (kind == 'fuel' and editor.group_member|default(false)) %}
     <input type="hidden" name="{{ date_name }}" value="{{ correction_date }}">
     {% if kind == 'fuel' %}<input type="hidden" name="truck_id" value="{{ correction_truck.id }}">{% endif %}
-    {% if mode == 'edit' %}<p class="owner-field-help">Payslip date: <strong>{{ f.display_date(f.date_to_db(correction_date)) }}</strong>. The date stays fixed while these payslips are compared.</p>{% endif %}
+    {% if mode == 'edit' %}<p class="owner-field-help">{{ 'Receipt' if kind == 'fuel' else 'Payslip' }} date: <strong>{{ f.display_date(f.date_to_db(correction_date)) }}</strong>. {{ 'The truck and date stay fixed while these receipts are compared.' if kind == 'fuel' else 'The date stays fixed while these payslips are compared.' }}</p>{% endif %}
   {% else %}
     <div class="owner-edit-field">
       <label for="owner-correction-date">{{ 'Job date' if kind == 'job' else 'Receipt date' if kind == 'fuel' else 'Payslip date' if kind == 'payslip' else 'Day date' }}</label>
@@ -71,7 +71,7 @@
     </select>
   </div>
 {% elif kind == 'fuel' %}
-  {% if mode == 'edit' %}{{ truck_select(trucks, values.get('truck_id')) }}{% endif %}
+  {% if mode == 'edit' and not editor.group_member|default(false) %}{{ truck_select(trucks, values.get('truck_id')) }}{% endif %}
   <div class="owner-edit-field">
     <label for="owner-fuel-card">Fuel card</label>
     <select id="owner-fuel-card" name="fuel_card_name" class="browser-default" required>
@@ -85,7 +85,7 @@
   {{ numeric_field('fuel_volume', 'Fuel volume (litres)', values.get('fuel_volume', ''), required=true) }}
   {{ numeric_field('fuel_cost', 'Receipt cost (£)', values.get('fuel_cost', ''), required=true) }}
 {% elif kind == 'payslip' %}
-  {{ numeric_field('total_wage', 'Total wage (£)', values.get('total_wage', ''), required=true) }}
+  {{ numeric_field('total_wage', 'Total wage (£)', values.get('total_wage', ''), required=true, help_text='Take-home pay after tax and deductions, as recorded on the payslip.') }}
   {{ numeric_field('total_cost_to_employer', 'Total employer cost (£)', values.get('total_cost_to_employer', ''), required=true, help_text='Enter the full employer cost from this payslip, including the wage.') }}
 {% elif kind == 'fuel_flag' %}
   <div class="owner-correction-notice">

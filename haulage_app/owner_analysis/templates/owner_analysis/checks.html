@@ -1,5 +1,5 @@
 {% extends 'std_template.html' %}
-{% macro badge(state) -%}<span class="owner-badge owner-badge-{{ state }}">{{ {'checked': 'Checked', 'needs_review': 'Needs review', 'not_reviewed': 'Not reviewed', 'outdated': 'Review out of date', 'in_progress': 'In progress', 'future': 'Future period'}[state]|default(state|replace('_', ' ')|capitalize) }}</span>{%- endmacro %}
+{% macro badge(state) -%}<span class="owner-badge owner-badge-{{ state }}">{{ {'checked': 'Checked', 'needs_review': 'Needs review', 'awaiting_records': 'Awaiting records', 'not_reviewed': 'Not reviewed', 'outdated': 'Review out of date', 'in_progress': 'In progress', 'future': 'Future period'}[state]|default(state|replace('_', ' ')|capitalize) }}</span>{%- endmacro %}
 {% macro csrf(form, unique_id) -%}{% if form.csrf_token is defined %}{{ form.csrf_token(id=unique_id) }}{% endif %}{%- endmacro %}
 {% macro hidden(form, prefix) -%}{% for field in form %}{% if field.type in ['HiddenField', 'CSRFTokenField'] %}{{ field(id=prefix ~ '-' ~ field.name) }}{% endif %}{% endfor %}{%- endmacro %}
 {% block standard_title %}<span class="owner-page-title">Data Checks</span>{% endblock %}
@@ -49,6 +49,7 @@
     <div class="owner-card-heading"><h2>{{ totals.outstanding }} {{ 'check' if totals.outstanding == 1 else 'checks' }} outstanding</h2>{% if recent_completed_url %}<a href="{{ recent_completed_url }}">Latest completed week</a>{% endif %}</div>
     <p class="owner-muted owner-small">Checks cover the whole business for this period. Your driver or truck selection is kept when you return to Owner Analysis.</p>
     <p class="owner-muted owner-small">Zero outstanding checks does not automatically mark a week as checked. Confirm the underlying earnings, fuel receipts and payroll before completing each weekly review.</p>
+    <p class="owner-muted owner-small">Optional mileage and truck details are under Other checks within each week. They do not add to this count or prevent sign-off.</p>
     {% if period == 'monthly' %}<p class="owner-muted owner-small">Only completed Saturday–Friday payroll weeks are included, matching the monthly figures. Each week is reviewed separately.</p>{% endif %}
   </section>
 

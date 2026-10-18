@@ -1,6 +1,6 @@
 {% extends 'std_template.html' %}
 {% macro money(value) -%}{% if value is not none %}£{{ '%.2f'|format(value / 100) }}{% else %}—{% endif %}{%- endmacro %}
-{% macro badge(state) -%}<span class="owner-badge owner-badge-{{ state }}">{{ {'checked': 'Checked', 'needs_review': 'Needs review', 'not_reviewed': 'Not reviewed', 'outdated': 'Review out of date', 'in_progress': 'In progress', 'future': 'Future month'}[state]|default(state|replace('_', ' ')|capitalize) }}</span>{%- endmacro %}
+{% macro badge(state) -%}<span class="owner-badge owner-badge-{{ state }}">{{ {'checked': 'Checked', 'needs_review': 'Needs review', 'awaiting_records': 'Awaiting records', 'not_reviewed': 'Not reviewed', 'outdated': 'Review out of date', 'in_progress': 'In progress', 'future': 'Future month'}[state]|default(state|replace('_', ' ')|capitalize) }}</span>{%- endmacro %}
 {% block standard_title %}<span class="owner-page-title">Owner Analysis</span>{% endblock %}
 {% block standard_content %}
 {% include 'owner_analysis/_styles.html' %}

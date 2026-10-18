@@ -21,6 +21,7 @@ from haulage_app.models import Day, Driver, Fuel, Job, Payslip, Truck
 from .dates import validate_week_start, week_end
 from .navigation import checks_url, read_review_context
 from .investigation import build_week_context
+from .policy import normalize_fuel_provider
 
 
 class CorrectionForm(FlaskForm):
@@ -65,6 +66,12 @@ def _digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
+def _valid_record_ids(value):
+    return (isinstance(value, list) and len(value) >= 2
+        and all(type(item) is int and item > 0 for item in value)
+        and value == sorted(set(value)))
+
+
 def _serializer():
     return URLSafeTimedSerializer(current_app.secret_key, salt='owner-analysis-correction-v1')
 
@@ -90,6 +97,12 @@ def _scope(payload, basis):
     """Source values and membership for this correction, independent of other drivers."""
     kind, mode = payload['kind'], payload['mode']
     rows = basis[_KEYS[kind]] if kind != 'fuel_flag' else basis['days']
+    if kind == 'fuel' and mode == 'group':
+        return {'records': [row for row in rows
+            if row['truck_id'] == payload['truck_id'] and row['date'] == payload['date']
+            and normalize_fuel_provider(row['fuel_card_name']) == payload['group_fuel_card']
+            and row['fuel_cost'] == payload['group_fuel_cost']
+            and row['fuel_volume'] == payload['group_fuel_volume']]}
     if mode == 'edit':
         selected = [row for row in rows if row['id'] == payload['record_id']]
         related = []
@@ -132,6 +145,28 @@ def _issue_target(week, issue, basis, fuel_flag=False):
         target = max((row['date'] for row in days), default=week.isoformat())
         payload.update(kind='payslip', mode='group' if code == 'multiple_payslips' else 'add',
                        driver_id=issue.get('driver_id'), date=target)
+    elif code == 'possible_duplicate_fuel':
+        record_ids = issue.get('record_ids')
+        if (not isinstance(record_ids, (list, tuple)) or len(record_ids) < 2
+                or any(type(value) is not int or value <= 0 for value in record_ids)
+                or list(record_ids) != sorted(set(record_ids))
+                or issue.get('record_id') != record_ids[0]):
+            return None
+        records = [row for row in basis['fuel_entries'] if row['id'] in record_ids]
+        if len(records) != len(record_ids):
+            return None
+        first = records[0]
+        if (issue.get('truck_id') != first['truck_id']
+                or _normal(issue.get('date')) != first['date']):
+            return None
+        payload.update(kind='fuel', mode='group', truck_id=first['truck_id'],
+            date=first['date'], record_ids=list(record_ids),
+            group_fuel_card=normalize_fuel_provider(first['fuel_card_name']),
+            group_fuel_cost=first['fuel_cost'], group_fuel_volume=first['fuel_volume'])
+        # Bind the whole actual group, including a newly added matching receipt.
+        # IDs in report metadata alone never authorize deleting an arbitrary row.
+        if [row['id'] for row in _scope(payload, basis)['records']] != list(record_ids):
+            return None
     elif issue.get('record_type') in _MODELS and issue.get('record_id'):
         payload.update(kind=issue['record_type'], mode='edit', record_id=issue['record_id'])
     else:
@@ -217,6 +252,8 @@ def _load_context(kind, item_id, action='entry'):
         context_kind, mode = payload['kind'], payload['mode']
         if context_kind not in (*_MODELS, 'fuel_flag') or mode not in ('add', 'edit', 'group'):
             raise ValueError()
+        if mode == 'group' and context_kind not in ('payslip', 'fuel'):
+            raise ValueError()
         if ('fuel' if context_kind == 'fuel_flag' else context_kind) != kind:
             raise ValueError()
         for key in ('driver_id', 'truck_id', 'record_id', 'day_id'):
@@ -228,7 +265,26 @@ def _load_context(kind, item_id, action='entry'):
             raise ValueError()
         if 'date' in payload:
             target_date = date.fromisoformat(payload['date'])
-            if not selected_week <= target_date <= week_end(selected_week):
+            if (payload['date'] != target_date.isoformat()
+                    or not selected_week <= target_date <= week_end(selected_week)):
+                raise ValueError()
+        if context_kind == 'fuel' and mode == 'group':
+            if (not _valid_record_ids(payload.get('record_ids'))
+                    or 'truck_id' not in payload or 'date' not in payload
+                    or not isinstance(payload.get('group_fuel_card'), str)
+                    or not payload['group_fuel_card']
+                    or payload['group_fuel_card'] != normalize_fuel_provider(payload['group_fuel_card'])
+                    or type(payload.get('group_fuel_cost')) is not int
+                    or type(payload.get('group_fuel_volume')) is not int
+                    or payload['group_fuel_cost'] <= 0 or payload['group_fuel_volume'] <= 0):
+                raise ValueError()
+        if 'fuel_group_source' in payload or 'fuel_group_ids' in payload:
+            if (context_kind != 'fuel' or mode != 'edit'
+                    or not payload.get('review_issue_key')
+                    or not _valid_record_ids(payload.get('fuel_group_ids'))
+                    or payload.get('record_id') not in payload['fuel_group_ids']
+                    or not isinstance(payload.get('fuel_group_source'), str)
+                    or len(payload['fuel_group_source']) != 64):
                 raise ValueError()
         if not isinstance(payload['source'], str) or len(payload['source']) != 64:
             raise ValueError()
@@ -241,7 +297,8 @@ def _load_context(kind, item_id, action='entry'):
     if mode == 'edit' and len(scope['records']) != 1:
         abort(409, 'The original record is no longer in this week.')
     if mode == 'group' and action == 'delete' and item_id not in {row['id'] for row in scope['records']}:
-        abort(400, 'This payslip is outside the selected correction.')
+        label = 'fuel receipt' if kind == 'fuel' else 'payslip'
+        abort(400, f'This {label} is outside the selected correction.')
     return token, payload, selected_week, basis, scope
 
 
@@ -353,6 +410,12 @@ def _save(payload, basis, week, item_id, *, review_issue=None):
         entry.notes = request.form.get('notes')
         entry.split = None
     elif kind == 'fuel':
+        if mode == 'edit' and payload.get('fuel_group_ids') is not None:
+            original = _scope(payload, basis)['records'][0]
+            if (review_issue is None or review_issue.get('code') != 'possible_duplicate_fuel'
+                    or request.form.get('truck_id') != str(original['truck_id'])
+                    or f.date_to_db(request.form.get('date')).isoformat() != original['date']):
+                raise ValueError('Keep the truck and date recorded on this fuel receipt while reviewing duplicates.')
         entry = entry if entry is not None else Fuel()
         entry.date = request.form.get('date')
         entry.truck_id = request.form.get('truck_id')
@@ -415,13 +478,19 @@ def validate_review_editor(context, issue, report, *, for_write=False):
     if issue is None or issue['key'] != key:
         abort(409, 'This check is no longer present. Reopen Data Checks for the updated week.')
     expected = _issue_target(week, issue, basis, fuel_flag=payload['kind'] == 'fuel_flag')
-    identity_fields = ('kind', 'mode', 'driver_id', 'truck_id', 'date', 'day_id', 'record_id')
+    identity_fields = ('kind', 'mode', 'driver_id', 'truck_id', 'date', 'day_id', 'record_id',
+                       'record_ids', 'group_fuel_card', 'group_fuel_cost', 'group_fuel_volume')
     matches = expected is not None and all(payload.get(name) == expected.get(name)
                                            for name in identity_fields)
-    group_member = (expected is not None and expected['kind'] == 'payslip'
-        and expected['mode'] == 'group' and payload['kind'] == 'payslip'
+    group_member = (expected is not None and expected['kind'] in ('payslip', 'fuel')
+        and expected['mode'] == 'group' and payload['kind'] == expected['kind']
         and payload['mode'] == 'edit'
         and payload.get('record_id') in {row['id'] for row in _scope(expected, basis)['records']})
+    if group_member and payload['kind'] == 'fuel':
+        group_member = (payload.get('fuel_group_source') == expected['source']
+                        and payload.get('fuel_group_ids') == expected['record_ids'])
+        if not group_member:
+            abort(409, 'This fuel receipt group has changed. Reopen Data Checks for the updated records.')
     if not matches and not group_member:
         abort(400, 'This editor does not belong to the selected check. Reopen Data Checks.')
     if for_write and issue.get('resolved'):
@@ -504,10 +573,22 @@ def build_correction_editor(context, *, error=None, include_nearby=None):
     group_rows = []
     if mode == 'group':
         for row in scope['records']:
-            issue = {'code': 'payslip_amount_out_of_range', 'record_type': 'payslip', 'record_id': row['id']}
-            group_rows.append(dict(row, edit_url=_make_url(week, issue, {'review_basis': basis},
-                review_context=payload.get('review_context'),
-                review_issue_key=payload.get('review_issue_key'))))
+            issue = {'code': 'fuel_price_unusual' if kind == 'fuel' else 'payslip_amount_out_of_range',
+                     'record_type': kind, 'record_id': row['id']}
+            if kind == 'fuel':
+                member_context = _issue_context(week, issue, {'review_basis': basis},
+                    review_context=payload.get('review_context'),
+                    review_issue_key=payload.get('review_issue_key'))
+                member_payload = member_context[1]
+                member_payload.update(fuel_group_source=payload['source'],
+                                      fuel_group_ids=payload['record_ids'])
+                member_url = url_for('fuel.add_fuel', item_id=row['id'], tab='edit',
+                                     owner_context=_serializer().dumps(member_payload))
+            else:
+                member_url = _make_url(week, issue, {'review_basis': basis},
+                    review_context=payload.get('review_context'),
+                    review_issue_key=payload.get('review_issue_key'))
+            group_rows.append(dict(row, edit_url=member_url))
     truck_id = payload.get('truck_id')
     on_date = date.fromisoformat(payload['date']) if payload.get('date') else None
     if entry is not None:
@@ -529,6 +610,8 @@ def build_correction_editor(context, *, error=None, include_nearby=None):
             nearby_url=url_for(endpoint, **args, nearby='1', _anchor='nearby-payslips') if driver_id is not None else None,
             nearby_hide_url=url_for(endpoint, **args),
             error=error, split_read_only=split_read_only, group_rows=group_rows,
+            group_kind=kind if mode == 'group' else None,
+            group_member=bool(kind == 'fuel' and mode == 'edit' and payload.get('fuel_group_ids')),
             action=url_for(endpoint, **args, **({'nearby': '1'} if include_nearby else {})))
 
 
@@ -564,7 +647,8 @@ def owner_entry_response(kind, item_id, tab):
             abort(400, 'Invalid correction form. Reload the page and try again.')
         review_issue = _validate_current_review_editor(context)
         if payload['mode'] == 'group':
-            abort(400, 'Select an individual payslip to change.')
+            label = 'fuel receipt' if kind == 'fuel' else 'payslip'
+            abort(400, f'Select an individual {label} to change.')
         try:
             with db.session.no_autoflush:
                 _save(payload, basis, week, item_id, review_issue=review_issue)
@@ -590,13 +674,18 @@ def owner_mutation_response(kind, item_id, action='edit'):
     form = CorrectionForm()
     if not form.validate_on_submit():
         abort(400, 'Invalid correction form. Reload the page and try again.')
-    _validate_current_review_editor(context)
-    if kind != 'payslip' or payload['mode'] != 'group':
-        abort(400, 'Only a duplicate payslip selected in this correction can be deleted.')
+    review_issue = _validate_current_review_editor(context)
+    fuel_group = (kind == 'fuel' and payload['mode'] == 'group'
+                  and review_issue is not None
+                  and review_issue.get('code') == 'possible_duplicate_fuel'
+                  and review_issue.get('key') == payload.get('review_issue_key'))
+    if not fuel_group and (kind != 'payslip' or payload['mode'] != 'group'):
+        abort(400, 'Only a duplicate receipt or payslip selected in this correction can be deleted.')
+    label = 'fuel receipt' if kind == 'fuel' else 'payslip'
     if request.form.get('confirm_delete') != 'yes':
-        return _render(context, error='Confirm that this payslip is a duplicate before deleting it.'), 400
-    entry = db.session.get(Payslip, item_id)
+        return _render(context, error=f'Confirm that this {label} is a duplicate before deleting it.'), 400
+    entry = db.session.get(_MODELS[kind], item_id)
     db.session.delete(entry)
     db.session.commit()
-    flash('Duplicate payslip deleted. Review the refreshed weekly figures.', 'success-msg')
+    flash(f'Duplicate {label} deleted. Review the refreshed weekly figures.', 'success-msg')
     return _return(week, payload)

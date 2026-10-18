@@ -8,13 +8,21 @@ import re
 from haulage_app import db
 from haulage_app.owner_analysis.calculations import calculate_weekly_report
 from haulage_app.owner_analysis.models import OwnerIssueVerification, OwnerWeekReview, _review_note
+from haulage_app.owner_analysis.policy import (
+    FUEL_PRICE_MAX_PENCE_PER_LITRE, FUEL_PRICE_MIN_PENCE_PER_LITRE,
+    OPTIONAL_ISSUES, PAYROLL_GAP_MIN_PENCE, PAYROLL_GAP_MULTIPLIER,
+    normalize_fuel_provider, review_schedule,
+)
 
 RULE_VERSION = 1
 VERIFIABLE_ISSUES = {
     "working_day_without_earnings", "working_day_without_truck", "missing_mileage",
     "mileage_end_before_start", "earnings_on_nonworking_day", "job_amount_out_of_range",
     "fuel_amount_out_of_range", "payslip_amount_out_of_range", "employer_cost_below_wage", "multiple_payslips",
+    "fuel_price_unusual", "possible_duplicate_fuel", "payroll_gap_unusual",
 }
+RESOLVING_DECISIONS = {"verified", "confirmed_zero", "dismissed"}
+AWAITING_INVOICE_ISSUES = {"missing_fuel_receipt", "fuel_flag_without_truck"}
 
 
 def _canonical(value):
@@ -72,9 +80,23 @@ def _scope_basis(report, scope_key):
     if code == "job_amount_out_of_range":
         return {"jobs": [row for row in basis["jobs"] if row["id"] == record_id],
                 "days": _fields(selected, ("id", "date", "driver_id", "status"))}
-    if code == "fuel_amount_out_of_range":
+    if code in {"fuel_amount_out_of_range", "fuel_price_unusual"}:
         return [row for row in basis["fuel_entries"] if row["id"] == record_id]
-    if code in {"payslip_amount_out_of_range", "employer_cost_below_wage"}:
+    if code == "possible_duplicate_fuel":
+        # Bind the decision to the complete current group, including membership.
+        # A third matching purchase must reopen a previously dismissed pair.
+        anchor = next((row for row in basis["fuel_entries"] if row["id"] == record_id), None)
+        if anchor is None:
+            return []
+
+        def signature(row):
+            return (row["truck_id"], row["date"], normalize_fuel_provider(row["fuel_card_name"]),
+                    row["fuel_cost"], row["fuel_volume"])
+
+        relevant = _fields([row for row in basis["fuel_entries"] if signature(row) == signature(anchor)],
+                           ("id", "date", "truck_id", "fuel_cost", "fuel_volume", "fuel_card_name"))
+        return [dict(row, fuel_card_name=normalize_fuel_provider(row["fuel_card_name"])) for row in relevant]
+    if code in {"payslip_amount_out_of_range", "employer_cost_below_wage", "payroll_gap_unusual"}:
         return [row for row in basis["payslips"] if row["id"] == record_id]
     if code in {"missing_payslip", "multiple_payslips"}:
         return {"payslips": [row for row in basis["payslips"] if row["driver_id"] == driver_id],
@@ -97,6 +119,15 @@ def fingerprint_for_scope(report, scope_key):
     """Hash source values and absent/present membership, not only record IDs."""
     payload = {"rules": RULE_VERSION, "week_start": report["week_start"],
                "scope": scope_key, "source": _scope_basis(report, scope_key)}
+    code = scope_key.split(":", 1)[0]
+    if code == "fuel_price_unusual":
+        payload["scope_rules"] = {"version": 1, "min_pence_per_litre": FUEL_PRICE_MIN_PENCE_PER_LITRE,
+                                  "max_pence_per_litre": FUEL_PRICE_MAX_PENCE_PER_LITRE}
+    elif code == "payroll_gap_unusual":
+        payload["scope_rules"] = {"version": 1, "multiplier": PAYROLL_GAP_MULTIPLIER,
+                                  "minimum_gap_pence": PAYROLL_GAP_MIN_PENCE}
+    elif code == "possible_duplicate_fuel":
+        payload["scope_rules"] = {"version": 1}
     if scope_key == "week":
         payload["verification_records"] = report.get("_verification_basis", [])
     return _digest(payload)
@@ -105,7 +136,9 @@ def fingerprint_for_scope(report, scope_key):
 def _allowed_decisions(issue):
     if issue["code"] == "missing_payslip":
         return ["confirmed_zero"]
-    return ["verified"] if issue["code"] in VERIFIABLE_ISSUES else []
+    if issue["code"] in AWAITING_INVOICE_ISSUES:
+        return ["awaiting_invoice"]
+    return ["verified", "dismissed"] if issue["code"] in VERIFIABLE_ISSUES else []
 
 
 def get_reviewed_week(week_start, *, as_of=None):
@@ -139,20 +172,49 @@ def get_reviewed_week(week_start, *, as_of=None):
     for issue in report["issues"]:
         issue["fingerprint"] = fingerprint_for_scope(report, issue["key"])
         issue["verification_decisions"] = _allowed_decisions(issue)
-        issue["can_verify"] = bool(issue["verification_decisions"])
-        issue["verification"] = matching.get(issue["key"])
+        issue["can_verify"] = bool(RESOLVING_DECISIONS.intersection(issue["verification_decisions"]))
+        issue["can_review_action"] = bool(issue["verification_decisions"])
+        issue["review_action"] = matching.get(issue["key"])
+        issue["awaiting_invoice"] = bool(issue["review_action"] and
+                                          issue["review_action"]["decision"] == "awaiting_invoice")
+        issue["current_note"] = issue["review_action"]["note"] if issue["review_action"] else ""
+        issue["verification"] = issue["review_action"] if issue["review_action"] and not issue["awaiting_invoice"] else None
         issue["resolved"] = issue["verification"] is not None
-    outstanding = [issue for issue in report["issues"] if not issue["resolved"]]
+        issue["optional"] = issue["code"] in OPTIONAL_ISSUES
+    all_outstanding = [issue for issue in report["issues"] if not issue["resolved"]]
+    outstanding = [issue for issue in all_outstanding if not issue["optional"]]
     report["outstanding_issues"] = outstanding
-    report["_verification_basis"] = [{name: row[name] for name in
+    report["optional_issues"] = [issue for issue in all_outstanding if issue["optional"]]
+    report["all_outstanding_issues"] = all_outstanding
+    report.update(review_schedule(report["week_end"], report["as_of"]))
+    full_verification_basis = [{name: row[name] for name in
         ("id", "scope_key", "decision", "note", "source_fingerprint")} for row in history]
+    # Optional reading/assignment explanations do not change financial signoff.
+    # Actual source changes remain in the complete source basis as before.
+    report["_verification_basis"] = [row for row in full_verification_basis
+                                     if row["scope_key"].split(":", 1)[0] not in OPTIONAL_ISSUES]
+    report["outstanding_count"] = len(outstanding)
+    report["optional_check_count"] = len(report["optional_issues"])
     report["week_fingerprint"] = fingerprint_for_scope(report, "week")
     last = week_reviews[-1] if week_reviews else None
     matches = bool(last and last.source_fingerprint == report["week_fingerprint"])
+    if last and not matches and full_verification_basis != report["_verification_basis"]:
+        # Older reviews included optional explanations. Match their exact
+        # append-only history prefix while ignoring only later optional actions.
+        # Never strip a financial decision or note, or alter current sources.
+        legacy_basis = list(full_verification_basis)
+        legacy_report = dict(report, _verification_basis=legacy_basis)
+        while True:
+            if last.source_fingerprint == fingerprint_for_scope(legacy_report, "week"):
+                matches = True
+                break
+            if not legacy_basis or legacy_basis[-1]["scope_key"].split(":", 1)[0] not in OPTIONAL_ISSUES:
+                break
+            legacy_basis.pop()
     if report["period_state"] != "finished":
         status = report["period_state"]
     elif outstanding:
-        status = "needs_review"
+        status = "needs_review" if report["review_overdue"] else "awaiting_records"
     elif matches:
         status = "checked"
     elif last:

@@ -13,6 +13,8 @@
         <h2 id="investigation-check-heading">{{ issue.title|default(issue.label|default(issue.code|replace('_', ' ')|capitalize)) }}</h2>
         {% if review_error|default(none) %}<p class="owner-correction-error" role="alert">{{ review_error }}</p>{% endif %}
         <p>{{ issue.message }}</p>
+        {% if fuel_price_evidence|default(none) %}<p><strong>£{{ '%.2f'|format(fuel_price_evidence.fuel_cost / 100) }} ÷ {{ '%.2f'|format(fuel_price_evidence.fuel_volume / 100) }} L = £{{ '%.3f'|format(fuel_price_evidence.price_per_litre) }} per litre.</strong></p>{% endif %}
+        {% if issue.code == 'payroll_gap_unusual' %}<p class="owner-muted owner-small">Compare the take-home pay and full employer cost on this payslip. Bonus pay can vary; this check does not assume a fixed weekly wage.</p>{% endif %}
         {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
         {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
         <p class="owner-muted owner-small">Payroll week: {{ week_context.week_start.strftime('%d %b') }} – {{ week_context.week_end.strftime('%d %b %Y') }}.</p>
@@ -27,7 +29,7 @@
           {% with editor=fuel_flag_editor %}{% include 'owner_analysis/_correction_editor.html' %}{% endwith %}
         </details>
       {% endif %}
-      {% if issue.resolved|default(false) or issue.can_verify or issue.can_mark_absence|default(false) %}
+      {% if issue.resolved|default(false) or issue.can_review_action|default(issue.can_verify) or issue.can_mark_absence|default(false) %}
       <section class="owner-card owner-review-options" aria-label="Check confirmation options">
         {% with action_week=report.week_start, issue_id='selected-' ~ report.week_start.isoformat(), actions_expanded=false, show_investigation_link=false, hide_correction_links=true %}
           {% include 'owner_analysis/_issue_actions.html' %}
@@ -38,7 +40,7 @@
         {% if issue.correction_url|default(none) %}<p><a class="owner-button" href="{{ issue.correction_url }}">Set truck and overheads</a></p>{% else %}<p class="owner-muted owner-small">This check needs its source records completed before it can be verified.</p>{% endif %}
       </section>
       {% endif %}
-      <p class="owner-muted owner-small">After saving, you will return to Data Checks. Complete the final weekly review there once all checks are resolved.</p>
+      <p class="owner-muted owner-small">After saving, you will return to Data Checks. Complete the final weekly review there once the outstanding financial and missing-entry checks are resolved.</p>
     </div>
     {% include 'owner_analysis/_week_context.html' %}
   </div>

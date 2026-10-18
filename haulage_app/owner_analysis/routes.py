@@ -182,6 +182,8 @@ _ISSUE_LABELS = {
     "working_day_without_truck": "Truck needs checking", "fuel_flag_without_truck": "Fuel purchase without a truck",
     "earnings_on_nonworking_day": "Earnings on a non-working day", "job_amount_out_of_range": "Job amount needs checking",
     "fuel_amount_out_of_range": "Fuel amount needs checking", "payslip_amount_out_of_range": "Payslip amount needs checking",
+    "fuel_price_unusual": "Fuel price needs checking", "possible_duplicate_fuel": "Possible duplicate fuel entries",
+    "payroll_gap_unusual": "Payroll amounts need checking",
     "employer_cost_below_wage": "Employer cost needs checking", "invalid_day_status": "Day status needs correcting",
 }
 
@@ -203,6 +205,8 @@ def _label_history(report):
     for item, code, details in subjects:
         item["label"] = {"week_note": "Week note", "week_review": "Week reviewed",
                          "recorded_absence": "Holiday or absence recorded"}.get(code, _ISSUE_LABELS.get(code, "Entry checked"))
+        item["decision_label"] = {"verified": "Verified", "confirmed_zero": "Confirmed no payroll cost",
+                                  "dismissed": "Dismissed", "awaiting_invoice": "Awaiting fuel invoice"}.get(item["decision"], "")
         labels = []
         for key, names, fallback in (("driver_id", driver_names, "Driver"), ("truck_id", truck_names, "Truck")):
             if details.get(key, "").isdigit():
@@ -235,8 +239,10 @@ def _prepare_week_presentation(report, *, correction_links=False, review_context
     outstanding_keys = {item["key"] for item in report["outstanding_issues"]}
     report["outstanding_issues"] = [item for item in report["issues"] if item["key"] in outstanding_keys]
     report["can_review"] = report["period_state"] == "finished" and not report["outstanding_issues"]
-    report["payroll_pending"] = any(item["code"] in {"missing_payslip", "multiple_payslips"} for item in report["outstanding_issues"])
-    report["fuel_pending"] = any(item["code"] in {"missing_fuel_receipt", "fuel_flag_without_truck"} for item in report["outstanding_issues"])
+    report["optional_issues"] = [item for item in report["issues"] if item.get("optional") and not item.get("resolved")]
+    report["all_outstanding_issues"] = report["outstanding_issues"] + report["optional_issues"]
+    report["payroll_pending"] = any(item["code"] in {"missing_payslip", "multiple_payslips", "payslip_amount_out_of_range", "employer_cost_below_wage", "payroll_gap_unusual"} for item in report["outstanding_issues"])
+    report["fuel_pending"] = any(item["code"] in {"missing_fuel_receipt", "fuel_flag_without_truck", "fuel_amount_out_of_range", "fuel_price_unusual", "possible_duplicate_fuel"} for item in report["outstanding_issues"])
     for name in ("reviewed_at", "last_reviewed_at"):
         value = report.get(name)
         if value is not None:
@@ -544,6 +550,13 @@ def _review_page_context(week, key, token=None, *, include_nearby=False,
         truck_id=issue.get("truck_id"), on_date=issue.get("date"),
         target_type=issue.get("record_type"), target_id=issue.get("record_id"),
         as_of=report["as_of"], include_nearby=include_nearby)
+    fuel_price_evidence = None
+    if issue["code"] == "fuel_price_unusual":
+        receipt = next((row for row in report["review_basis"]["fuel_entries"]
+                        if row["id"] == issue["record_id"]), None)
+        if receipt and receipt["fuel_volume"] > 0:
+            fuel_price_evidence = dict(receipt,
+                price_per_litre=Decimal(receipt["fuel_cost"]) / receipt["fuel_volume"])
     editor = flag_editor = active_editor = None
     if not issue.get("resolved"):
         editor = correction_editor_for_issue(week, issue, report,
@@ -570,6 +583,7 @@ def _review_page_context(week, key, token=None, *, include_nearby=False,
         review_return=_review_return_serializer().dumps({"v": 1, "week_start": week.isoformat(),
             "issue_key": key, "review_context": token}) if not issue.get("resolved") else None,
         review_error=None, active_verification=False, active_absence=False,
+        fuel_price_evidence=fuel_price_evidence,
         week_context=details, week=week, week_end=report["week_end"],
         back_url=review_checks_url(week, token), back_label="Back to Data Checks",
         correction_url=issue.get("correction_url"),
@@ -592,7 +606,7 @@ def _add_check_forms(report, token):
         "review": WeekReviewForm(data=common),
     }
     # Sort only the presentation list; the rule identities and fingerprints
-    # remain unchanged. Informational checks still count toward final review.
+    # remain unchanged. Optional checks stay outside the final-review queue.
     report["outstanding_issues"].sort(key=lambda issue: not issue["blocking"])
 
 
@@ -756,7 +770,7 @@ def verify_issue():
     form = IssueVerificationForm()
     return _post(form, lambda week: save_issue_verification(week, form.issue_key.data, form.note.data,
         form.fingerprint.data, decision=form.decision.data, as_of=today_london()),
-        "Verification and explanation saved.", review_action="verification")
+        "Check review saved.", review_action="verification")
 
 
 @owner_analysis_bp.route("/owner-analysis/note", methods=["POST"])

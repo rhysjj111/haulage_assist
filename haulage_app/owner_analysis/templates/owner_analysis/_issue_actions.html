@@ -2,10 +2,11 @@
 {% set verification_form = action_forms.verification %}
 {% set absence_form = action_forms.absence %}
 {% set action_week_id = action_week.isoformat() %}
+{% set decision_labels = {'verified': 'Checked and verified', 'confirmed_zero': 'Confirmed no payroll cost for this week', 'dismissed': 'Dismiss with explanation', 'awaiting_invoice': 'Awaiting fuel invoice'} %}
 {% set correction_label = {'missing_overhead_settings': 'Set truck and overheads', 'missing_day': 'Add day', 'working_day_without_earnings': 'Add job earnings', 'missing_fuel_receipt': 'Add fuel receipt', 'missing_payslip': 'Add payslip', 'multiple_payslips': 'Review payslips'}.get(issue.code, {'day': 'Review day', 'job': 'Edit job', 'fuel': 'Review fuel receipt', 'payslip': 'Review payslip'}.get(issue.record_type|default(''), 'Correct entry')) %}
 
 {% if issue.resolved|default(false) %}
-  <p class="owner-notice"><strong>Already verified</strong>{% if issue.verification.created_at_label|default('') %} · {{ issue.verification.created_at_label }}{% endif %}</p>
+  <p class="owner-notice"><strong>{{ 'Dismissed with explanation' if issue.verification.decision == 'dismissed' else 'Already verified' }}</strong>{% if issue.verification.created_at_label|default('') %} · {{ issue.verification.created_at_label }}{% endif %}</p>
   {% if issue.verification.note %}<p class="owner-note">{{ issue.verification.note }}</p>{% endif %}
   <p class="owner-muted owner-small">This check is resolved for the current records. Changes to its source entries can reopen it.</p>
 {% else %}
@@ -15,9 +16,14 @@
     {% if issue.fuel_flag_correction_url|default(none) %}<a href="{{ issue.fuel_flag_correction_url }}" class="owner-button owner-button-secondary">Review fuel purchase flag</a>{% endif %}
   </div>{% endif %}
 
-  {% if issue.can_verify and verification_form %}
+  {% if issue.awaiting_invoice|default(false) %}
+  <p class="owner-notice"><strong>Awaiting fuel invoice</strong> · This check remains outstanding until the receipt is entered or a mistaken fuel tick is corrected.</p>
+  <p class="owner-note">{{ issue.current_note }}</p>
+  {% endif %}
+
+  {% if issue.can_review_action|default(issue.can_verify) and verification_form %}
   <details{% if actions_expanded|default(false) or active_verification|default(false) %} open{% endif %}>
-    <summary>Explain or verify this check</summary>
+    <summary>{{ 'Record invoice status' if issue.verification_decisions == ['awaiting_invoice'] else 'Review decision' }}</summary>
     <form method="post" action="{{ url_for('owner_analysis.verify_issue') }}">
       {% if verification_form.csrf_token is defined %}{{ verification_form.csrf_token(id='verify-csrf-' ~ issue_id) }}{% endif %}
       <input id="verify-week-{{ issue_id }}" type="hidden" name="week_start" value="{{ action_week_id }}">
@@ -25,15 +31,21 @@
       <input id="verify-fingerprint-{{ issue_id }}" type="hidden" name="fingerprint" value="{{ issue.fingerprint }}">
       {% if verification_form.review_context is defined %}{{ verification_form.review_context(id='verify-context-' ~ issue_id) }}{% endif %}
       {% if review_return|default(none) %}<input id="verify-return-{{ issue_id }}" type="hidden" name="review_return" value="{{ review_return }}">{% endif %}
-      {% if issue.can_confirm_zero|default(false) %}<p class="owner-muted owner-small">Add the payslip if there was a payroll cost. Only confirm zero after checking that no employer wage cost is due for this driver and week.</p>{% else %}<p class="owner-muted owner-small">Check the recorded details, then explain why they are correct. Correct an incorrect entry before verifying it.</p>{% endif %}
-      <label for="verify-note-{{ issue_id }}">What did you check?</label>{{ verification_form.note(id='verify-note-' ~ issue_id, required=true, maxlength=4000) }}
+      {% if issue.can_confirm_zero|default(false) %}
+      <p class="owner-muted owner-small">Add the payslip if there was a payroll cost. Only confirm zero after checking that no employer wage cost is due for this driver and week.</p>
+      {% elif issue.verification_decisions == ['awaiting_invoice'] %}
+      <p class="owner-muted owner-small">Save a brief explanation while waiting for the invoice. The missing cost stays pending and the week cannot be signed off.</p>
+      {% else %}
+      <p class="owner-muted owner-small">Correct an incorrect entry above. If the recorded details are genuine, verify them or dismiss the warning with a reason. Neither decision changes the entries or totals.</p>
+      {% endif %}
+      <label for="verify-note-{{ issue_id }}">Brief explanation</label>{{ verification_form.note(id='verify-note-' ~ issue_id, required=true, maxlength=4000) }}
       {% if issue.verification_decisions|length == 1 %}
         <input type="hidden" id="verify-decision-{{ issue_id }}" name="decision" value="{{ issue.verification_decisions[0] }}">
       {% else %}
-        <label for="verify-decision-{{ issue_id }}">Confirmation</label>
-        <select class="browser-default" name="decision" id="verify-decision-{{ issue_id }}">{% for decision in issue.verification_decisions %}<option value="{{ decision }}">{{ 'Confirmed no payroll cost for this week' if decision == 'confirmed_zero' else 'Checked and verified' }}</option>{% endfor %}</select>
+        <label for="verify-decision-{{ issue_id }}">Decision</label>
+        <select class="browser-default" name="decision" id="verify-decision-{{ issue_id }}">{% for decision in issue.verification_decisions %}<option value="{{ decision }}"{% if verification_form.decision.data == decision %} selected{% endif %}>{{ decision_labels[decision] }}</option>{% endfor %}</select>
       {% endif %}
-      <button type="submit" class="owner-button">{{ 'Confirm no payroll cost' if issue.can_confirm_zero|default(false) else 'Verify check' }}</button>
+      <button type="submit" class="owner-button">{{ 'Mark awaiting invoice' if issue.verification_decisions == ['awaiting_invoice'] else 'Confirm no payroll cost' if issue.can_confirm_zero|default(false) else 'Save review decision' }}</button>
     </form>
   </details>
   {% elif issue.blocking %}<p class="owner-muted owner-small">This check needs the source entry or settings to be corrected. An explanation alone cannot complete missing financial information.</p>{% endif %}

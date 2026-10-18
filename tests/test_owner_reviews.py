@@ -161,8 +161,11 @@ class OwnerReviewTests(OwnerDatabaseTestCase):
         with self.assertRaises(ValueError):
             save_week_review(self.start, report["week_fingerprint"], as_of=on_friday)
 
-    def test_outstanding_issues_prevent_final_review(self):
-        self.create_mileage_issue()
+    def test_outstanding_financial_issues_prevent_final_review(self):
+        # Missing mileage is optional; missing working-day earnings remains
+        # essential and must be corrected or explicitly explained first.
+        db.session.execute(Job.__table__.delete().where(Job.id == self.jobs[0]))
+        self.assertTrue(self.issue("working_day_without_earnings"))
         with self.assertRaises(ValueError):
             self.mark_checked()
 

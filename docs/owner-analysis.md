@@ -110,10 +110,35 @@ The existing carry-forward calculation and database schema are unchanged.
 
 ## Checks and notes
 
-Checks cover missing expected days, working days without earnings, fuel flags
-without receipts, missing or multiple payslips, numeric ranges, missing overhead
-settings, and informational mileage issues. Plausible incorrect data and
-unflagged missing purchases still need human review.
+The main queue covers missing expected weekdays, working days without earnings,
+fuel flags without receipts, missing or multiple payslips, numeric ranges,
+missing overhead settings, unusual fuel prices, possible duplicate fuel entries
+and unusually large differences between payslip amounts. Plausible incorrect
+data and unflagged missing purchases still need human review.
+
+| Check | Deliberately broad rule |
+| --- | --- |
+| Fuel price | Warn below £0.50 or above £3.00 per litre on an otherwise valid receipt; the boundaries are included in the accepted range. Compare cost with purchased litres on that invoice line. |
+| Possible duplicate fuel | Same truck, date, provider, litres and cost. Ignore provider case and extra spacing. Compare the entries; never remove one automatically. |
+| Payroll amounts | Retain employer-cost-below-take-home and raw-range checks. Also warn when employer cost is over five times take-home pay **and** at least £200 higher, on an otherwise valid payslip. |
+
+Payroll comparisons use the two fields on the same payslip: take-home pay after
+tax/deductions and full employer cost. Variable bonuses are allowed. There is no
+fixed weekly wage assumption, net/gross comparison, historic wage rule or fuel
+consumption/economy estimate.
+
+Mileage readings and missing truck assignments appear collapsed under **Other
+checks**. They do not increase the owner's outstanding count, cause a driver's
+financial warning or prevent final weekly review. Actual source changes still
+invalidate a sign-off; optional explanations alone do not.
+
+Days, payroll and fuel share one timetable: the following Friday through Monday
+(week end +7 through +10 days). Finished weeks with outstanding financial or
+missing-entry checks show **Awaiting records** through that Monday, then **Needs
+review** from Tuesday. The due dates are shown on Data Checks. A complete week
+can be reviewed earlier. Dates never fill missing costs, dismiss a check or
+complete sign-off automatically. Monthly status uses its included completed
+weeks, retaining any overdue week that needs attention.
 
 Data Checks lists each outstanding issue with its subject, a short description
 and one **Review** action. Missing weekdays are grouped by driver within the
@@ -125,7 +150,7 @@ signed, validated report context returns corrections and settings to the same
 checks period. Only known local reporting routes are valid return destinations.
 Monthly checks and their counts include completed weeks only, matching the
 monthly financial totals. Each included finished week has its own review; there
-is no month-wide signoff. Informational checks remain in the outstanding count.
+is no month-wide signoff. Optional checks remain outside the outstanding count.
 
 Explicit business notes for a week remain visible read-only on Owner Analysis.
 Adding another note preserves earlier notes; lengthy notes have a short preview
@@ -155,9 +180,19 @@ query overrides.
 The selected check can be explained/verified or have a confirmed Holiday/Absent
 day recorded alongside the entry form and weekly evidence. These use the same guarded
 actions, including required explanations, CSRF, source-value
-fingerprints and signed return navigation. Verification is offered only where
-the rule permits it. A confirmed-zero payroll decision is explicitly labelled;
-already verified checks show the saved explanation without another action form.
+fingerprints and signed return navigation. Actions are offered only where the rule permits them:
+
+- **Checked and verified** or **Dismiss with explanation** can clear a genuine
+  exceptional recorded value or a false duplicate warning. A reason is required;
+  neither changes source entries or totals. Relevant source changes reopen it.
+- **Awaiting fuel invoice** records the reason while the fuel entry is missing.
+  The check remains outstanding, missing profit stays pending and sign-off stays
+  blocked. Add the receipt when received, or clear a genuinely mistaken fuel tick.
+- **Confirmed no payroll cost** is available only for an actually zero-cost week,
+  with a required explanation. Actual missing days, fuel costs, payroll or
+  overheads cannot simply be dismissed.
+
+Resolved checks show their saved decision and explanation without another action form.
 Rejected corrections and review confirmations keep the selected check, evidence
 and submitted text on the same review page. Signed return metadata binds each
 confirmation to that check and its originating report period. Legacy correction
@@ -174,11 +209,15 @@ the same payroll week. Money, mileage and litres are displayed in human units
 once, and rejected submissions retain the entered text. Working-day controls are
 shown only for Working status; changing to Holiday/Absent explains that day
 details and additional amounts are cleared while existing jobs are retained.
-Duplicate payslips can be compared, with an explicit duplicate confirmation
-required before deletion. The duplicate review can correct an existing member's
+Duplicate payslips and possible duplicate fuel receipts can be compared, with
+an explicit confirmation required before deleting the selected duplicate. The duplicate review can correct an existing member's
 amounts while keeping its driver and date fixed. It does not create or remove
 another payslip, and the multiple-payslip check remains outstanding until the
-records are corrected or verified. Historical inactive drivers remain eligible only for the exact correction.
+records are corrected or verified. Fuel comparison likewise edits only a signed
+member, keeping its date and truck fixed. Changed amounts, matching membership
+or sibling records invalidate an open comparison form. The selected receipt
+alone is deleted; other receipts remain. Historical inactive drivers remain
+eligible only for the exact correction.
 Split-job allocation edits remain read-only to avoid breaking both allocations.
 
 Verification and review history is append-only and independent of legacy alert
@@ -191,19 +230,27 @@ its last included Friday.
 
 ## Database changes and release
 
-Two additive migrations follow the previous head:
+Three owner migrations follow the original head:
 
 1. `859d6ebe2110` → `7e9c2a41b6d8`: owner overhead settings/snapshots.
 2. `7e9c2a41b6d8` → `b2e7a9c4106f`: issue explanations and weekly signoffs.
+3. `b2e7a9c4106f` → `d4a8f6c239b1`: widen the existing decision CHECK constraint
+   to accept `dismissed` and `awaiting_invoice`. No tables/columns are added and
+   existing financial records, notes and settings are unchanged. Deliberate
+   downgrade maps those decisions to `verified` and `note`, respectively, while
+   retaining each explanation and its source fingerprint.
 
-They do not seed configuration or change existing entry/payroll records. This
-branch adds a Heroku release phase to apply pending migrations before a new web
-release starts. Future pending migrations will also run during release. Follow
+They do not seed configuration or change existing entry/payroll records. The
+live baseline already has the four owner tables at `b2e7a9c4106f`; this release
+applies only the new constraint migration. The Heroku release phase applies
+pending migrations before a new web release starts. Future pending migrations will also run during release. Follow
 the [deployment and rollback procedure](owner-analysis-deployment.md). Before a live release,
 check the live revision/schema, obtain a fresh backup, rehearse on a separate
 restored copy and agree the migration/deployment sequence. Do not stamp a database
 or replay legacy migrations without checking its actual state. Rolling code back
-can retain these additive tables; downgrading removes the new owner records.
+retains these owner tables and the expanded constraint. Downgrading the original
+table migrations would remove owner records; the new decision-only downgrade
+preserves explanations while mapping the two new decision labels.
 
 ## Verification and independent reconciliation
 

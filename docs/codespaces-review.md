@@ -52,9 +52,22 @@ occasional Saturday job illustrates actual weekend work.
 On a check's review page, try an invalid correction or an incomplete
 verification explanation. The selected check, weekly evidence and entered text
 stay visible so you can correct the submission. Saves return to the original
-weekly/monthly checks period. Confirming an absence and verifying a check retain
-their existing explanation requirements; this update does not add new dismissal
-rules or change which checks are raised.
+weekly/monthly checks period. Missing weekdays still require an actual
+Working/Holiday/Absent record. Where allowed, try **Dismiss with explanation** for a known false alarm. On missing
+fuel, **Awaiting fuel invoice** saves a reason but keeps the check outstanding,
+profit pending and final review blocked. Saved decisions appear in history and
+reopen if their source records change.
+
+Fuel typo checks compare cost per purchased litre, with broad £0.50–£3.00 limits.
+Matching truck/date/provider/litres/cost raises one possible-duplicate comparison;
+remove a receipt only after checking the actual invoice lines. Payroll compares
+take-home pay with full employer cost on the same payslip; variable bonuses are
+allowed. Mileage and truck-assignment hints sit under collapsed **Other checks**
+and do not affect the main count or final weekly review.
+
+Days, fuel and payroll use the following Friday–Monday review window. Outstanding
+records show **Awaiting records** through Monday, then **Needs review**. A ready
+week can be signed off earlier. Monthly checks use completed payroll weeks only.
 
 When updating an existing preview, stop the server with **Ctrl+C**, then run:
 
@@ -63,6 +76,12 @@ git pull --ff-only
 python3 tools/setup_review.py
 python3 run.py
 ```
+
+This update needs that setup command even on an existing preview: it safely
+widens the recognised owner-review decision constraint to allow the new saved
+decisions. It retains existing rows and explanations. If the existing constraint
+is missing or unrecognised, setup stops without changing it. It does not stamp
+or replay the migration chain.
 
 The setup keeps existing records and edits. It can remove the original demo's
 empty weekend Absent entries only when it recognises the synthetic fixture and

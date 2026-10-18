@@ -28,7 +28,7 @@
         <div class="owner-metric"><span class="owner-metric-label">Fuel entries</span><strong class="owner-metric-value">{{ item.fuel_entry_count }}</strong></div>
       {% endif %}
       </div>
-      {% if item.entries_pending|default(false) %}<p class="owner-notice owner-small">Entries may still be missing for this driver. Recorded totals may change.</p>{% endif %}
+      {% if item.entries_pending|default(false) %}<p class="owner-notice owner-small">This driver has outstanding data checks. Recorded totals may change.</p>{% endif %}
       {% if item.fuel_pending|default(false) %}<p class="owner-notice owner-small">Fuel checks are outstanding for this truck. Recorded purchases may be incomplete.</p>{% endif %}
     </article>
     {% else %}<div class="owner-card"><p>No {{ 'driver' if breakdown.kind == 'driver' else 'truck' }} records for the selected period.</p></div>{% endfor %}

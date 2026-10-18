@@ -10,7 +10,10 @@ from types import ModuleType, SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
+from alembic.operations import Operations
+from alembic.runtime.migration import MigrationContext
 from sqlalchemy import create_engine, event, inspect, select, text
+from sqlalchemy.exc import IntegrityError
 
 from owner_test_support import OwnerTestCase, db
 from haulage_app.models import Day, Driver, Fuel, Job, Payslip
@@ -132,6 +135,8 @@ class ReviewTargetSafetyTests(unittest.TestCase):
              "Sample weekend cleanup skipped"),
             (dict(seeded=False, sample_weekends_removed=0, sample_weekends_cleanup_skipped=False),
              "All records and edits were preserved"),
+            (dict(seeded=False, sample_weekends_removed=0, sample_weekends_cleanup_skipped=False,
+                  issue_decisions_updated=True), "Updated the review decision options"),
         )
         imported_module = ModuleType("haulage_app")
         imported_module.app = SimpleNamespace(
@@ -378,3 +383,72 @@ class ReviewSampleDataTests(OwnerTestCase):
                              ("payslip", Payslip), ("driver", Driver)):
             self.assertEqual(db.session.execute(select(db.func.count()).select_from(model)).scalar_one(),
                              counts[table])
+
+
+class ReviewDecisionCompatibilityTests(OwnerTestCase):
+    def set_decision_constraint(self, expression):
+        from alembic import op
+        with Operations.context(MigrationContext.configure(db.session.connection())):
+            with op.batch_alter_table("owner_issue_verification") as batch:
+                batch.drop_constraint("ck_owner_issue_decision", type_="check")
+                batch.create_check_constraint("ck_owner_issue_decision", expression)
+        db.session.commit()
+
+    def add_note(self, decision="verified", scope="test"):
+        db.session.execute(text("""INSERT INTO owner_issue_verification
+            (week_start,scope_key,decision,note,source_fingerprint)
+            VALUES ('2026-10-03',:scope,:decision,'Original explanation',:fingerprint)"""),
+            dict(scope=scope, decision=decision, fingerprint="a" * 64))
+        db.session.commit()
+
+    def notes(self):
+        return db.session.execute(text("SELECT * FROM owner_issue_verification ORDER BY id")).all()
+
+    def test_existing_preview_constraint_upgrade_preserves_records_edits_and_notes(self):
+        setup_review.seed_review_data(db.session.connection(), db.metadata.tables, today=date(2026, 10, 21))
+        db.session.execute(Job.__table__.update().where(Job.id == 1).values(earned=77777))
+        db.session.execute(OwnerOverheadSetting.__table__.update().values(allowance_per_truck=99999))
+        db.session.commit()
+        self.set_decision_constraint("decision IN ('verified', 'confirmed_zero', 'note')")
+        self.add_note()
+        before = self.notes()
+        with patch.object(setup_review, "seed_review_data", side_effect=AssertionError("must not reseed")):
+            result = setup_review.setup_review_database(
+                db.session.connection(), db.metadata, today=date(2026, 10, 21))
+        db.session.commit()
+        self.assertTrue(result["issue_decisions_updated"])
+        self.assertFalse(result["seeded"])
+        self.assertEqual(self.notes(), before)
+        self.assertEqual(db.session.get(Job, 1).earned, 77777)
+        self.assertEqual(set(db.session.execute(select(OwnerOverheadSetting.allowance_per_truck)).scalars()),
+                         {99999})
+        self.add_note("dismissed", "dismissal")
+        self.add_note("awaiting_invoice", "invoice")
+        again = setup_review.setup_review_database(
+            db.session.connection(), db.metadata, today=date(2026, 11, 21))
+        self.assertFalse(again["issue_decisions_updated"])
+        self.assertEqual(len(self.notes()), 3)
+        with self.assertRaises(IntegrityError):
+            self.add_note("unexpected", "invalid")
+        db.session.rollback()
+
+    def test_unknown_or_missing_constraint_is_refused_without_changing_records(self):
+        for expression in ("decision IN ('verified', 'confirmed_zero', 'note', 'unexpected')",
+                           "decision IN ('verified', 'confirmed_zero', 'note') OR length(note) > 5"):
+            with self.subTest(expression=expression):
+                self.set_decision_constraint(expression)
+                before = self.notes()
+                with self.assertRaisesRegex(RuntimeError, "constraint is incompatible"):
+                    setup_review.setup_review_database(
+                        db.session.connection(), db.metadata, today=date(2026, 10, 21))
+                self.assertEqual(self.notes(), before)
+                self.assertEqual(next(item["sqltext"] for item in inspect(db.session.connection()).get_check_constraints(
+                    "owner_issue_verification") if item["name"] == "ck_owner_issue_decision"), expression)
+
+        from alembic import op
+        with Operations.context(MigrationContext.configure(db.session.connection())):
+            with op.batch_alter_table("owner_issue_verification") as batch:
+                batch.drop_constraint("ck_owner_issue_decision", type_="check")
+        db.session.commit()
+        with self.assertRaisesRegex(RuntimeError, "missing or incompatible"):
+            setup_review.setup_review_database(db.session.connection(), db.metadata, today=date(2026, 10, 21))

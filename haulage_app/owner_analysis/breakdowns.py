@@ -49,11 +49,14 @@ def build_breakdown(report, kind, *, selected_id=None, selected_label=None):
                     for item in week["issues"])
                 missing_payroll |= not confirmed_zero
             row["payroll_pending"] = missing_payroll or any(item["code"] in {
-                "missing_payslip", "multiple_payslips", "payslip_amount_out_of_range", "employer_cost_below_wage"
+                "missing_payslip", "multiple_payslips", "payslip_amount_out_of_range", "employer_cost_below_wage",
+                "payroll_gap_unusual",
             } for item in relevant)
             row["entries_pending"] = bool(relevant)
         else:
-            row["fuel_pending"] = any(item["code"] in {"missing_fuel_receipt", "fuel_amount_out_of_range"} for item in relevant)
+            row["fuel_pending"] = any(item["code"] in {
+                "missing_fuel_receipt", "fuel_amount_out_of_range", "fuel_price_unusual", "possible_duplicate_fuel"
+            } for item in relevant)
     return {"kind": kind, "options": options, "rows": rows, "selected_id": selected_id,
             "selected_label": selected_label, "issues": issues, "history": history,
             "allowance_weeks": [{"week_start": week["week_start"], "week_end": week["week_end"],
