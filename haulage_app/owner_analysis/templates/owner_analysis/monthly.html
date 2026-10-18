@@ -54,7 +54,6 @@
       <div class="owner-metric"><span class="owner-metric-label">Overheads</span><strong class="owner-metric-value">{{ money(report.overheads) }}</strong></div>
     </div>
     {% include 'owner_analysis/_overhead_basis.html' %}
-    <p class="owner-muted owner-small">Wages are recorded employer costs; fuel is recorded spending. Overheads include the allowance for every truck in each included week.</p>
     {% else %}<p>No completed payroll weeks yet.</p><p class="owner-muted owner-small">Figures will appear after the first included payroll week has finished.</p>{% include 'owner_analysis/_overhead_basis.html' %}{% endif %}
   </section>
 

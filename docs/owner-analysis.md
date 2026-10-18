@@ -101,8 +101,10 @@ fingerprint rejects stale forms, including changes outside the currently viewed
 week. Reads do not create weekly snapshots; snapshots are saved only by explicit
 settings actions.
 
-Weekly Overview shows the truck count and per-truck allowance applicable to that
-week. Monthly Overview describes only its included completed weeks; if their
+Overview uses a compact line such as **Overheads: 4 trucks × £350/week · Settings**,
+with no explanatory paragraph beneath it. Whole-pound allowances omit `.00`;
+nonzero pennies remain visible. Weekly values apply to the selected week.
+Monthly Overview describes only its included completed weeks; if their
 settings differ, expand **Settings varied during this period** for the dated
 breakdown. Current/future settings are not substituted for historical values,
 and missing settings remain unknown rather than zero.
