@@ -5,14 +5,18 @@ from decimal import Decimal
 import re
 from zoneinfo import ZoneInfo
 
-from flask import abort, flash, make_response, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, make_response, redirect, render_template, request, url_for
+from itsdangerous import BadData, URLSafeTimedSerializer
 from sqlalchemy.exc import IntegrityError
 
 from haulage_app import db
 from haulage_app.models import Day, Driver, Truck
 from haulage_app.owner_analysis import owner_analysis_bp
 from haulage_app.owner_analysis.breakdowns import build_breakdown
-from haulage_app.owner_analysis.corrections import correction_url, fuel_flag_correction_url
+from haulage_app.owner_analysis.corrections import (
+    build_correction_editor, correction_editor_for_issue, correction_url,
+    fuel_flag_correction_url, validate_review_editor,
+)
 from haulage_app.owner_analysis.dates import (
     payroll_month_for_week, payroll_week_start, payroll_weeks_for_month,
     shift_month, validate_week_start, week_end,
@@ -70,7 +74,68 @@ def _adjacent_week(week, offset):
         return None
 
 
-def _post(form, action, message):
+def _review_return_serializer():
+    return URLSafeTimedSerializer(current_app.secret_key, salt="owner-analysis-check-return-v1")
+
+
+def _read_review_return(form, review_action):
+    """A local, signed review destination tied to the actual submitted action."""
+    if "review_return" not in request.form:
+        return None
+    if len(request.form.getlist("review_return")) != 1 or review_action not in {"verification", "absence"}:
+        abort(400, description="Reopen this check from Data Checks.")
+    raw = request.form["review_return"]
+    try:
+        payload = _review_return_serializer().loads(raw, max_age=8 * 60 * 60)
+        if (not isinstance(payload, dict) or set(payload) != {"v", "week_start", "issue_key", "review_context"}
+                or type(payload["v"]) is not int or payload["v"] != 1):
+            raise ValueError()
+        week = _parse_week(payload["week_start"])
+        if payload["week_start"] != week.isoformat():
+            raise ValueError()
+        if (not isinstance(payload["issue_key"], str) or not payload["issue_key"]
+                or len(payload["issue_key"]) > 255):
+            raise ValueError()
+        read_review_context(payload["review_context"], week=week)
+        if (len(request.form.getlist("week_start")) != 1 or
+                request.form.get("week_start") != payload["week_start"] or
+                len(request.form.getlist("review_context")) != 1 or
+                request.form.get("review_context") != payload["review_context"]):
+            raise ValueError()
+        if review_action == "verification" and (
+                len(request.form.getlist("issue_key")) != 1 or
+                request.form.get("issue_key") != payload["issue_key"]):
+            raise ValueError()
+    except (BadData, ValueError, KeyError, TypeError, OverflowError):
+        abort(400, description="Invalid or expired check review. Reopen it from Data Checks.")
+    with db.session.no_autoflush:
+        report = get_reviewed_week(week, as_of=today_london())
+        issue = next((item for item in report["issues"] if item["key"] == payload["issue_key"]), None)
+    if issue is None or issue.get("resolved"):
+        abort(409, description="This check is no longer outstanding. Reopen Data Checks for the updated week.")
+    if review_action == "absence" and (issue["code"] != "missing_day" or
+            len(request.form.getlist("driver_id")) != 1 or
+            len(request.form.getlist("absent_date")) != 1 or
+            issue.get("driver_id") != form.driver_id.data or
+            issue.get("date") != form.absent_date.data):
+        abort(400, description="This day does not belong to the selected check. Reopen Data Checks.")
+    return {"week": week, "issue_key": payload["issue_key"],
+            "review_context": payload["review_context"], "token": raw}
+
+
+def _review_form_failure(form, destination, review_action, message):
+    with db.session.no_autoflush:
+        page = _review_page_context(destination["week"], destination["issue_key"],
+                                    destination["review_context"])
+        page["action_forms"][review_action] = form
+        page.update(review_return=destination["token"], review_error=message,
+                    active_verification=review_action == "verification",
+                    active_absence=review_action == "absence")
+        return render_template("owner_analysis/investigate.html", **page), 400
+
+
+def _post(form, action, message, *, review_action=None):
+    destination = _read_review_return(form, review_action)
     fallback = payroll_week_start(today_london())
     field = "selected_week" if hasattr(form, "selected_week") else "week_start"
     try:
@@ -85,17 +150,25 @@ def _post(form, action, message):
         abort(400, description="Monthly checks cover completed payroll weeks only.")
     if not form.validate_on_submit():
         errors = [error for messages in form.errors.values() for error in messages]
-        flash(" ".join(errors) or "Please check the form and try again.", "error-msg")
+        message = " ".join(errors) or "Please check the form and try again."
+        if destination is not None:
+            return _review_form_failure(form, destination, review_action, message)
+        flash(message, "error-msg")
         return _back(week, token)
     try:
         action(week)
         db.session.commit()
     except ValueError as exc:
         db.session.rollback()
+        if destination is not None:
+            return _review_form_failure(form, destination, review_action, str(exc))
         flash(str(exc), "error-msg")
     except IntegrityError:
         db.session.rollback()
-        flash("The entry changed or already exists. Refresh the week and check it again.", "error-msg")
+        message = "The entry changed or already exists. Refresh the week and check it again."
+        if destination is not None:
+            return _review_form_failure(form, destination, review_action, message)
+        flash(message, "error-msg")
     else:
         flash(message, "success-msg")
     return _back(week, token)
@@ -156,6 +229,7 @@ def _prepare_week_presentation(report, *, correction_links=False, review_context
             issue["correction_url"] = url_for("owner_analysis.overhead_settings", week_start=week.isoformat(),
                 **({"review_context": review_context} if review_context else {})) if issue["code"] == "missing_overhead_settings" else correction_url(week, issue, report=report, review_context=review_context)
             issue["fuel_flag_correction_url"] = fuel_flag_correction_url(week, issue, report=report, review_context=review_context) if issue["code"] == "missing_fuel_receipt" else None
+            issue["review_url"] = issue["correction_url"] if issue["code"] == "missing_overhead_settings" else issue["investigation_url"]
         issue["can_confirm_zero"] = "confirmed_zero" in issue.get("verification_decisions", [])
         issue["can_mark_absence"] = issue["code"] == "missing_day"
     outstanding_keys = {item["key"] for item in report["outstanding_issues"]}
@@ -444,28 +518,68 @@ def investigate():
     if token and read_review_context(token)["period"] == "monthly" and week_end(week) >= today_london():
         abort(400, description="Monthly checks cover completed payroll weeks only.")
     token = token or review_context_for("weekly", week)
-    # The selected driver/truck/date comes from the actual check, never from
-    # independent query parameters that could silently switch the subject.
     with db.session.no_autoflush:
-        report = _prepare_week_presentation(get_reviewed_week(week, as_of=today_london()),
-            correction_links=True, review_context=token)
-        issue = next((item for item in report["issues"] if item["key"] == key), None)
-        if issue is None:
-            abort(404, description="This check is no longer present. Reopen Data Checks for the updated week.")
-        _add_check_forms(report, token)
-        details = build_week_context(week, report["review_basis"], driver_id=issue.get("driver_id"),
-            truck_id=issue.get("truck_id"), on_date=issue.get("date"),
-            target_type=issue.get("record_type"), target_id=issue.get("record_id"),
-            as_of=report["as_of"], include_nearby=include_nearby)
-        args = {"week_start": week.isoformat(), "issue_key": key, "review_context": token}
-        return render_template("owner_analysis/investigate.html", report=report, issue=issue,
-            action_forms=report["forms"],
-            week_context=details, week=week, week_end=report["week_end"],
-            back_url=review_checks_url(week, token), back_label="Back to Data Checks",
-            correction_url=issue.get("correction_url"),
-            nearby_url=url_for("owner_analysis.investigate", **args, nearby="1", _anchor="nearby-payslips")
-                       if issue.get("driver_id") is not None else None,
-            nearby_hide_url=url_for("owner_analysis.investigate", **args))
+        return render_template("owner_analysis/investigate.html", **_review_page_context(
+            week, key, token, include_nearby=include_nearby))
+
+
+def _review_page_context(week, key, token=None, *, include_nearby=False,
+                         correction_context=None, error=None):
+    """One check's evidence, exact entry form and allowed review actions.
+
+    Subjects always come from the real check. Optional signed correction state
+    permits rejected submissions and duplicate-member inspection to reuse this
+    page without broadening the source record that can be changed.
+    """
+    token = token or review_context_for("weekly", week)
+    report = _prepare_week_presentation(get_reviewed_week(week, as_of=today_london()),
+        correction_links=True, review_context=token)
+    issue = next((item for item in report["issues"] if item["key"] == key), None)
+    if correction_context is not None:
+        validate_review_editor(correction_context, issue, report)
+    if issue is None:
+        abort(404, description="This check is no longer present. Reopen Data Checks for the updated week.")
+    _add_check_forms(report, token)
+    details = build_week_context(week, report["review_basis"], driver_id=issue.get("driver_id"),
+        truck_id=issue.get("truck_id"), on_date=issue.get("date"),
+        target_type=issue.get("record_type"), target_id=issue.get("record_id"),
+        as_of=report["as_of"], include_nearby=include_nearby)
+    editor = flag_editor = active_editor = None
+    if not issue.get("resolved"):
+        editor = correction_editor_for_issue(week, issue, report,
+            review_context=token, include_nearby=include_nearby)
+        if issue["code"] == "missing_fuel_receipt":
+            flag_editor = correction_editor_for_issue(week, issue, report,
+                review_context=token, fuel_flag=True, include_nearby=include_nearby)
+        if correction_context is not None:
+            active_editor = build_correction_editor(correction_context,
+                error=error, include_nearby=include_nearby)
+            if active_editor["kind"] == "fuel_flag":
+                flag_editor = active_editor
+            else:
+                editor = active_editor
+        else:
+            active_editor = editor
+    args = {"week_start": week.isoformat(), "issue_key": key, "review_context": token}
+    # Retain the standalone editor aliases for existing signed bookmarks and
+    # consumers; new templates use the explicit editor dictionaries.
+    context = dict(active_editor or {})
+    context.update(report=report, issue=issue, action_forms=report["forms"],
+        correction_editor=editor, fuel_flag_editor=flag_editor,
+        active_correction_kind=active_editor["kind"] if active_editor else None,
+        review_return=_review_return_serializer().dumps({"v": 1, "week_start": week.isoformat(),
+            "issue_key": key, "review_context": token}) if not issue.get("resolved") else None,
+        review_error=None, active_verification=False, active_absence=False,
+        week_context=details, week=week, week_end=report["week_end"],
+        back_url=review_checks_url(week, token), back_label="Back to Data Checks",
+        correction_url=issue.get("correction_url"),
+        nearby_url=url_for("owner_analysis.investigate", **args, nearby="1", _anchor="nearby-payslips")
+                   if issue.get("driver_id") is not None else None,
+        nearby_hide_url=url_for("owner_analysis.investigate", **args))
+    if correction_context is not None and active_editor is not None:
+        context["nearby_url"] = active_editor["nearby_url"]
+        context["nearby_hide_url"] = active_editor["nearby_hide_url"]
+    return context
 
 
 def _add_check_forms(report, token):
@@ -641,7 +755,8 @@ def save_overheads():
 def verify_issue():
     form = IssueVerificationForm()
     return _post(form, lambda week: save_issue_verification(week, form.issue_key.data, form.note.data,
-        form.fingerprint.data, decision=form.decision.data, as_of=today_london()), "Verification and explanation saved.")
+        form.fingerprint.data, decision=form.decision.data, as_of=today_london()),
+        "Verification and explanation saved.", review_action="verification")
 
 
 @owner_analysis_bp.route("/owner-analysis/note", methods=["POST"])
@@ -673,4 +788,4 @@ def record_absence():
         updated = get_reviewed_week(week, as_of=today_london())
         scope = f"recorded_absence:{week.isoformat()}:driver_id={form.driver_id.data}:date={form.absent_date.data.isoformat()}"
         save_week_note(week, form.note.data, updated["week_fingerprint"], scope_key=scope, as_of=today_london())
-    return _post(form, save, "Day status and explanation recorded.")
+    return _post(form, save, "Day status and explanation recorded.", review_action="absence")

@@ -115,8 +115,12 @@ without receipts, missing or multiple payslips, numeric ranges, missing overhead
 settings, and informational mileage issues. Plausible incorrect data and
 unflagged missing purchases still need human review.
 
-Detailed checks, explanations, verification history and final-review forms live
-on Data Checks. Weekly/monthly links retain the originating driver/truck view;
+Data Checks lists each outstanding issue with its subject, a short description
+and one **Review** action. Missing weekdays are grouped by driver within the
+week, with one dated review row for each gap. This presentation keeps each
+check's identity, count and explanation intact. Per-issue entry, verification and absence forms live
+on the selected check's review page. Weekly notes, verification history and
+final weekly review remain on Data Checks. Weekly/monthly links retain the originating driver/truck view;
 signed, validated report context returns corrections and settings to the same
 checks period. Only known local reporting routes are valid return destinations.
 Monthly checks and their counts include completed weeks only, matching the
@@ -128,9 +132,11 @@ Adding another note preserves earlier notes; lengthy notes have a short preview
 and an expandable full version. Per-issue explanations and verification history
 stay on Data Checks.
 
-Each check has a **Review check** link with the available correction and review
-actions beside the weekly evidence. The same read-only investigation panel
-appears beside the correction forms on desktop. It shows all
+Each **Review** opens the relevant entry form beside the weekly evidence and
+the available confirmation options. Missing fuel offers both an Add receipt
+form and a collapsed **The fuel tick was a mistake** action on that page.
+Overhead configuration checks open the standalone truck and overhead settings
+page. The read-only evidence panel shows all
 seven dates, actual Working/Holiday/Absent entries and explicit unknown gaps,
 recorded trucks, jobs/additional earnings, and the selected week's payslips for
 all drivers. The selected date, driver and record are highlighted. Dates after
@@ -147,11 +153,15 @@ comes from the actual check or signed correction, not independent driver/truck
 query overrides.
 
 The selected check can be explained/verified or have a confirmed Holiday/Absent
-day recorded without leaving the weekly evidence. These use the same guarded
-actions as Data Checks, including required explanations, CSRF, source-value
+day recorded alongside the entry form and weekly evidence. These use the same guarded
+actions, including required explanations, CSRF, source-value
 fingerprints and signed return navigation. Verification is offered only where
 the rule permits it. A confirmed-zero payroll decision is explicitly labelled;
 already verified checks show the saved explanation without another action form.
+Rejected corrections and review confirmations keep the selected check, evidence
+and submitted text on the same review page. Signed return metadata binds each
+confirmation to that check and its originating report period. Legacy correction
+bookmarks without review metadata still use the shared entry controls.
 Final weekly signoff remains on Data Checks.
 
 Legitimate exceptions require an explanation. Missing days require an actual Day
@@ -165,7 +175,10 @@ once, and rejected submissions retain the entered text. Working-day controls are
 shown only for Working status; changing to Holiday/Absent explains that day
 details and additional amounts are cleared while existing jobs are retained.
 Duplicate payslips can be compared, with an explicit duplicate confirmation
-required before deletion. Historical inactive drivers remain eligible only for the exact correction.
+required before deletion. The duplicate review can correct an existing member's
+amounts while keeping its driver and date fixed. It does not create or remove
+another payslip, and the multiple-payslip check remains outstanding until the
+records are corrected or verified. Historical inactive drivers remain eligible only for the exact correction.
 Split-job allocation edits remain read-only to avoid breaking both allocations.
 
 Verification and review history is append-only and independent of legacy alert

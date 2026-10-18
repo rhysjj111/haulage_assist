@@ -1,0 +1,14 @@
+<article class="owner-issue owner-check-summary" id="{{ issue.anchor_id|default('check-' ~ issue_id) }}" data-owner-check-key="{{ issue.key }}">
+  <div class="owner-check-description">
+    <h3 id="check-title-{{ issue_id }}">{% if compact_missing_day|default(false) %}{{ issue.date.strftime('%A %d %b') }}{% else %}{{ issue.title|default(issue.label|default(issue.code|replace('_', ' ')|capitalize)) }}{% endif %}</h3>
+    {% if not compact_missing_day|default(false) %}
+      {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
+      {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
+      <p class="owner-small">{{ issue.message }}</p>
+    {% endif %}
+  </div>
+  <div class="owner-check-action">
+    {% if not compact_missing_day|default(false) %}{% if issue.blocking %}<span class="owner-badge owner-badge-needs_review">Needs attention</span>{% else %}<span class="owner-badge">Information</span>{% endif %}{% endif %}
+    <a href="{{ issue.review_url|default(issue.investigation_url) }}" class="owner-button owner-button-secondary" aria-describedby="check-title-{{ issue_id }}">Review</a>
+  </div>
+</article>

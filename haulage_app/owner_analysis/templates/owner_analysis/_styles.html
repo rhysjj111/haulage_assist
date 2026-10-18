@@ -52,6 +52,15 @@
   .owner-issue { padding: .9rem 0; border-top: 1px solid #e4eaed; }
   .owner-issue:first-of-type { border-top: 0; }
   .owner-issue-title { font-weight: 600; margin-bottom: .25rem; }
+  .owner-check-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: center; }
+  .owner-check-summary h3 { margin-bottom: .25rem; }
+  .owner-check-description { min-width: 0; }
+  .owner-check-description p { margin: .15rem 0; }
+  .owner-check-action { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .7rem; }
+  .owner-check-group { padding-top: 1rem; margin: .4rem 0; border-top: 1px solid #e4eaed; }
+  .owner-check-group .owner-card-heading { margin-bottom: .3rem; }
+  .owner-check-group .owner-card-heading h3 { font-size: 1.15rem; }
+  .owner-check-group .owner-check-summary h3 { font-size: 1rem; margin: 0; }
   .owner-analysis details { margin-top: .6rem; }
   .owner-analysis summary { cursor: pointer; color: #245a86; padding: .35rem 0; }
   .owner-analysis form { margin-top: .8rem; }
@@ -85,6 +94,8 @@
   .owner-history-entry:last-child { border-bottom: 0; }
   @media (max-width: 992px) { .owner-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 600px) {
+    .owner-check-summary { grid-template-columns: 1fr; gap: .5rem; }
+    .owner-check-action { justify-content: flex-start; }
     .owner-page-title { font-size: 1.8rem; margin-left: 1.1rem; }
     .owner-analysis { padding-bottom: 2rem; }
     .owner-analysis h2 { font-size: 1.4rem; }

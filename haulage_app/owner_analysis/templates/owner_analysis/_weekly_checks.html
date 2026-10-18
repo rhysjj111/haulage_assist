@@ -8,17 +8,24 @@
   </div>
   <div class="owner-card-heading"><h3>Outstanding checks</h3><span class="owner-badge">{{ week.outstanding_issues|length }} outstanding</span></div>
   {% if week.outstanding_issues %}<p class="owner-muted owner-small">Financial and missing-entry checks appear first. Changes to records or settings can reopen a check.</p>{% endif %}
+  {% set missing_groups = namespace(drivers=[]) %}
   {% for issue in week.outstanding_issues %}
   {% set issue_id = week_id ~ '-' ~ loop.index %}
-  <article class="owner-issue" id="{{ issue.anchor_id|default('check-' ~ issue_id) }}">
-    <div class="owner-card-heading"><h3>{{ issue.title|default(issue.label|default(issue.code|replace('_', ' ')|capitalize)) }}</h3>{% if issue.blocking %}<span class="owner-badge owner-badge-needs_review">Needs attention</span>{% else %}<span class="owner-badge">Information</span>{% endif %}</div>
-    <p>{{ issue.message }}</p>
-    {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
-    {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
-    {% with action_forms=week.forms, action_week=week.week_start, actions_expanded=false, show_investigation_link=true %}
-      {% include 'owner_analysis/_issue_actions.html' %}
-    {% endwith %}
-  </article>
+  {% if issue.code == 'missing_day' %}
+    {% if issue.driver_id not in missing_groups.drivers %}
+      {% set missing_groups.drivers = missing_groups.drivers + [issue.driver_id] %}
+      {% set missing_days = week.outstanding_issues|selectattr('code', 'equalto', 'missing_day')|selectattr('driver_id', 'equalto', issue.driver_id)|list %}
+      <section class="owner-check-group" data-owner-missing-days-driver="{{ issue.driver_id }}" aria-labelledby="missing-days-{{ week_id }}-{{ issue.driver_id }}">
+        <div class="owner-card-heading"><h3 id="missing-days-{{ week_id }}-{{ issue.driver_id }}">{{ issue.driver_name|default(week.driver_names.get(issue.driver_id, 'Driver ' ~ issue.driver_id), true) }} · Missing day entries</h3><span class="owner-badge owner-badge-needs_review">{{ missing_days|length }} {{ 'weekday' if missing_days|length == 1 else 'weekdays' }}</span></div>
+        <p class="owner-muted owner-small">Add the working day or confirm Holiday/Absent for each date.</p>
+        {% for missing in missing_days %}
+          {% with issue=missing, issue_id=week_id ~ '-day-' ~ missing.driver_id ~ '-' ~ missing.date.isoformat(), compact_missing_day=true %}{% include 'owner_analysis/_check_summary.html' %}{% endwith %}
+        {% endfor %}
+      </section>
+    {% endif %}
+  {% else %}
+    {% include 'owner_analysis/_check_summary.html' %}
+  {% endif %}
   {% else %}
   <p>No outstanding checks for this week.{% if week.review_status == 'checked' %} This week has been reviewed.{% elif week.period_state == 'finished' %} It still needs an explicit final review.{% else %} Final review is available after the week ends.{% endif %}</p>
   {% endfor %}

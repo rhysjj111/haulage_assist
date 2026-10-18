@@ -33,8 +33,8 @@ created. Open those paths on your preview's address:
 | Example | What to look for |
 | --- | --- |
 | Complete example week | Clear financial summary, driver/truck views and an explicit review status. The seeded figures are £9,625 earnings, £3,128 employer wage cost, £1,490 fuel, £1,400 overheads and £3,607 estimated result. |
-| Checks to practise | A missing day, missing payslip, missing fuel receipt and unusual job amount. Open **Review check**, inspect the week, then correct or explain it as appropriate. |
-| Duplicate payslip example | Compare both entries before confirming a duplicate removal, or verify genuinely separate payslips with an explanation. |
+| Checks to practise | Each item has one **Review** button. Open a missing day, payslip, fuel receipt or unusual job amount to inspect the week and enter a correction on the same page. Missing fuel also offers **The fuel tick was a mistake**. |
+| Duplicate payslip example | Compare both entries, edit an existing payslip's amounts, explicitly confirm a duplicate removal, or verify genuinely separate payslips with an explanation. |
 | Previous month | Whole payroll weeks, monthly totals and review status. |
 | Current partial week | Only entries due so far; later dates remain outside the figures. If you create the preview at a weekend, there may be no Working days yet. |
 | Truck and overhead settings | Four sample trucks, with a dated allowance change from £350 to £400 per truck per week. These are demo amounts. |
@@ -48,6 +48,13 @@ Driver and truck cards have read-only **View week** / **View details** popups.
 Drivers show jobs and destinations; trucks show daily readings and fuel receipts.
 Ordinary weekends have no day entry and are not counted as absences. An
 occasional Saturday job illustrates actual weekend work.
+
+On a check's review page, try an invalid correction or an incomplete
+verification explanation. The selected check, weekly evidence and entered text
+stay visible so you can correct the submission. Saves return to the original
+weekly/monthly checks period. Confirming an absence and verifying a check retain
+their existing explanation requirements; this update does not add new dismissal
+rules or change which checks are raised.
 
 When updating an existing preview, stop the server with **Ctrl+C**, then run:
 

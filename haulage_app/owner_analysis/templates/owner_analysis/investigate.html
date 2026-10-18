@@ -1,24 +1,47 @@
 {% extends 'std_template.html' %}
-{% block standard_title %}<span class="owner-page-title">Review week details</span>{% endblock %}
+{% block standard_title %}<span class="owner-page-title">Review check</span>{% endblock %}
 {% block standard_content %}
 {% include 'owner_analysis/_styles.html' %}
 {% include 'owner_analysis/_investigation_styles.html' %}
+{% include 'owner_analysis/_correction_styles.html' %}
 <div class="owner-analysis owner-investigation-page">
   <div class="owner-toolbar"><a class="owner-button owner-button-secondary" href="{{ back_url }}">← {{ back_label|default('Back to Data Checks') }}</a></div>
   <div class="owner-investigation-layout">
-    <section class="owner-card owner-investigation-summary" aria-labelledby="investigation-check-heading">
-      <p class="owner-investigation-label">Selected check</p>
-      <h2 id="investigation-check-heading">{{ issue.title|default(issue.label|default(issue.code|replace('_', ' ')|capitalize)) }}</h2>
-      <p>{{ issue.message }}</p>
-      {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
-      {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
-      <p class="owner-muted owner-small">Payroll week: {{ week_context.week_start.strftime('%d %b') }} – {{ week_context.week_end.strftime('%d %b %Y') }}.</p>
-      {% with action_week=report.week_start, issue_id='selected-' ~ report.week_start.isoformat(), actions_expanded=true, show_investigation_link=false %}
-        {% include 'owner_analysis/_issue_actions.html' %}
-      {% endwith %}
-      <p class="owner-muted owner-small" style="margin-top:1rem">After saving, you will return to Data Checks. Complete the final weekly review there once all checks are resolved.</p>
-    </section>
+    <div class="owner-review-controls">
+      <section class="owner-card owner-investigation-summary" aria-labelledby="investigation-check-heading">
+        <p class="owner-investigation-label">Selected check</p>
+        <h2 id="investigation-check-heading">{{ issue.title|default(issue.label|default(issue.code|replace('_', ' ')|capitalize)) }}</h2>
+        {% if review_error|default(none) %}<p class="owner-correction-error" role="alert">{{ review_error }}</p>{% endif %}
+        <p>{{ issue.message }}</p>
+        {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
+        {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
+        <p class="owner-muted owner-small">Payroll week: {{ week_context.week_start.strftime('%d %b') }} – {{ week_context.week_end.strftime('%d %b %Y') }}.</p>
+        {% if not issue.resolved|default(false) %}<p class="owner-muted owner-small">Check the records alongside, then make the correction here or use the available confirmation options below.</p>{% endif %}
+      </section>
+      {% if correction_editor|default(none) %}
+        {% with editor=correction_editor %}{% include 'owner_analysis/_correction_editor.html' %}{% endwith %}
+      {% endif %}
+      {% if fuel_flag_editor|default(none) %}
+        <details class="owner-review-alternative"{% if fuel_flag_editor.error %} open{% endif %}>
+          <summary>The fuel tick was a mistake</summary>
+          {% with editor=fuel_flag_editor %}{% include 'owner_analysis/_correction_editor.html' %}{% endwith %}
+        </details>
+      {% endif %}
+      {% if issue.resolved|default(false) or issue.can_verify or issue.can_mark_absence|default(false) %}
+      <section class="owner-card owner-review-options" aria-label="Check confirmation options">
+        {% with action_week=report.week_start, issue_id='selected-' ~ report.week_start.isoformat(), actions_expanded=false, show_investigation_link=false, hide_correction_links=true %}
+          {% include 'owner_analysis/_issue_actions.html' %}
+        {% endwith %}
+      </section>
+      {% elif not correction_editor|default(none) %}
+      <section class="owner-card">
+        {% if issue.correction_url|default(none) %}<p><a class="owner-button" href="{{ issue.correction_url }}">Set truck and overheads</a></p>{% else %}<p class="owner-muted owner-small">This check needs its source records completed before it can be verified.</p>{% endif %}
+      </section>
+      {% endif %}
+      <p class="owner-muted owner-small">After saving, you will return to Data Checks. Complete the final weekly review there once all checks are resolved.</p>
+    </div>
     {% include 'owner_analysis/_week_context.html' %}
   </div>
 </div>
 {% endblock %}
+{% block additional_js %}{% include 'owner_analysis/_correction_scripts.html' %}{% endblock %}

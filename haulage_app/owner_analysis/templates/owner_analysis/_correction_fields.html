@@ -19,9 +19,10 @@
 {% set date_name = 'date_cd' if kind == 'job' else 'date' %}
 {% if kind in ['day', 'job', 'fuel', 'payslip'] %}
   {% if correction_driver %}<input type="hidden" name="driver_id" value="{{ correction_driver.id }}">{% endif %}
-  {% if mode == 'add' %}
+  {% if mode == 'add' or (kind == 'payslip' and issue|default(none) and issue.code == 'multiple_payslips') %}
     <input type="hidden" name="{{ date_name }}" value="{{ correction_date }}">
     {% if kind == 'fuel' %}<input type="hidden" name="truck_id" value="{{ correction_truck.id }}">{% endif %}
+    {% if mode == 'edit' %}<p class="owner-field-help">Payslip date: <strong>{{ f.display_date(f.date_to_db(correction_date)) }}</strong>. The date stays fixed while these payslips are compared.</p>{% endif %}
   {% else %}
     <div class="owner-edit-field">
       <label for="owner-correction-date">{{ 'Job date' if kind == 'job' else 'Receipt date' if kind == 'fuel' else 'Payslip date' if kind == 'payslip' else 'Day date' }}</label>

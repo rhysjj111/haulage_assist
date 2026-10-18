@@ -142,7 +142,9 @@ def _issue_target(week, issue, basis, fuel_flag=False):
     return payload
 
 
-def _make_url(week, issue, report, fuel_flag=False, review_context=None):
+def _issue_context(week, issue, report=None, *, fuel_flag=False, review_context=None,
+                   review_issue_key=None):
+    """Build a signed editor directly from a check, without routing internally."""
     validate_week_start(week)
     if review_context is not None:
         read_review_context(review_context, week=week)
@@ -156,7 +158,23 @@ def _make_url(week, issue, report, fuel_flag=False, review_context=None):
         return None
     if review_context is not None:
         payload['review_context'] = review_context
+    # Only signed metadata can reattach an editor to the review page. The
+    # current check/target binding is verified again before rendering or saving.
+    key = review_issue_key if review_issue_key is not None else issue.get('key')
+    if key is not None:
+        if not isinstance(key, str) or not key or len(key) > 255:
+            raise ValueError('Invalid check identity.')
+        payload['review_issue_key'] = key
     token = _serializer().dumps(payload)
+    return token, payload, week, basis, _scope(payload, basis)
+
+
+def _make_url(week, issue, report, fuel_flag=False, review_context=None, review_issue_key=None):
+    context = _issue_context(week, issue, report, fuel_flag=fuel_flag,
+        review_context=review_context, review_issue_key=review_issue_key)
+    if context is None:
+        return None
+    token, payload, _, _, _ = context
     kind = 'fuel' if payload['kind'] == 'fuel_flag' else payload['kind']
     item_id = payload.get('record_id', 0)
     return url_for(f'{kind}.add_{kind}', item_id=item_id,
@@ -172,6 +190,12 @@ def fuel_flag_correction_url(week, issue, report=None, *, review_context=None):
 
 
 def _load_context(kind, item_id, action='entry'):
+    allowed = {'owner_context', 'nearby'}
+    if ('owner_context' in request.args or 'owner_context' in request.form) and (
+            set(request.args) - allowed or
+            any(len(request.args.getlist(key)) != 1 for key in request.args) or
+            len(request.form.getlist('owner_context')) > 1):
+        abort(400, 'Reopen this correction from Data Checks.')
     token = request.args.get('owner_context') or request.form.get('owner_context')
     if not token:
         return None
@@ -187,6 +211,9 @@ def _load_context(kind, item_id, action='entry'):
             raise ValueError()
         if 'review_context' in payload:
             read_review_context(payload['review_context'], week=selected_week)
+        if 'review_issue_key' in payload and (not isinstance(payload['review_issue_key'], str)
+                or not payload['review_issue_key'] or len(payload['review_issue_key']) > 255):
+            raise ValueError()
         context_kind, mode = payload['kind'], payload['mode']
         if context_kind not in (*_MODELS, 'fuel_flag') or mode not in ('add', 'edit', 'group'):
             raise ValueError()
@@ -271,7 +298,7 @@ def _submitted_target(payload, week):
         raise ValueError('Split-job allocations need to be reviewed together; this correction does not split jobs.')
 
 
-def _save(payload, basis, week, item_id):
+def _save(payload, basis, week, item_id, *, review_issue=None):
     kind, mode = payload['kind'], payload['mode']
     _submitted_target(payload, week)
     if kind in ('day', 'job', 'payslip') and mode == 'edit':
@@ -347,7 +374,18 @@ def _save(payload, basis, week, item_id):
             raise ValueError('Please select an existing driver.')
         others = db.session.execute(select(Payslip.id).where(Payslip.driver_id == entry.driver_id,
                     Payslip.date.between(week, week_end(week)), Payslip.id != (entry.id or 0))).scalars().all()
-        if others:
+        # The unified duplicate review may correct one existing member without
+        # silently removing another. Other editors and new entries retain the
+        # original prohibition against adding/changing a duplicate week.
+        duplicate_member = (mode == 'edit' and review_issue is not None
+            and review_issue['code'] == 'multiple_payslips'
+            and review_issue['key'] == payload.get('review_issue_key')
+            and review_issue.get('driver_id') == entry.driver_id
+            and any(row['id'] == item_id and row['driver_id'] == entry.driver_id
+                    for row in basis['payslips']))
+        if duplicate_member and entry.date.isoformat() != _scope(payload, basis)['records'][0]['date']:
+            raise ValueError('Keep the date recorded on this payslip while reviewing duplicates.')
+        if others and not duplicate_member:
             raise ValueError('Another payslip exists in this payroll week. Review it before saving.')
         _store_number(entry, 'total_wage', _decimal_value('total_wage'))
         _store_number(entry, 'total_cost_to_employer', _decimal_value('total_cost_to_employer'))
@@ -361,6 +399,57 @@ def _render(context, error=None):
     # processor in the read-only scope as well as bounded source queries.
     with db.session.no_autoflush:
         return _render_form(context, error=error)
+
+
+def validate_review_editor(context, issue, report, *, for_write=False):
+    """Bind optional review metadata to its actual check and exact source target.
+
+    A duplicate-group comparison may open an individual member for inspection,
+    but that exception cannot turn the group signature into an arbitrary edit.
+    Old correction links without review metadata retain their existing scope.
+    """
+    _, payload, week, basis, _ = context
+    key = payload.get('review_issue_key')
+    if key is None:
+        return
+    if issue is None or issue['key'] != key:
+        abort(409, 'This check is no longer present. Reopen Data Checks for the updated week.')
+    expected = _issue_target(week, issue, basis, fuel_flag=payload['kind'] == 'fuel_flag')
+    identity_fields = ('kind', 'mode', 'driver_id', 'truck_id', 'date', 'day_id', 'record_id')
+    matches = expected is not None and all(payload.get(name) == expected.get(name)
+                                           for name in identity_fields)
+    group_member = (expected is not None and expected['kind'] == 'payslip'
+        and expected['mode'] == 'group' and payload['kind'] == 'payslip'
+        and payload['mode'] == 'edit'
+        and payload.get('record_id') in {row['id'] for row in _scope(expected, basis)['records']})
+    if not matches and not group_member:
+        abort(400, 'This editor does not belong to the selected check. Reopen Data Checks.')
+    if for_write and issue.get('resolved'):
+        abort(409, 'This check has already been verified. Reopen Data Checks before changing its records.')
+
+
+def _validate_current_review_editor(context):
+    """Recheck the issue before a signed review editor can mutate records."""
+    _, payload, week, _, _ = context
+    if payload.get('review_issue_key') is None:
+        return
+    from .reviews import get_reviewed_week
+    from .routes import today_london
+    with db.session.no_autoflush:
+        report = get_reviewed_week(week, as_of=today_london())
+        issue = next((item for item in report['issues']
+                      if item['key'] == payload['review_issue_key']), None)
+        validate_review_editor(context, issue, report, for_write=True)
+        return issue
+
+
+def correction_editor_for_issue(week, issue, report, *, review_context=None,
+                                fuel_flag=False, include_nearby=False):
+    """Return reusable correction template values, never a rendered response."""
+    context = _issue_context(week, issue, report, fuel_flag=fuel_flag, review_context=review_context)
+    if context is None:
+        return None
+    return build_correction_editor(context, include_nearby=include_nearby)
 
 
 def _nearby_requested():
@@ -388,7 +477,8 @@ def _form_values(payload, scope, *, error=None):
     return values
 
 
-def _render_form(context, error=None):
+def build_correction_editor(context, *, error=None, include_nearby=None):
+    """Extract the bounded editor for the canonical review and legacy pages."""
     token, payload, week, basis, scope = context
     kind, mode = payload['kind'], payload['mode']
     form = CorrectionForm()
@@ -415,8 +505,9 @@ def _render_form(context, error=None):
     if mode == 'group':
         for row in scope['records']:
             issue = {'code': 'payslip_amount_out_of_range', 'record_type': 'payslip', 'record_id': row['id']}
-            group_rows.append(dict(row, edit_url=correction_url(week, issue, {'review_basis': basis},
-                                                               review_context=payload.get('review_context'))))
+            group_rows.append(dict(row, edit_url=_make_url(week, issue, {'review_basis': basis},
+                review_context=payload.get('review_context'),
+                review_issue_key=payload.get('review_issue_key'))))
     truck_id = payload.get('truck_id')
     on_date = date.fromisoformat(payload['date']) if payload.get('date') else None
     if entry is not None:
@@ -424,13 +515,10 @@ def _render_form(context, error=None):
         if kind in ('day', 'fuel'):
             truck_id = entry.truck_id
     truck = db.session.get(Truck, truck_id) if truck_id is not None else None
-    include_nearby = _nearby_requested()
-    details = build_week_context(week, basis, driver_id=driver_id, truck_id=truck_id,
-        on_date=on_date, target_type=kind, target_id=payload.get('record_id'),
-        include_nearby=include_nearby)
+    include_nearby = _nearby_requested() if include_nearby is None else include_nearby
     endpoint = f'{"fuel" if kind == "fuel_flag" else kind}.add_{"fuel" if kind == "fuel_flag" else kind}'
     args = dict(item_id=payload.get('record_id', 0), tab='edit' if mode == 'edit' else 'entry', owner_context=token)
-    return render_template('owner_correction_entry.html', kind=kind, mode=mode, entry=entry, values=values,
+    return dict(kind=kind, mode=mode, entry=entry, values=values,
             trucks=trucks, form=form, token=token, week=week, week_end=week_end(week),
             back_url=checks_url(week, payload.get('review_context')),
             correction_driver={'id': driver_id, 'name': drivers[0].full_name if drivers else f'Driver {driver_id}'}
@@ -438,11 +526,30 @@ def _render_form(context, error=None):
             correction_truck={'id': truck_id, 'registration': truck.registration if truck else f'Truck {truck_id}'}
                              if truck_id is not None else None,
             correction_date=on_date.isoformat() if on_date is not None else None,
-            week_context=details,
             nearby_url=url_for(endpoint, **args, nearby='1', _anchor='nearby-payslips') if driver_id is not None else None,
             nearby_hide_url=url_for(endpoint, **args),
             error=error, split_read_only=split_read_only, group_rows=group_rows,
             action=url_for(endpoint, **args, **({'nearby': '1'} if include_nearby else {})))
+
+
+def _render_form(context, error=None):
+    _, payload, week, basis, _ = context
+    include_nearby = _nearby_requested()
+    if payload.get('review_issue_key') is not None:
+        # A failed save stays on the same evidence-and-entry page, with its
+        # submitted values intact. No internal request or legacy history load.
+        from .routes import _review_page_context
+        page = _review_page_context(week, payload['review_issue_key'], payload.get('review_context'),
+            include_nearby=include_nearby, correction_context=context, error=error)
+        return render_template('owner_analysis/investigate.html', **page)
+    editor = build_correction_editor(context, error=error, include_nearby=include_nearby)
+    details = build_week_context(week, basis,
+        driver_id=editor['correction_driver']['id'] if editor['correction_driver'] else None,
+        truck_id=editor['correction_truck']['id'] if editor['correction_truck'] else None,
+        on_date=date.fromisoformat(editor['correction_date']) if editor['correction_date'] else None,
+        target_type=payload['kind'], target_id=payload.get('record_id'), include_nearby=include_nearby)
+    return render_template('owner_correction_entry.html', **editor,
+        correction_editor=editor, fuel_flag_editor=None, week_context=details)
 
 
 def owner_entry_response(kind, item_id, tab):
@@ -455,11 +562,12 @@ def owner_entry_response(kind, item_id, tab):
         form = CorrectionForm()
         if not form.validate_on_submit():
             abort(400, 'Invalid correction form. Reload the page and try again.')
+        review_issue = _validate_current_review_editor(context)
         if payload['mode'] == 'group':
             abort(400, 'Select an individual payslip to change.')
         try:
             with db.session.no_autoflush:
-                _save(payload, basis, week, item_id)
+                _save(payload, basis, week, item_id, review_issue=review_issue)
             db.session.commit()
         except (ValueError, IntegrityError) as error:
             db.session.rollback()
@@ -482,6 +590,7 @@ def owner_mutation_response(kind, item_id, action='edit'):
     form = CorrectionForm()
     if not form.validate_on_submit():
         abort(400, 'Invalid correction form. Reload the page and try again.')
+    _validate_current_review_editor(context)
     if kind != 'payslip' or payload['mode'] != 'group':
         abort(400, 'Only a duplicate payslip selected in this correction can be deleted.')
     if request.form.get('confirm_delete') != 'yes':

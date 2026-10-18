@@ -9,14 +9,14 @@
   {% if issue.verification.note %}<p class="owner-note">{{ issue.verification.note }}</p>{% endif %}
   <p class="owner-muted owner-small">This check is resolved for the current records. Changes to its source entries can reopen it.</p>
 {% else %}
-  <div class="owner-week-links owner-investigation-actions">
+  {% if not hide_correction_links|default(false) %}<div class="owner-week-links owner-investigation-actions">
     {% if show_investigation_link|default(false) and issue.investigation_url|default(none) %}<a href="{{ issue.investigation_url }}" class="owner-button owner-button-secondary">Review check</a>{% endif %}
     {% if issue.correction_url|default(none) %}<a href="{{ issue.correction_url }}" class="owner-button{% if not actions_expanded|default(false) %} owner-button-secondary{% endif %}">{{ correction_label }}</a>{% endif %}
     {% if issue.fuel_flag_correction_url|default(none) %}<a href="{{ issue.fuel_flag_correction_url }}" class="owner-button owner-button-secondary">Review fuel purchase flag</a>{% endif %}
-  </div>
+  </div>{% endif %}
 
   {% if issue.can_verify and verification_form %}
-  <details{% if actions_expanded|default(false) %} open{% endif %}>
+  <details{% if actions_expanded|default(false) or active_verification|default(false) %} open{% endif %}>
     <summary>Explain or verify this check</summary>
     <form method="post" action="{{ url_for('owner_analysis.verify_issue') }}">
       {% if verification_form.csrf_token is defined %}{{ verification_form.csrf_token(id='verify-csrf-' ~ issue_id) }}{% endif %}
@@ -24,6 +24,7 @@
       <input id="verify-key-{{ issue_id }}" type="hidden" name="issue_key" value="{{ issue.key }}">
       <input id="verify-fingerprint-{{ issue_id }}" type="hidden" name="fingerprint" value="{{ issue.fingerprint }}">
       {% if verification_form.review_context is defined %}{{ verification_form.review_context(id='verify-context-' ~ issue_id) }}{% endif %}
+      {% if review_return|default(none) %}<input id="verify-return-{{ issue_id }}" type="hidden" name="review_return" value="{{ review_return }}">{% endif %}
       {% if issue.can_confirm_zero|default(false) %}<p class="owner-muted owner-small">Add the payslip if there was a payroll cost. Only confirm zero after checking that no employer wage cost is due for this driver and week.</p>{% else %}<p class="owner-muted owner-small">Check the recorded details, then explain why they are correct. Correct an incorrect entry before verifying it.</p>{% endif %}
       <label for="verify-note-{{ issue_id }}">What did you check?</label>{{ verification_form.note(id='verify-note-' ~ issue_id, required=true, maxlength=4000) }}
       {% if issue.verification_decisions|length == 1 %}
@@ -38,7 +39,7 @@
   {% elif issue.blocking %}<p class="owner-muted owner-small">This check needs the source entry or settings to be corrected. An explanation alone cannot complete missing financial information.</p>{% endif %}
 
   {% if issue.can_mark_absence|default(false) and absence_form %}
-  <details{% if actions_expanded|default(false) %} open{% endif %}>
+  <details{% if actions_expanded|default(false) or active_absence|default(false) %} open{% endif %}>
     <summary>Record Holiday or Absent</summary>
     <form method="post" action="{{ url_for('owner_analysis.record_absence') }}">
       {% if absence_form.csrf_token is defined %}{{ absence_form.csrf_token(id='absence-csrf-' ~ issue_id) }}{% endif %}
@@ -47,6 +48,7 @@
       <input id="absence-driver-{{ issue_id }}" type="hidden" name="driver_id" value="{{ issue.driver_id }}">
       <input id="absence-date-{{ issue_id }}" type="hidden" name="absent_date" value="{{ issue.on_date|default(issue.date) }}">
       {% if absence_form.review_context is defined %}{{ absence_form.review_context(id='absence-context-' ~ issue_id) }}{% endif %}
+      {% if review_return|default(none) %}<input id="absence-return-{{ issue_id }}" type="hidden" name="review_return" value="{{ review_return }}">{% endif %}
       <p class="owner-muted owner-small">Use this only after confirming the driver was off on this date. A missing entry is not automatically an absence.</p>
       <label for="absence-status-{{ issue_id }}">Day status</label>{{ absence_form.status(id='absence-status-' ~ issue_id, class_='browser-default') }}
       <label for="absence-note-{{ issue_id }}">Brief explanation</label>{{ absence_form.note(id='absence-note-' ~ issue_id, required=true, maxlength=4000) }}

@@ -6,92 +6,11 @@
 {% include 'owner_analysis/_styles.html' %}
 {% include 'owner_analysis/_investigation_styles.html' %}
 {% include 'owner_analysis/_correction_styles.html' %}
-<div class="col s12 owner-correction-shell">
+<div class="col s12 owner-analysis owner-correction-shell">
   <p><a href="{{ back_url }}">Back to Data Checks</a></p>
   {% if week_context|default(none) %}<div class="owner-correction-layout">{% endif %}
-    <section class="owner-correction-form owner-correction-card" aria-labelledby="owner-correction-title">
-      <h5 id="owner-correction-title">{{ correction_title }}</h5>
-      <p class="owner-correction-week">Payroll week: {{ f.display_date(week) }} – {{ f.display_date(week_end) }}</p>
-      <dl class="owner-correction-identity">
-        {% if correction_driver %}<div><dt>Driver</dt><dd>{{ correction_driver.name }}</dd></div>{% endif %}
-        {% if correction_truck and (mode == 'add' or kind == 'fuel_flag') %}<div><dt>Truck</dt><dd>{{ correction_truck.registration }}</dd></div>{% endif %}
-        {% if correction_date and (mode == 'add' or kind == 'fuel_flag') %}<div><dt>Date</dt><dd>{{ f.display_date(f.date_to_db(correction_date)) }}</dd></div>{% endif %}
-        {% if entry %}<div><dt>Record</dt><dd>{{ record_label|capitalize }} #{{ entry.id }}</dd></div>{% endif %}
-      </dl>
-      {% if error %}<div class="owner-correction-error" role="alert"><strong>Correction not saved.</strong> {{ error }}</div>{% endif %}
-      {% if mode == 'group' %}
-        <p>Compare the payslips for this driver before removing a duplicate. All recorded employer costs remain included until a correction is saved.</p>
-        <p class="owner-field-help">If {{ 'both' if group_rows|length == 2 else 'all' }} payslips are genuine, return to Data Checks and verify the check with an explanation. To edit a remaining payslip, remove only a confirmed duplicate first, then reopen the corrected week.</p>
-        <div class="owner-duplicate-comparison">
-          {% for row in group_rows %}
-            <section class="owner-duplicate-record" aria-labelledby="owner-payslip-{{ row.id }}">
-              <h6 id="owner-payslip-{{ row.id }}">Payslip #{{ row.id }}</h6>
-              <dl class="owner-duplicate-values">
-                <div><dt>Date</dt><dd>{{ f.display_date(f.date_to_db(row.date)) }}</dd></div>
-                <div><dt>Total wage</dt><dd>{{ f.fd_currency(row.total_wage) }}</dd></div>
-                <div><dt>Employer cost</dt><dd>{{ f.fd_currency(row.total_cost_to_employer) }}</dd></div>
-              </dl>
-              <p><a href="{{ row.edit_url }}">View this payslip</a></p>
-              <details class="owner-duplicate-removal">
-                <summary>Remove this payslip…</summary>
-                <p>Delete only if you have checked that payslip #{{ row.id }} is a duplicate. This removes its wage and employer cost from the week.</p>
-                <form method="post" action="{{ url_for('payslip.delete_payslip', item_id=row.id, owner_context=token) }}" class="owner-correction-editor">
-                  {% for field in form %}{% if field.type in ['HiddenField', 'CSRFTokenField'] %}{{ field(id='delete-payslip-' ~ row.id ~ '-' ~ field.name) }}{% endif %}{% endfor %}
-                  <label class="owner-native-check" for="owner-confirm-delete-{{ row.id }}"><input id="owner-confirm-delete-{{ row.id }}" name="confirm_delete" value="yes" type="checkbox" required> I checked this payslip is a duplicate</label>
-                  <button class="owner-edit-button owner-edit-button-danger" type="submit">Delete payslip #{{ row.id }}</button>
-                  <button class="owner-edit-button owner-edit-button-secondary" type="button" data-owner-cancel-delete hidden>Cancel removal</button>
-                </form>
-              </details>
-            </section>
-          {% endfor %}
-        </div>
-        <p><a href="{{ back_url }}">Back to Data Checks</a></p>
-      {% elif split_read_only %}
-        <div class="owner-correction-notice" role="status"><p><strong>This is a split-job allocation.</strong> Check the allocations together to preserve their total. This form is read-only.</p></div>
-        <p>{{ entry.collection }} → {{ entry.delivery }} · {{ f.fd_currency(entry.earned) }}</p>
-        <p><a href="{{ back_url }}">Back to Data Checks</a></p>
-      {% else %}
-        <form method="post" action="{{ action }}" class="owner-correction-editor">
-          {{ form.hidden_tag() }}
-          {% include 'owner_analysis/_correction_fields.html' %}
-          <div class="owner-correction-actions">
-            <button class="owner-edit-button" type="submit">{{ 'Clear mistaken fuel marker' if kind == 'fuel_flag' else 'Add ' ~ record_label if mode == 'add' else 'Save correction' }}</button>
-            <a class="owner-edit-cancel" href="{{ back_url }}">Cancel</a>
-          </div>
-          <p class="owner-field-help">Saving refreshes the figures and returns you to Data Checks.</p>
-        </form>
-      {% endif %}
-    </section>
+    {% with editor=correction_editor %}{% include 'owner_analysis/_correction_editor.html' %}{% endwith %}
     {% if week_context|default(none) %}{% include 'owner_analysis/_week_context.html' %}</div>{% endif %}
 </div>
 {% endblock %}
-{% block additional_js %}
-<script>
-  // These controls belong only to the bounded Data Checks correction form.
-  document.querySelectorAll('.owner-correction-editor').forEach(function (form) {
-    var status = form.querySelector('#owner-day-status');
-    var working = form.querySelector('[data-owner-working-fields]');
-    if (status && working) {
-      function showWorkingFields() {
-        var isWorking = status.value === 'working';
-        working.hidden = !isWorking;
-        working.disabled = !isWorking;
-        var truck = working.querySelector('select[name="truck_id"]');
-        if (truck) truck.required = isWorking;
-      }
-      status.addEventListener('change', showWorkingFields);
-      showWorkingFields();
-    }
-  });
-  document.querySelectorAll('[data-owner-cancel-delete]').forEach(function (button) {
-    button.hidden = false;
-    button.addEventListener('click', function () {
-      var details = button.closest('details');
-      var confirmation = details.querySelector('input[name="confirm_delete"]');
-      if (confirmation) confirmation.checked = false;
-      details.open = false;
-      details.querySelector('summary').focus();
-    });
-  });
-</script>
-{% endblock %}
+{% block additional_js %}{% include 'owner_analysis/_correction_scripts.html' %}{% endblock %}

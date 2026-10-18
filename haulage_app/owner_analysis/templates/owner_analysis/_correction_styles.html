@@ -1,8 +1,10 @@
 <style>
-  .owner-correction-card { background: white; border: 1px solid #dce3e6; border-top: 4px solid #3c6c91; border-radius: .35rem; padding: 1.2rem 1.4rem; }
+  .owner-correction-card { background: white; border: 1px solid #dce3e6; border-top: 4px solid #3c6c91; border-radius: .35rem; padding: 1.2rem 1.4rem; overflow-wrap: anywhere; }
   .owner-correction-card h5 { margin: .15rem 0 .65rem; font-size: 1.5rem; }
+  .owner-correction-card .owner-editor-heading { margin: .15rem 0 .65rem; font-size: 1.3rem; line-height: 1.4; }
   .owner-correction-week { color: #54636a; font-size: .85rem; margin: .3rem 0 1rem; }
   .owner-correction-identity { background: #f2f6f8; border-radius: .3rem; padding: .8rem 1rem; margin: 0 0 1.15rem; display: flex; flex-wrap: wrap; column-gap: 1.75rem; row-gap: .5rem; }
+  .owner-correction-identity > div { min-width: 0; max-width: 100%; }
   .owner-correction-identity dt, .owner-duplicate-values dt { color: #54636a; font-size: .8rem; }
   .owner-correction-identity dd { margin: .15rem 0 0; font-weight: 600; }
   .owner-correction-editor .owner-edit-field { margin-bottom: 1rem; min-width: 0; }
@@ -33,7 +35,7 @@
   .owner-correction-error { border-color: #aa3434; background: #fff1f0; color: #852828; }
   .owner-duplicate-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
   .owner-duplicate-record { border: 1px solid #cfdbe1; border-radius: .3rem; padding: .85rem; min-width: 0; }
-  .owner-duplicate-record h6 { font-size: 1.05rem; font-weight: 600; margin: .1rem 0 .8rem; }
+  .owner-duplicate-record h4 { font-size: 1.05rem; font-weight: 600; margin: .1rem 0 .8rem; }
   .owner-duplicate-values { margin: 0; }
   .owner-duplicate-values > div { margin-bottom: .6rem; }
   .owner-duplicate-values dd { font-variant-numeric: tabular-nums; margin: .1rem 0 0; font-weight: 600; }
