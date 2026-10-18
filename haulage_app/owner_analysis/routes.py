@@ -21,8 +21,10 @@ from haulage_app.owner_analysis.forms import (
     AbsenceForm, IssueVerificationForm, OverheadSettingsForm, WeekNoteForm, WeekReviewForm,
 )
 from haulage_app.owner_analysis.overheads import (
-    ensure_weekly_overhead, overhead_settings_fingerprint, set_overhead_settings,
+    ensure_weekly_overhead, get_weekly_overhead, overhead_settings_fingerprint, set_overhead_settings,
 )
+from haulage_app.owner_analysis.models import OwnerOverheadSetting
+from haulage_app.owner_analysis.overhead_presentation import build_overhead_basis
 from haulage_app.owner_analysis.reviews import (
     get_reviewed_week, save_issue_verification, save_week_note, save_week_review,
 )
@@ -129,7 +131,7 @@ def _prepare_week_presentation(report, *, correction_links=False):
             issue.get("driver_name"), issue.get("truck_registration"),
             issue.get("date").strftime("%d %b %Y") if issue.get("date") else None) if value)
         if correction_links:
-            issue["correction_url"] = "#owner-overheads" if issue["code"] == "missing_overhead_settings" else correction_url(week, issue, report=report)
+            issue["correction_url"] = url_for("owner_analysis.overhead_settings", week_start=week.isoformat()) if issue["code"] == "missing_overhead_settings" else correction_url(week, issue, report=report)
             issue["fuel_flag_correction_url"] = fuel_flag_correction_url(week, issue, report=report) if issue["code"] == "missing_fuel_receipt" else None
         issue["can_confirm_zero"] = "confirmed_zero" in issue.get("verification_decisions", [])
         issue["can_mark_absence"] = issue["code"] == "missing_day"
@@ -214,16 +216,14 @@ def weekly():
     report = _prepare_week_presentation(get_reviewed_week(week, as_of=today), correction_links=view == "overview")
     assigned_month = payroll_month_for_week(week)
     selected_month = f"{assigned_month.year:04d}-{assigned_month.month:02d}"
-    settings = report["overhead_settings"] or {}
-    overhead_form = OverheadSettingsForm(data={"selected_week": week.isoformat(), "effective_week_start": week,
-        "fingerprint": overhead_settings_fingerprint(), "truck_count": settings.get("truck_count", 4),
-        "allowance_per_truck": Decimal(settings["allowance_per_truck"]) / 100 if "allowance_per_truck" in settings else None}) if view == "overview" else None
     # Shared notification context processors also query the database while
     # rendering. Keep the entire read-only response inside this guard.
     with db.session.no_autoflush:
         return render_template("owner_analysis/weekly.html", report=report,
             previous_week=_adjacent_week(week, -7), next_week=_adjacent_week(week, 7), current_week=current.isoformat(),
-            selected_month=selected_month, overhead_form=overhead_form, verification_form=IssueVerificationForm(),
+            selected_month=selected_month, verification_form=IssueVerificationForm(),
+            overhead_basis=build_overhead_basis([report]),
+            settings_url=url_for("owner_analysis.overhead_settings", week_start=week.isoformat()),
             note_form=WeekNoteForm(data={"week_start": week.isoformat(), "fingerprint": report["week_fingerprint"], "scope_key": "week_note"}),
             review_form=WeekReviewForm(data={"week_start": week.isoformat(), "fingerprint": report["week_fingerprint"]}),
             absence_form=AbsenceForm(), **_analysis_context(report, view, selected_id))
@@ -267,19 +267,119 @@ def monthly():
     with db.session.no_autoflush:
         return render_template("owner_analysis/monthly.html", report=report, selected_month=selected_month,
             previous_month=adjacent(-1), next_month=adjacent(1), current_month=_month_key(today),
+            overhead_basis=build_overhead_basis(report["weeks"]),
+            settings_url=url_for("owner_analysis.overhead_settings", week_start=chosen_week.isoformat(), month=selected_month),
             weekly_toggle_week=chosen_week.isoformat(), **_analysis_context(report, view, selected_id,
             selected_month=selected_month, chosen_week=chosen_week))
 
 
+def _settings_month():
+    """Keep return navigation within a validated, local report period."""
+    if len(request.args.getlist("month")) > 1:
+        abort(400, description="Please select one return month.")
+    value = request.args.get("month")
+    if value is not None:
+        try:
+            if re.fullmatch(r"[0-9]{4}-[0-9]{2}", value) is None:
+                raise ValueError()
+            selected = date.fromisoformat(value + "-01")
+            week_end(payroll_weeks_for_month(selected.year, selected.month)[-1])
+        except (TypeError, ValueError, OverflowError):
+            abort(400, description="Please select a valid return month.")
+    return value
+
+
+def _settings_url(week, month=None):
+    return url_for("owner_analysis.overhead_settings", week_start=week.isoformat(),
+                   **({"month": month} if month is not None else {}))
+
+
+def _render_overhead_settings(selected_week, *, month=None, form=None, save_error=None, status=200):
+    # Notification context processors query while rendering, too. Keep this
+    # entire GET/error response read-only, including any pending source edits.
+    with db.session.no_autoflush:
+        current_week = payroll_week_start(today_london())
+        rows = OwnerOverheadSetting.query.order_by(OwnerOverheadSetting.effective_week_start.desc()).all()
+        sources = {row.id: row for row in rows}
+
+        def values_for(week):
+            effective = get_weekly_overhead(week)
+            if effective is None:
+                return None
+            source = sources[effective.source_setting_id]
+            return {"effective_week_start": source.effective_week_start,
+                    "truck_count": effective.truck_count,
+                    "allowance_per_truck": effective.allowance_per_truck,
+                    "total": effective.total}
+
+        current_setting = values_for(current_week)
+        selected_setting = values_for(selected_week)
+        active = next((row for row in rows if row.effective_week_start <= current_week), None)
+        history = [{"effective_week_start": row.effective_week_start,
+                    "truck_count": row.truck_count, "allowance_per_truck": row.allowance_per_truck,
+                    "total": row.total,
+                    "status": "scheduled" if row.effective_week_start > current_week else
+                              "current" if row is active else "previous"} for row in rows]
+        if form is None:
+            form = OverheadSettingsForm(data={
+                "selected_week": selected_week.isoformat(), "effective_week_start": current_week,
+                "fingerprint": overhead_settings_fingerprint(),
+                "truck_count": current_setting["truck_count"] if current_setting is not None else 4,
+                "allowance_per_truck": Decimal(current_setting["allowance_per_truck"]) / 100
+                                       if current_setting is not None else None,
+            })
+        return render_template("owner_analysis/overheads.html", overhead_form=form,
+            current_week=current_week, selected_week=selected_week, current_setting=current_setting,
+            selected_setting=selected_setting, settings_history=history, save_error=save_error,
+            settings_url=_settings_url(selected_week, month),
+            form_action=url_for("owner_analysis.save_overheads", **({"month": month} if month is not None else {})),
+            back_url=url_for("owner_analysis.monthly", month=month, week_start=selected_week.isoformat())
+                     if month is not None else url_for("owner_analysis.weekly", week_start=selected_week.isoformat()),
+            back_label="Back to monthly analysis" if month is not None else "Back to weekly analysis"), status
+
+
+@owner_analysis_bp.route("/owner-analysis/overheads", methods=["GET"])
+def overhead_settings():
+    if len(request.args.getlist("week_start")) > 1:
+        abort(400, description="Please select one report week.")
+    try:
+        selected_week = _parse_week(request.args.get("week_start", payroll_week_start(today_london()).isoformat()), normalize=True)
+        week_end(selected_week)
+    except (ValueError, OverflowError) as exc:
+        abort(400, description=str(exc))
+    return _render_overhead_settings(selected_week, month=_settings_month())
+
+
 @owner_analysis_bp.route("/owner-analysis/overheads", methods=["POST"])
 def save_overheads():
+    month = _settings_month()
     form = OverheadSettingsForm()
-    def save(week):
+    try:
+        selected_week = _parse_week(form.selected_week.data)
+        week_end(selected_week)
+    except (ValueError, OverflowError):
+        flash("Please reopen the settings page and select a valid report week.", "error-msg")
+        return redirect(_settings_url(payroll_week_start(today_london()), month), code=303)
+    if not form.validate_on_submit():
+        return _render_overhead_settings(selected_week, month=month, form=form, status=400)
+    try:
         if form.fingerprint.data != overhead_settings_fingerprint():
-            raise ValueError("Overhead settings have changed since this form opened. Refresh the week before saving.")
-        set_overhead_settings(form.effective_week_start.data, form.truck_count.data, int(form.allowance_per_truck.data * 100))
-        ensure_weekly_overhead(week)
-    return _post(form, save, "Overhead settings saved from the selected starting week.")
+            raise ValueError("Overhead settings have changed since this form opened. Refresh the settings and review the changes before saving.")
+        set_overhead_settings(form.effective_week_start.data, form.truck_count.data,
+                              int(form.allowance_per_truck.data * 100))
+        # The selected report week is only return context. A change creates a
+        # snapshot for its actual first affected week, never an unrelated week.
+        ensure_weekly_overhead(form.effective_week_start.data)
+        db.session.commit()
+    except (ValueError, OverflowError) as exc:
+        db.session.rollback()
+        return _render_overhead_settings(selected_week, month=month, form=form, save_error=str(exc), status=409)
+    except IntegrityError:
+        db.session.rollback()
+        return _render_overhead_settings(selected_week, month=month, form=form,
+            save_error="The settings changed while you were saving. Refresh the settings and check the history before trying again.", status=409)
+    flash("Overhead settings saved from the selected starting week.", "success-msg")
+    return redirect(_settings_url(selected_week, month), code=303)
 
 
 @owner_analysis_bp.route("/owner-analysis/verify", methods=["POST"])

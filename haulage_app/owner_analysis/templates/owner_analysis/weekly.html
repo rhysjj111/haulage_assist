@@ -41,6 +41,7 @@
       <div class="owner-metric"><span class="owner-metric-label">Employer wage cost</span><strong class="owner-metric-value">{% if report.payroll_pending and report.employer_cost == 0 %}Pending{% else %}{{ money(report.employer_cost) }}{% endif %}</strong>{% if report.payroll_pending and report.employer_cost != 0 %}<span class="owner-small owner-muted">Recorded subtotal · payroll pending</span>{% endif %}</div>
       <div class="owner-metric"><span class="owner-metric-label">Estimated overheads</span><strong class="owner-metric-value">{{ money(report.overheads) }}</strong></div>
     </div>
+    {% include 'owner_analysis/_overhead_basis.html' %}
     <p class="owner-muted owner-small">Earnings include jobs and additional day earnings. Fuel is spending recorded during this week. Wage cost comes from recorded payslips. Overheads use the weekly allowance and truck count, including trucks that did not go out.</p>
     <div class="owner-result"><span>Estimated operating result</span><strong>{{ money(report.estimated_operating_result) }}</strong></div>
     {% if report.estimated_operating_result is none %}<p class="owner-notice">The estimated operating result is unavailable until the required entries and overhead settings are complete. Recorded totals above may still be incomplete.</p>{% endif %}
@@ -99,23 +100,6 @@
         {% endif %}
       </article>
     {% else %}<p>No checks found for this week.{% if report.review_status == 'checked' %} This week has been reviewed.{% else %} A finished week still needs an explicit final review.{% endif %}</p>{% endfor %}
-  </section>
-
-  <section class="owner-card" id="owner-overheads">
-    <h2>Weekly overhead settings</h2>
-    <p class="owner-muted owner-small">Enter the allowance once; it carries forward until a new setting starts. Choose the first payroll week affected by a change. Earlier weeks keep their previous settings.</p>
-    {% if overhead_form|default(none) %}
-    <form method="post" action="{{ url_for('owner_analysis.save_overheads') }}">
-      {{ hidden(overhead_form, 'overhead') }}
-      <div class="owner-form-grid">
-        <div><label for="{{ overhead_form.effective_week_start.id }}">First payroll week (Saturday)</label>{{ overhead_form.effective_week_start() }}</div>
-        <div><label for="{{ overhead_form.truck_count.id }}">Truck count</label>{{ overhead_form.truck_count() }}</div>
-        <div><label for="{{ overhead_form.allowance_per_truck.id }}">Weekly allowance per truck (£)</label>{{ overhead_form.allowance_per_truck() }}</div>
-      </div>
-      {% for name, errors in overhead_form.errors.items() %}{% for error in errors %}<p class="owner-error-list">{{ error }}</p>{% endfor %}{% endfor %}
-      <button type="submit" class="owner-button">Save overhead settings</button>
-    </form>
-    {% endif %}
   </section>
 
   <section class="owner-card" id="weekly-review">

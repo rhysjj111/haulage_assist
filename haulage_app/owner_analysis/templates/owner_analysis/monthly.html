@@ -47,10 +47,11 @@
       <div class="owner-metric"><span class="owner-metric-label">Employer wage cost</span><strong class="owner-metric-value">{% if payroll_pending and report.employer_cost == 0 %}Pending{% else %}{{ money(report.employer_cost) }}{% endif %}</strong>{% if payroll_pending and report.employer_cost != 0 %}<span class="owner-small owner-muted">Recorded subtotal · payroll pending</span>{% endif %}</div>
       <div class="owner-metric"><span class="owner-metric-label">Estimated overheads</span><strong class="owner-metric-value">{{ money(report.overheads) }}</strong></div>
     </div>
+    {% include 'owner_analysis/_overhead_basis.html' %}
     <div class="owner-result"><span>Estimated operating result</span><strong>{{ money(report.estimated_operating_result) }}</strong></div>
     {% if report.estimated_operating_result is none %}<p class="owner-notice">One or more completed weeks has incomplete financial information. The monthly estimated operating result is unavailable until those weeks are complete.</p>{% endif %}
     <p class="owner-muted owner-small">Fuel is spending recorded in the included payroll weeks. Wage cost comes from recorded payslips. Overheads add the allowance for each included week, including trucks that did not go out.</p>
-    {% else %}<p>No completed payroll weeks yet.</p><p class="owner-muted owner-small">Figures will appear after the first included payroll week has finished.</p>{% endif %}
+    {% else %}<p>No completed payroll weeks yet.</p><p class="owner-muted owner-small">Figures will appear after the first included payroll week has finished.</p>{% include 'owner_analysis/_overhead_basis.html' %}{% endif %}
   </section>
 
   <section class="owner-card" aria-label="Monthly holiday and absence context">

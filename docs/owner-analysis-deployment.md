@@ -122,7 +122,7 @@ entries or changing actual payroll values:
    reviewed or as a final profit estimate. An unflagged missing receipt still
    needs a human fuel-record check.
 
-After those checks, use **Weekly overhead settings** on the new page to enter
+After those checks, open **Truck & overhead settings** from the menu to enter
 the confirmed allowance, four-truck count and first applicable Saturday. These
 carry forward automatically; do not infer historical values. Review/correct
 recent underlying entries before sending final figures to the owner. Do not mark

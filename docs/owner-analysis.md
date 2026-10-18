@@ -41,8 +41,14 @@ result. Valid zero and negative amounts are not treated as unknown.
 
 ## Overhead setup
 
-Use **Weekly overhead settings** once to enter the allowance per truck, the
-truck count (including unused trucks), and the first Saturday they apply to.
+Open **Truck & overhead settings** from the menu or the small link below the
+Overview figures (`/owner-analysis/overheads`). Enter the allowance per truck,
+the truck count (including unused trucks), and the first Saturday they apply to.
+The page shows current settings and dated previous/scheduled changes. Expand
+**Add a change** when the fleet count or allowance changes; it is not a weekly
+entry task. The change form initially proposes the current payroll week, even
+when opened from an older report. Choose an earlier Saturday deliberately if
+setting up historical reports or correcting an earlier setting.
 Settings carry forward automatically. A later change applies from its selected
 week up to the next scheduled change. Earlier weeks retain their prior values.
 An intentionally historical effective date is an explicit correction.
@@ -52,6 +58,17 @@ seeded. Four is only an unsaved form suggestion. A global settings-history
 fingerprint rejects stale forms, including changes outside the currently viewed
 week. Reads do not create weekly snapshots; snapshots are saved only by explicit
 settings actions.
+
+Weekly Overview shows the truck count and per-truck allowance applicable to that
+week. Monthly Overview describes only its included completed weeks; if their
+settings differ, expand **Settings varied during this period** for the dated
+breakdown. Current/future settings are not substituted for historical values,
+and missing settings remain unknown rather than zero.
+
+Successful saves return to settings with the report week/month preserved for
+the back link. Invalid entries remain on the form with a 400 response; stale or
+conflicting saves return 409 with a refresh link and do not write changes.
+The existing carry-forward calculation and database schema are unchanged.
 
 ## Checks and notes
 

@@ -88,10 +88,11 @@ class OwnerWeeklyPageTests(OwnerTestCase):
     def test_post_actions_require_csrf_when_enabled(self):
         self.seed_week()
         _, context = self.get_page("/owner-analysis?week_start=2026-10-03")
+        _, settings_context = self.get_page("/owner-analysis/overheads?week_start=2026-10-03")
         payloads = {
             "overheads": {"selected_week": "2026-10-03", "effective_week_start": "2026-10-03",
                           "truck_count": "9", "allowance_per_truck": "700.00",
-                          "fingerprint": context["overhead_form"].fingerprint.data},
+                          "fingerprint": settings_context["overhead_form"].fingerprint.data},
             "note": {"week_start": "2026-10-03", "fingerprint": context["report"]["week_fingerprint"],
                      "scope_key": "week_note", "note": "Should not be saved"},
         }
@@ -101,9 +102,11 @@ class OwnerWeeklyPageTests(OwnerTestCase):
                 with self.subTest(action=action):
                     response = self.client.post("/owner-analysis/" + action,
                                                 data=payloads.get(action, {"week_start": "2026-10-03"}))
-                    self.assertEqual(response.status_code, 303)
-                    response, rejected = self.get_page(response.headers["Location"])
+                    self.assertEqual(response.status_code, 400 if action == "overheads" else 303)
+                    if action != "overheads":
+                        response, _ = self.get_page(response.headers["Location"])
                     self.assertIn("CSRF", response.text)
+                    _, rejected = self.get_page("/owner-analysis?week_start=2026-10-03")
                     self.assertEqual(rejected["report"]["overhead_settings"]["truck_count"], 4)
                     self.assertFalse(any(item["note"] == "Should not be saved"
                                          for item in rejected["report"]["verification_history"]))
@@ -135,14 +138,14 @@ class OwnerWeeklyPageTests(OwnerTestCase):
 
     def test_overhead_form_rejects_stale_history_even_if_selected_week_is_unchanged(self):
         self.seed_week()
-        _, context = self.get_page("/owner-analysis?week_start=2026-10-03")
+        _, context = self.get_page("/owner-analysis/overheads?week_start=2026-10-03")
         fingerprint = context["overhead_form"].fingerprint.data
         self.configure_overheads(date(2026, 10, 24), 5, 60000)
         response = self.client.post("/owner-analysis/overheads", data={
             "selected_week": "2026-10-03", "effective_week_start": "2026-10-03",
             "truck_count": "4", "allowance_per_truck": "510.00", "fingerprint": fingerprint,
         })
-        self.assertEqual(response.status_code, 303)
+        self.assertEqual(response.status_code, 409)
         _, context = self.get_page("/owner-analysis?week_start=2026-10-03")
         self.assertEqual(context["report"]["overhead_settings"]["allowance_per_truck"], 50000)
 

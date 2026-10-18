@@ -5,6 +5,8 @@ from wtforms import BooleanField, DateField, DecimalField, HiddenField, IntegerF
 from wtforms.validators import DataRequired, InputRequired, Length, NumberRange, Optional, ValidationError
 from wtforms.widgets import HiddenInput
 
+from haulage_app.owner_analysis.dates import validate_week_start, week_end
+
 
 def _allowance(form, field):
     value = field.data
@@ -16,9 +18,17 @@ def _allowance(form, field):
         raise ValidationError("Use no more than two decimal places.")
 
 
+def _effective_week(form, field):
+    try:
+        validate_week_start(field.data)
+        week_end(field.data)
+    except (TypeError, ValueError, OverflowError):
+        raise ValidationError("Choose a Saturday as the first affected payroll week.") from None
+
+
 class OverheadSettingsForm(FlaskForm):
     selected_week = HiddenField(validators=[InputRequired()])
-    effective_week_start = DateField("First payroll week", validators=[InputRequired()])
+    effective_week_start = DateField("Applies from week beginning (Saturday)", validators=[InputRequired(), _effective_week])
     truck_count = IntegerField("Truck count", validators=[InputRequired(), NumberRange(min=0, max=2147483647)])
     allowance_per_truck = DecimalField("Weekly allowance per truck (£)", places=None,
                                        validators=[InputRequired(), _allowance])
