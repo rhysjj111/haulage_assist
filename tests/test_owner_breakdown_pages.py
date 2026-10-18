@@ -82,17 +82,17 @@ class OwnerBreakdownPageTests(OwnerTestCase):
         response, detail = self.get_page("/owner-analysis?week_start=2026-10-03&view=drivers&driver_id=1")
         self.assertEqual(overview["report"]["review_status"], detail["report"]["review_status"])
         self.assertNotEqual(detail["report"]["review_status"], "checked")
-        self.assertIn("whole period", response.text)
+        self.assertIn("Across the whole payroll week", response.text)
 
-    def test_details_only_have_get_forms_and_open_overview_for_corrections(self):
+    def test_details_only_have_get_forms_and_open_checks_with_return_context(self):
         self.seed_entities()
         for suffix in ("view=drivers&driver_id=1", "view=trucks&truck_id=1"):
             response, context = self.get_page("/owner-analysis?week_start=2026-10-03&" + suffix)
             self.assertNotRegex(response.text, r'<form\b[^>]*method=["\']post["\']')
             self.assertNotIn("owner_context=", response.text)
-            for week in context["breakdown"]["weekly_links"]:
-                self.assertNotIn("view=drivers", week["url"])
-                self.assertNotIn("view=trucks", week["url"])
+            self.assertIn("/owner-analysis/checks?", context["checks_url"])
+            self.assertIn(suffix.split("&")[0], context["checks_url"])
+            self.assertIn(suffix.split("&")[1], context["checks_url"])
 
     def test_driver_filter_and_navigation_preserve_selected_period_and_entity(self):
         self.seed_entities()

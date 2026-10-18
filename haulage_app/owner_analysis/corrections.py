@@ -1,4 +1,4 @@
-"""Signed, single-record entry forms opened from an owner-analysis check.
+"""Signed, single-record entry forms opened from Data Checks.
 
 The ordinary entry/history flows are untouched. A correction context binds the
 selected payroll week, exact target and its current source values; a changed or
@@ -19,6 +19,7 @@ from wtforms import HiddenField
 from haulage_app import db, f
 from haulage_app.models import Day, Driver, Fuel, Job, Payslip, Truck
 from .dates import validate_week_start, week_end
+from .navigation import checks_url, read_review_context
 
 
 class CorrectionForm(FlaskForm):
@@ -128,8 +129,10 @@ def _issue_target(week, issue, basis, fuel_flag=False):
     return payload
 
 
-def _make_url(week, issue, report, fuel_flag=False):
+def _make_url(week, issue, report, fuel_flag=False, review_context=None):
     validate_week_start(week)
+    if review_context is not None:
+        read_review_context(review_context, week=week)
     basis = report.get('review_basis') if report is not None else None
     if basis is None:
         basis = _week_basis(week)
@@ -138,6 +141,8 @@ def _make_url(week, issue, report, fuel_flag=False):
     payload = _issue_target(week, issue, basis, fuel_flag)
     if payload is None:
         return None
+    if review_context is not None:
+        payload['review_context'] = review_context
     token = _serializer().dumps(payload)
     kind = 'fuel' if payload['kind'] == 'fuel_flag' else payload['kind']
     item_id = payload.get('record_id', 0)
@@ -145,12 +150,12 @@ def _make_url(week, issue, report, fuel_flag=False):
                    tab='edit' if payload['mode'] == 'edit' else 'entry', owner_context=token)
 
 
-def correction_url(week, issue, report=None):
-    return _make_url(week, issue, report)
+def correction_url(week, issue, report=None, *, review_context=None):
+    return _make_url(week, issue, report, review_context=review_context)
 
 
-def fuel_flag_correction_url(week, issue, report=None):
-    return _make_url(week, issue, report, fuel_flag=True)
+def fuel_flag_correction_url(week, issue, report=None, *, review_context=None):
+    return _make_url(week, issue, report, fuel_flag=True, review_context=review_context)
 
 
 def _load_context(kind, item_id, action='entry'):
@@ -167,6 +172,8 @@ def _load_context(kind, item_id, action='entry'):
         validate_week_start(selected_week)
         if payload['week'] != selected_week.isoformat():
             raise ValueError()
+        if 'review_context' in payload:
+            read_review_context(payload['review_context'], week=selected_week)
         context_kind, mode = payload['kind'], payload['mode']
         if context_kind not in (*_MODELS, 'fuel_flag') or mode not in ('add', 'edit', 'group'):
             raise ValueError()
@@ -186,10 +193,10 @@ def _load_context(kind, item_id, action='entry'):
         if not isinstance(payload['source'], str) or len(payload['source']) != 64:
             raise ValueError()
     except (BadData, ValueError, TypeError, KeyError, OverflowError):
-        abort(400, 'Invalid or expired owner-analysis correction. Reopen it from the report.')
+        abort(400, 'Invalid or expired correction. Reopen it from Data Checks.')
     basis = _week_basis(selected_week)
     if _digest(_scope(payload, basis)) != payload['source']:
-        abort(409, 'This record has changed or moved. Reopen the correction from the report.')
+        abort(409, 'This record has changed or moved. Reopen the correction from Data Checks.')
     scope = _scope(payload, basis)
     if mode == 'edit' and len(scope['records']) != 1:
         abort(409, 'The original record is no longer in this week.')
@@ -198,8 +205,8 @@ def _load_context(kind, item_id, action='entry'):
     return token, payload, selected_week, basis, scope
 
 
-def _return(week):
-    return redirect(url_for('owner_analysis.weekly', week_start=week.isoformat(), view='overview'), code=303)
+def _return(week, payload):
+    return redirect(checks_url(week, payload.get('review_context')), code=303)
 
 
 def _decimal_value(name):
@@ -379,10 +386,11 @@ def _render_form(context, error=None):
     if mode == 'group':
         for row in scope['records']:
             issue = {'code': 'payslip_amount_out_of_range', 'record_type': 'payslip', 'record_id': row['id']}
-            group_rows.append(dict(row, edit_url=correction_url(week, issue, {'review_basis': basis})))
+            group_rows.append(dict(row, edit_url=correction_url(week, issue, {'review_basis': basis},
+                                                               review_context=payload.get('review_context'))))
     return render_template('owner_correction_entry.html', kind=kind, mode=mode, entry=entry, values=values,
             drivers=drivers, trucks=trucks, form=form, token=token, week=week, week_end=week_end(week),
-            back_url=url_for('owner_analysis.weekly', week_start=week.isoformat(), view='overview'),
+            back_url=checks_url(week, payload.get('review_context')),
             error=error, split_read_only=split_read_only, group_rows=group_rows,
             macro_type='edit' if mode == 'edit' and not error else 'add',
             action=url_for(f'{"fuel" if kind == "fuel_flag" else kind}.add_{"fuel" if kind == "fuel_flag" else kind}',
@@ -406,10 +414,10 @@ def owner_entry_response(kind, item_id, tab):
             db.session.commit()
         except (ValueError, IntegrityError) as error:
             db.session.rollback()
-            message = str(error) if isinstance(error, ValueError) else 'A conflicting entry already exists. Reopen the report to check it.'
+            message = str(error) if isinstance(error, ValueError) else 'A conflicting entry already exists. Reopen Data Checks to check it.'
             return _render(context, error=message), 400
         flash('Correction saved. The weekly figures and checks have been refreshed.', 'success-msg')
-        return _return(week)
+        return _return(week, payload)
     return _render(context)
 
 
@@ -430,4 +438,4 @@ def owner_mutation_response(kind, item_id, action='edit'):
     db.session.delete(entry)
     db.session.commit()
     flash('Duplicate payslip deleted. Review the refreshed weekly figures.', 'success-msg')
-    return _return(week)
+    return _return(week, payload)

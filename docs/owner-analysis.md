@@ -3,8 +3,16 @@
 Owner Analysis is separate from the existing wage calculator and old analysis
 pages. Open `/owner-analysis` for a Saturday–Friday payroll week, or
 `/owner-analysis/monthly?month=YYYY-MM` for a payroll month. Overview, Drivers
-and Trucks are available for both periods. Corrections and review actions are
-performed on the weekly Overview.
+and Trucks are available for both periods. The Overview puts estimated profit
+first, followed by recorded earnings, wages (employer cost), fuel and overheads.
+Missing financial information is shown beside the pending result.
+
+Open **Data Checks** from the menu (`/owner-analysis/checks`) to correct or verify
+entries, add weekly notes and complete weekly reviews. Its default is the latest
+finished payroll week. `/owner-analysis/checks/monthly?month=YYYY-MM` groups the
+included completed weeks. Owner Analysis keeps a compact whole-period check
+count and link on every view; a driver/truck filter does not hide checks for the
+rest of the period. Zero outstanding checks still requires an explicit review.
 
 ## Figures and periods
 
@@ -76,6 +84,20 @@ Checks cover missing expected days, working days without earnings, fuel flags
 without receipts, missing or multiple payslips, numeric ranges, missing overhead
 settings, and informational mileage issues. Plausible incorrect data and
 unflagged missing purchases still need human review.
+
+Detailed checks, explanations, verification history and final-review forms live
+on Data Checks. Weekly/monthly links retain the originating driver/truck view;
+signed, validated report context returns corrections and settings to the same
+checks period. Only known local reporting routes are valid return destinations.
+Monthly checks and their counts include completed weeks only, matching the
+monthly financial totals. Each included finished week has its own review; there
+is no month-wide signoff. Informational checks remain in the outstanding count.
+
+Explicit business notes for a week remain visible read-only on Owner Analysis.
+Adding another note preserves earlier notes; lengthy notes have a short preview
+and an expandable full version. Per-issue explanations and verification history
+stay on Data Checks. Investigation week details and further simplification of
+individual correction forms are separate later steps.
 
 Legitimate exceptions require an explanation. Missing days require an actual Day
 record (Working, Holiday or Absent). Unknown fuel and overhead costs cannot be

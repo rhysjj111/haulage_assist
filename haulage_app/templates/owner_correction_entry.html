@@ -3,9 +3,9 @@
 {% block header %}<h4>Review {{ 'fuel flag' if kind == 'fuel_flag' else kind }}</h4>{% endblock %}
 {% block main %}
 <div class="col s12 m10 offset-m1 l8 offset-l2" style="padding-bottom: 2rem; overflow-wrap: anywhere;">
-  <p><a href="{{ back_url }}">Back to Owner Analysis</a></p>
+  <p><a href="{{ back_url }}">Back to Data Checks</a></p>
   <p>Payroll week: {{ f.display_date(week) }} – {{ f.display_date(week_end) }}.</p>
-  <p>This form covers only the record selected from the analysis check.</p>
+  <p>This form covers only the record selected from Data Checks.</p>
   {% if error %}<p class="red-text" role="alert">{{ error }}</p>{% endif %}
   {% if mode == 'group' %}
     <h5>Payslips recorded for this driver</h5>

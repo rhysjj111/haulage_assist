@@ -87,7 +87,7 @@ class OwnerWeeklyPageTests(OwnerTestCase):
 
     def test_post_actions_require_csrf_when_enabled(self):
         self.seed_week()
-        _, context = self.get_page("/owner-analysis?week_start=2026-10-03")
+        _, context = self.get_page("/owner-analysis/checks?week_start=2026-10-03")
         _, settings_context = self.get_page("/owner-analysis/overheads?week_start=2026-10-03")
         payloads = {
             "overheads": {"selected_week": "2026-10-03", "effective_week_start": "2026-10-03",
@@ -116,7 +116,7 @@ class OwnerWeeklyPageTests(OwnerTestCase):
     def test_person_names_are_escaped_on_weekly_and_detail_pages(self):
         self.add_truck()
         self.add_driver(first_name="<script>alert(1)</script>")
-        self.add_day()
+        self.add_day(status="holiday")
         for suffix in ("", "&view=drivers"):
             response, _ = self.get_page("/owner-analysis?week_start=2026-10-03" + suffix)
             self.assertNotIn("<script>alert(1)</script>", response.text)
@@ -124,8 +124,8 @@ class OwnerWeeklyPageTests(OwnerTestCase):
 
     def test_week_note_is_saved_and_escaped_without_signing_off_the_week(self):
         self.seed_week()
-        _, context = self.get_page("/owner-analysis?week_start=2026-10-03")
-        form = context["note_form"]
+        _, context = self.get_page("/owner-analysis/checks?week_start=2026-10-03")
+        form = context["weeks"][0]["forms"]["note"]
         response = self.client.post("/owner-analysis/note", data={
             "week_start": "2026-10-03", "scope_key": "week_note",
             "fingerprint": form.fingerprint.data, "note": "Fuel checked <script>alert(1)</script>",
@@ -167,7 +167,8 @@ class OwnerWeeklyPageTests(OwnerTestCase):
         self.assertIsNone(recorded.truck_id)
         response, context = self.get_page("/owner-analysis?week_start=2026-10-03")
         self.assertEqual(context["report"]["absence_summary"][0]["absent_days"], 1)
-        self.assertIn("Alice was off &lt;script&gt;", response.text)
+        checks_response, _ = self.get_page("/owner-analysis/checks?week_start=2026-10-03")
+        self.assertIn("Alice was off &lt;script&gt;", checks_response.text)
         self.assertNotEqual(context["report"]["review_status"], "checked")
 
     def test_review_requires_each_confirmation_to_be_true_before_creating_signoff(self):

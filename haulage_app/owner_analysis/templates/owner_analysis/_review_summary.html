@@ -1,0 +1,8 @@
+{% set is_monthly = report.weeks is defined %}
+<section class="owner-review-summary" aria-label="Review status and checks">
+  <div class="owner-review-summary-main">
+    {{ badge(report.review_status) }}
+    <span><strong>{{ report.outstanding_issues|length }} {{ 'check' if report.outstanding_issues|length == 1 else 'checks' }} outstanding</strong><span class="owner-small owner-muted owner-review-scope">{{ 'Across completed weeks in this payroll month' if is_monthly else 'Across the whole payroll week' }}</span></span>
+  </div>
+  <a class="owner-button owner-button-secondary" href="{{ checks_url }}">View checks</a>
+</section>

@@ -1,0 +1,15 @@
+{% if report.business_notes %}
+<section class="owner-card" aria-label="Weekly business notes">
+  <h2>{{ 'Weekly notes' if report.weeks is defined else 'Week notes' }}</h2>
+  {% for entry in report.business_notes %}
+  <div class="owner-business-note">
+    {% if report.weeks is defined %}<p class="owner-small owner-muted">{{ entry.week_start.strftime('%d %b %Y') }} – {{ entry.week_end.strftime('%d %b %Y') }}</p>{% endif %}
+    {% if entry.note|length > 240 %}
+      <p class="owner-note">{{ entry.note[:240] }}…</p>
+      <details><summary>Read full note</summary><p class="owner-note">{{ entry.note }}</p></details>
+    {% else %}<p class="owner-note">{{ entry.note }}</p>{% endif %}
+    {% if entry.created_at_label %}<p class="owner-small owner-muted">Added {{ entry.created_at_label }}</p>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endif %}

@@ -25,6 +25,10 @@ from haulage_app.owner_analysis.overheads import (
 )
 from haulage_app.owner_analysis.models import OwnerOverheadSetting
 from haulage_app.owner_analysis.overhead_presentation import build_overhead_basis
+from haulage_app.owner_analysis.navigation import (
+    analysis_url as review_analysis_url, checks_url as review_checks_url,
+    read_review_context, review_context_for,
+)
 from haulage_app.owner_analysis.reviews import (
     get_reviewed_week, save_issue_verification, save_week_note, save_week_review,
 )
@@ -42,8 +46,17 @@ def _parse_week(value, *, normalize=False):
     return payroll_week_start(parsed) if normalize else validate_week_start(parsed)
 
 
-def _back(week):
-    return redirect(url_for("owner_analysis.weekly", week_start=week.isoformat()), code=303)
+def _back(week, review_context=None):
+    return redirect(review_checks_url(week, review_context), code=303)
+
+
+def _validated_review_context(token, week):
+    if token:
+        try:
+            read_review_context(token, week=week)
+        except ValueError as exc:
+            abort(400, description=str(exc))
+    return token or None
 
 
 def _adjacent_week(week, offset):
@@ -63,10 +76,15 @@ def _post(form, action, message):
     except (ValueError, OverflowError) as exc:
         flash(str(exc), "error-msg")
         return _back(fallback)
+    if len(request.form.getlist("review_context")) > 1:
+        abort(400, description="Please reopen this check from Data Checks.")
+    token = _validated_review_context(request.form.get("review_context"), week)
+    if token and read_review_context(token)["period"] == "monthly" and week_end(week) >= today_london():
+        abort(400, description="Monthly checks cover completed payroll weeks only.")
     if not form.validate_on_submit():
         errors = [error for messages in form.errors.values() for error in messages]
         flash(" ".join(errors) or "Please check the form and try again.", "error-msg")
-        return _back(week)
+        return _back(week, token)
     try:
         action(week)
         db.session.commit()
@@ -78,7 +96,7 @@ def _post(form, action, message):
         flash("The entry changed or already exists. Refresh the week and check it again.", "error-msg")
     else:
         flash(message, "success-msg")
-    return _back(week)
+    return _back(week, token)
 
 
 _ISSUE_LABELS = {
@@ -123,7 +141,7 @@ def _label_history(report):
         item["context_label"] = " · ".join(labels)
 
 
-def _prepare_week_presentation(report, *, correction_links=False):
+def _prepare_week_presentation(report, *, correction_links=False, review_context=None):
     week = report["week_start"]
     for issue in report["issues"]:
         issue["label"] = _ISSUE_LABELS.get(issue["code"], "Entry needs checking")
@@ -131,8 +149,9 @@ def _prepare_week_presentation(report, *, correction_links=False):
             issue.get("driver_name"), issue.get("truck_registration"),
             issue.get("date").strftime("%d %b %Y") if issue.get("date") else None) if value)
         if correction_links:
-            issue["correction_url"] = url_for("owner_analysis.overhead_settings", week_start=week.isoformat()) if issue["code"] == "missing_overhead_settings" else correction_url(week, issue, report=report)
-            issue["fuel_flag_correction_url"] = fuel_flag_correction_url(week, issue, report=report) if issue["code"] == "missing_fuel_receipt" else None
+            issue["correction_url"] = url_for("owner_analysis.overhead_settings", week_start=week.isoformat(),
+                **({"review_context": review_context} if review_context else {})) if issue["code"] == "missing_overhead_settings" else correction_url(week, issue, report=report, review_context=review_context)
+            issue["fuel_flag_correction_url"] = fuel_flag_correction_url(week, issue, report=report, review_context=review_context) if issue["code"] == "missing_fuel_receipt" else None
         issue["can_confirm_zero"] = "confirmed_zero" in issue.get("verification_decisions", [])
         issue["can_mark_absence"] = issue["code"] == "missing_day"
     outstanding_keys = {item["key"] for item in report["outstanding_issues"]}
@@ -149,7 +168,32 @@ def _prepare_week_presentation(report, *, correction_links=False):
         item["created_at"] = (value if value.tzinfo else value.replace(tzinfo=timezone.utc)).astimezone(ZoneInfo("Europe/London"))
         item["created_at_label"] = item["created_at"].strftime("%d %b %Y at %H:%M")
     _label_history(report)
+    notes = [item for item in report["verification_history"]
+             if item["scope_key"] == "week_note" and item["decision"] == "note"]
+    report["business_notes"] = [{"note": item["note"], "week_start": week,
+        "week_end": report["week_end"], "created_at_label": item["created_at_label"]} for item in notes]
+    report["profit_pending_reason"] = _profit_pending_reason(report)
     return report
+
+
+def _profit_pending_reason(report):
+    if report["estimated_operating_result"] is not None:
+        return None
+    if "weeks" in report and not report["weeks"]:
+        return "No completed payroll weeks yet."
+    if "weeks" not in report and report["period_state"] != "finished":
+        return "This payroll week has not started." if report["period_state"] == "future" else "Week in progress; final profit is not yet available."
+    reasons = []
+    if report["payroll_pending"]:
+        reasons.append("payroll needs checking")
+    if report["fuel_pending"]:
+        reasons.append("fuel records need checking")
+    if report["overheads"] is None:
+        reasons.append("overheads not set")
+    if any(item["code"] in {"missing_day", "working_day_without_earnings"}
+           for item in report["outstanding_issues"]):
+        reasons.append("day or earnings entries incomplete")
+    return "Profit pending — " + ("; ".join(reasons) if reasons else "financial entries need checking") + "."
 
 
 def _analysis_selection():
@@ -172,7 +216,7 @@ def _analysis_selection():
     return view, selected_id
 
 
-def _analysis_context(report, view, selected_id, *, selected_month=None, chosen_week=None):
+def _analysis_context(report, view, selected_id, *, selected_month=None, chosen_week=None, review_context=None):
     monthly_view = "weeks" in report
     endpoint = "owner_analysis.monthly" if monthly_view else "owner_analysis.weekly"
     period_args = {"month": selected_month, "week_start": chosen_week.isoformat()} if monthly_view else {"week_start": report["week_start"].isoformat()}
@@ -198,46 +242,71 @@ def _analysis_context(report, view, selected_id, *, selected_month=None, chosen_
             "review_status": item["review_status"], "url": url_for("owner_analysis.weekly", week_start=item["week_start"].isoformat())} for item in weeks]
         breakdown["filter_action"] = url_for(endpoint)
         breakdown["filter_fields"] = dict(period_args, view=view)
+    week = chosen_week if monthly_view else report["week_start"]
+    token = review_context or review_context_for("monthly" if monthly_view else "weekly", week,
+        month=selected_month if monthly_view else None, view=view, selected_id=selected_id)
+    for item in report["weeks"] if monthly_view else [report]:
+        item["checks_url"] = review_checks_url(item["week_start"], token)
     return {"analysis_view": view, "view_args": view_args, "breakdown": breakdown,
+            "checks_url": url_for("owner_analysis.monthly_checks" if monthly_view else "owner_analysis.checks",
+                                  **period_args, **view_args), "review_context": token,
             "view_links": {name: url_for(endpoint, **period_args, **({"view": name} if name != "overview" else {}))
                            for name in ("overview", "drivers", "trucks")}}
 
 
-@owner_analysis_bp.route("/owner-analysis", methods=["GET"])
-def weekly():
+def _weekly_response(*, checks_page=False):
     view, selected_id = _analysis_selection()
     today = today_london()
     current = payroll_week_start(today)
+    default_week = current - timedelta(days=7) if checks_page else current
+    if len(request.args.getlist("week_start")) > 1:
+        abort(400, description="Please select one payroll week.")
     try:
-        week = _parse_week(request.args.get("week_start", current.isoformat()), normalize=True)
+        week = _parse_week(request.args.get("week_start", default_week.isoformat()), normalize=True)
         week_end(week)
     except (ValueError, OverflowError) as exc:
         abort(400, description=str(exc))
-    report = _prepare_week_presentation(get_reviewed_week(week, as_of=today), correction_links=view == "overview")
     assigned_month = payroll_month_for_week(week)
     selected_month = f"{assigned_month.year:04d}-{assigned_month.month:02d}"
+    token = review_context_for("weekly", week, view=view, selected_id=selected_id)
+    report = _prepare_week_presentation(get_reviewed_week(week, as_of=today),
+        correction_links=checks_page, review_context=token)
     # Shared notification context processors also query the database while
     # rendering. Keep the entire read-only response inside this guard.
     with db.session.no_autoflush:
+        context = _analysis_context(report, view, selected_id, review_context=token)
+        if checks_page:
+            _add_check_forms(report, token)
+            return render_template("owner_analysis/checks.html", report=report,
+                **_checks_context(report, context, week, selected_month, current, token))
         return render_template("owner_analysis/weekly.html", report=report,
             previous_week=_adjacent_week(week, -7), next_week=_adjacent_week(week, 7), current_week=current.isoformat(),
-            selected_month=selected_month, verification_form=IssueVerificationForm(),
+            selected_month=selected_month,
             overhead_basis=build_overhead_basis([report]),
             settings_url=url_for("owner_analysis.overhead_settings", week_start=week.isoformat()),
-            note_form=WeekNoteForm(data={"week_start": week.isoformat(), "fingerprint": report["week_fingerprint"], "scope_key": "week_note"}),
-            review_form=WeekReviewForm(data={"week_start": week.isoformat(), "fingerprint": report["week_fingerprint"]}),
-            absence_form=AbsenceForm(), **_analysis_context(report, view, selected_id))
+            **context)
+
+
+@owner_analysis_bp.route("/owner-analysis", methods=["GET"])
+def weekly():
+    return _weekly_response()
+
+
+@owner_analysis_bp.route("/owner-analysis/checks", methods=["GET"])
+def checks():
+    return _weekly_response(checks_page=True)
 
 
 def _month_key(value):
     return f"{value.year:04d}-{value.month:02d}" if value is not None else None
 
 
-@owner_analysis_bp.route("/owner-analysis/monthly", methods=["GET"])
-def monthly():
+def _monthly_response(*, checks_page=False):
     from haulage_app.owner_analysis.monthly import get_monthly_report
     view, selected_id = _analysis_selection()
     today = today_london()
+    if len(request.args.getlist("month")) > 1 or len(request.args.getlist("week_start")) > 1:
+        abort(400, description="Please select one payroll month and remembered week.")
     selected_month = request.args.get("month", _month_key(today))
     try:
         if re.fullmatch(r"[0-9]{4}-[0-9]{2}", selected_month) is None:
@@ -254,8 +323,6 @@ def monthly():
             return _month_key(candidate)
         except (ValueError, OverflowError):
             return None
-    for item in report["weeks"]:
-        _prepare_week_presentation(item)
     chosen_week = report.get("active_week") or (report["weeks"][-1]["week_start"] if report["weeks"] else report["expected_week_starts"][0])
     if request.args.get("week_start"):
         try:
@@ -264,13 +331,88 @@ def monthly():
                 chosen_week = candidate
         except (ValueError, OverflowError):
             pass
+    token = review_context_for("monthly", chosen_week, month=selected_month, view=view, selected_id=selected_id)
+    for item in report["weeks"]:
+        _prepare_week_presentation(item, correction_links=checks_page, review_context=token)
+    report["payroll_pending"] = any(item["payroll_pending"] for item in report["weeks"])
+    report["fuel_pending"] = any(item["fuel_pending"] for item in report["weeks"])
+    report["business_notes"] = [note for item in report["weeks"] for note in item["business_notes"]]
+    report["profit_pending_reason"] = _profit_pending_reason(report)
     with db.session.no_autoflush:
+        context = _analysis_context(report, view, selected_id, selected_month=selected_month,
+                                    chosen_week=chosen_week, review_context=token)
+        if checks_page:
+            for item in report["weeks"]:
+                _add_check_forms(item, token)
+            return render_template("owner_analysis/checks.html", report=report,
+                **_checks_context(report, context, chosen_week, selected_month, payroll_week_start(today), token))
         return render_template("owner_analysis/monthly.html", report=report, selected_month=selected_month,
             previous_month=adjacent(-1), next_month=adjacent(1), current_month=_month_key(today),
             overhead_basis=build_overhead_basis(report["weeks"]),
             settings_url=url_for("owner_analysis.overhead_settings", week_start=chosen_week.isoformat(), month=selected_month),
-            weekly_toggle_week=chosen_week.isoformat(), **_analysis_context(report, view, selected_id,
-            selected_month=selected_month, chosen_week=chosen_week))
+            weekly_toggle_week=chosen_week.isoformat(), **context)
+
+
+@owner_analysis_bp.route("/owner-analysis/monthly", methods=["GET"])
+def monthly():
+    return _monthly_response()
+
+
+@owner_analysis_bp.route("/owner-analysis/checks/monthly", methods=["GET"])
+def monthly_checks():
+    return _monthly_response(checks_page=True)
+
+
+def _add_check_forms(report, token):
+    week = report["week_start"].isoformat()
+    common = {"week_start": week, "fingerprint": report["week_fingerprint"], "review_context": token}
+    report["forms"] = {
+        "verification": IssueVerificationForm(data={"week_start": week, "review_context": token}),
+        "absence": AbsenceForm(data={"week_start": week, "review_context": token}),
+        "note": WeekNoteForm(data={**common, "scope_key": "week_note"}),
+        "review": WeekReviewForm(data=common),
+    }
+    # Sort only the presentation list; the rule identities and fingerprints
+    # remain unchanged. Informational checks still count toward final review.
+    report["outstanding_issues"].sort(key=lambda issue: not issue["blocking"])
+
+
+def _checks_context(report, context, selected_week, selected_month, current_week, token):
+    monthly_view = "weeks" in report
+    view_args = context["view_args"]
+
+    def week_url(week):
+        return url_for("owner_analysis.checks", week_start=week.isoformat(), **view_args)
+
+    def adjacent_month(offset):
+        try:
+            selected = date.fromisoformat(selected_month + "-01")
+            target = shift_month(selected, offset)
+            week_end(payroll_weeks_for_month(target.year, target.month)[-1])
+            return url_for("owner_analysis.monthly_checks", month=_month_key(target), **view_args)
+        except (ValueError, OverflowError):
+            return None
+
+    previous_week, next_week = _adjacent_week(selected_week, -7), _adjacent_week(selected_week, 7)
+    pending = [{"week_start": start, "checks_url": week_url(start),
+                "is_active": start == report.get("active_week")} for start in report.get("pending_week_starts", [])]
+    return {"period": "monthly" if monthly_view else "weekly",
+        "weeks": report["weeks"] if monthly_view else [report], "selected_week": selected_week,
+        "selected_month": selected_month, "review_context": token, "view_args": view_args,
+        "outstanding_count": len(report["outstanding_issues"]),
+        "back_url": review_analysis_url(selected_week, token), "back_label": "Back to Owner Analysis",
+        "weekly_url": week_url(selected_week),
+        "monthly_url": url_for("owner_analysis.monthly_checks", month=selected_month,
+                               week_start=selected_week.isoformat(), **view_args),
+        "filter_action": url_for("owner_analysis.monthly_checks" if monthly_view else "owner_analysis.checks"),
+        "filter_fields": {**view_args, **({"week_start": selected_week.isoformat()} if monthly_view else {})},
+        "previous_period_url": adjacent_month(-1) if monthly_view else
+            week_url(date.fromisoformat(previous_week)) if previous_week else None,
+        "next_period_url": adjacent_month(1) if monthly_view else
+            week_url(date.fromisoformat(next_week)) if next_week else None,
+        "current_period_url": url_for("owner_analysis.monthly_checks", month=_month_key(today_london()), **view_args)
+            if monthly_view else week_url(current_week),
+        "recent_completed_url": week_url(current_week - timedelta(days=7)), "pending_weeks": pending}
 
 
 def _settings_month():
@@ -289,12 +431,13 @@ def _settings_month():
     return value
 
 
-def _settings_url(week, month=None):
+def _settings_url(week, month=None, review_context=None):
     return url_for("owner_analysis.overhead_settings", week_start=week.isoformat(),
-                   **({"month": month} if month is not None else {}))
+                   **({"month": month} if month is not None else {}),
+                   **({"review_context": review_context} if review_context else {}))
 
 
-def _render_overhead_settings(selected_week, *, month=None, form=None, save_error=None, status=200):
+def _render_overhead_settings(selected_week, *, month=None, form=None, save_error=None, status=200, review_context=None):
     # Notification context processors query while rendering, too. Keep this
     # entire GET/error response read-only, including any pending source edits.
     with db.session.no_autoflush:
@@ -323,6 +466,7 @@ def _render_overhead_settings(selected_week, *, month=None, form=None, save_erro
         if form is None:
             form = OverheadSettingsForm(data={
                 "selected_week": selected_week.isoformat(), "effective_week_start": current_week,
+                "review_context": review_context,
                 "fingerprint": overhead_settings_fingerprint(),
                 "truck_count": current_setting["truck_count"] if current_setting is not None else 4,
                 "allowance_per_truck": Decimal(current_setting["allowance_per_truck"]) / 100
@@ -331,23 +475,26 @@ def _render_overhead_settings(selected_week, *, month=None, form=None, save_erro
         return render_template("owner_analysis/overheads.html", overhead_form=form,
             current_week=current_week, selected_week=selected_week, current_setting=current_setting,
             selected_setting=selected_setting, settings_history=history, save_error=save_error,
-            settings_url=_settings_url(selected_week, month),
+            settings_url=_settings_url(selected_week, month, review_context),
             form_action=url_for("owner_analysis.save_overheads", **({"month": month} if month is not None else {})),
-            back_url=url_for("owner_analysis.monthly", month=month, week_start=selected_week.isoformat())
+            back_url=review_checks_url(selected_week, review_context) if review_context else
+                     url_for("owner_analysis.monthly", month=month, week_start=selected_week.isoformat())
                      if month is not None else url_for("owner_analysis.weekly", week_start=selected_week.isoformat()),
-            back_label="Back to monthly analysis" if month is not None else "Back to weekly analysis"), status
+            back_label="Back to Data Checks" if review_context else
+                       "Back to monthly analysis" if month is not None else "Back to weekly analysis"), status
 
 
 @owner_analysis_bp.route("/owner-analysis/overheads", methods=["GET"])
 def overhead_settings():
-    if len(request.args.getlist("week_start")) > 1:
+    if len(request.args.getlist("week_start")) > 1 or len(request.args.getlist("review_context")) > 1:
         abort(400, description="Please select one report week.")
     try:
         selected_week = _parse_week(request.args.get("week_start", payroll_week_start(today_london()).isoformat()), normalize=True)
         week_end(selected_week)
     except (ValueError, OverflowError) as exc:
         abort(400, description=str(exc))
-    return _render_overhead_settings(selected_week, month=_settings_month())
+    token = _validated_review_context(request.args.get("review_context"), selected_week)
+    return _render_overhead_settings(selected_week, month=_settings_month(), review_context=token)
 
 
 @owner_analysis_bp.route("/owner-analysis/overheads", methods=["POST"])
@@ -360,8 +507,11 @@ def save_overheads():
     except (ValueError, OverflowError):
         flash("Please reopen the settings page and select a valid report week.", "error-msg")
         return redirect(_settings_url(payroll_week_start(today_london()), month), code=303)
+    if len(request.form.getlist("review_context")) > 1:
+        abort(400, description="Please reopen settings from Data Checks.")
+    token = _validated_review_context(form.review_context.data, selected_week)
     if not form.validate_on_submit():
-        return _render_overhead_settings(selected_week, month=month, form=form, status=400)
+        return _render_overhead_settings(selected_week, month=month, form=form, status=400, review_context=token)
     try:
         if form.fingerprint.data != overhead_settings_fingerprint():
             raise ValueError("Overhead settings have changed since this form opened. Refresh the settings and review the changes before saving.")
@@ -373,13 +523,13 @@ def save_overheads():
         db.session.commit()
     except (ValueError, OverflowError) as exc:
         db.session.rollback()
-        return _render_overhead_settings(selected_week, month=month, form=form, save_error=str(exc), status=409)
+        return _render_overhead_settings(selected_week, month=month, form=form, save_error=str(exc), status=409, review_context=token)
     except IntegrityError:
         db.session.rollback()
         return _render_overhead_settings(selected_week, month=month, form=form,
-            save_error="The settings changed while you were saving. Refresh the settings and check the history before trying again.", status=409)
+            save_error="The settings changed while you were saving. Refresh the settings and check the history before trying again.", status=409, review_context=token)
     flash("Overhead settings saved from the selected starting week.", "success-msg")
-    return redirect(_settings_url(selected_week, month), code=303)
+    return redirect(_settings_url(selected_week, month, token), code=303)
 
 
 @owner_analysis_bp.route("/owner-analysis/verify", methods=["POST"])

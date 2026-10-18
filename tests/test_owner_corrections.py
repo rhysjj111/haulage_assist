@@ -9,8 +9,9 @@ from sqlalchemy import event
 from owner_test_support import OwnerTestCase, app, db
 from haulage_app.models import Day, Fuel, Job, Payslip
 from haulage_app.owner_analysis.corrections import (
-    _week_basis, correction_url, fuel_flag_correction_url,
+    _serializer, _week_basis, correction_url, fuel_flag_correction_url,
 )
+from haulage_app.owner_analysis.navigation import review_context_for
 
 
 class OwnerCorrectionTests(OwnerTestCase):
@@ -54,7 +55,7 @@ class OwnerCorrectionTests(OwnerTestCase):
             event.remove(db.engine, 'before_cursor_execute', capture)
         self.assertEqual(response.status_code, 200, response.text)
         self.assertIn('Driver1 Test', response.text)
-        self.assertIn('Back to Owner Analysis', response.text)
+        self.assertIn('Back to Data Checks', response.text)
         self.assertNotIn('name="split"', response.text)
         self.assertNotIn('modal_edit_', response.text)
         self.assertFalse(any('row_number' in query for query in statements))
@@ -64,6 +65,7 @@ class OwnerCorrectionTests(OwnerTestCase):
     def test_corrected_job_returns_to_selected_week_with_303(self):
         response = self.client.post(self.edit_job_url(), data=self.job_data())
         self.assertEqual(response.status_code, 303, response.text)
+        self.assertEqual(urlsplit(response.location).path, '/owner-analysis/checks')
         self.assertIn('week_start=2026-10-03', response.location)
         self.assertEqual(db.session.get(Job, self.job_id).earned, 17525)
 
@@ -234,3 +236,61 @@ class OwnerCorrectionTests(OwnerTestCase):
         self.assertEqual(response.status_code, 200, response.text)
         self.assertIn(pending, db.session.dirty)
         self.assertTrue(db.session.is_modified(pending))
+
+    def test_monthly_driver_context_round_trips_through_correction(self):
+        with app.test_request_context():
+            context = review_context_for('monthly', date(2026, 10, 17), month='2026-10',
+                                         view='drivers', selected_id=1)
+            path = correction_url(self.start, dict(code='job_amount_out_of_range',
+                record_type='job', record_id=self.job_id), review_context=context)
+        page = self.client.get(path)
+        self.assertEqual(page.status_code, 200, page.text)
+        self.assertIn('Back to Data Checks', page.text)
+        response = self.client.post(path, data=self.job_data())
+        self.assertEqual(response.status_code, 303, response.text)
+        parsed = urlsplit(response.location)
+        self.assertEqual(parsed.path, '/owner-analysis/checks/monthly')
+        self.assertEqual(parse_qs(parsed.query), {'month': ['2026-10'], 'week_start': ['2026-10-17'],
+                                                'view': ['drivers'], 'driver_id': ['1']})
+        self.assertEqual(parsed.fragment, 'week-2026-10-03')
+        self.assertEqual(db.session.get(Job, self.job_id).earned, 17525)
+
+    def test_invalid_embedded_navigation_context_rejects_post_before_write(self):
+        with app.test_request_context():
+            payload = _serializer().loads(self.token(self.edit_job_url()))
+            payload['review_context'] = 'tampered-navigation-token'
+            token = _serializer().dumps(payload)
+        path = f'/job/add_job/{self.job_id}/edit?owner_context={token}'
+        response = self.client.post(path, data=self.job_data())
+        self.assertEqual(response.status_code, 400, response.text)
+        self.assertEqual(db.session.get(Job, self.job_id).earned, 0)
+
+    def test_signed_navigation_for_other_week_rejects_post_before_write(self):
+        with app.test_request_context():
+            payload = _serializer().loads(self.token(self.edit_job_url()))
+            payload['review_context'] = review_context_for('weekly', date(2026, 10, 10))
+            token = _serializer().dumps(payload)
+        response = self.client.post(f'/job/add_job/{self.job_id}/edit?owner_context={token}',
+                                    data=self.job_data())
+        self.assertEqual(response.status_code, 400, response.text)
+        self.assertEqual(db.session.get(Job, self.job_id).earned, 0)
+
+    def test_duplicate_payslip_sublink_keeps_monthly_context(self):
+        self.add_payslip(id=1)
+        self.add_payslip(id=2)
+        with app.test_request_context():
+            context = review_context_for('monthly', self.start, month='2026-10', view='drivers', selected_id=1)
+            path = correction_url(self.start, dict(code='multiple_payslips', driver_id=1), review_context=context)
+        page = self.client.get(path)
+        self.assertEqual(page.status_code, 200, page.text)
+        # Individual payslip edits inherit the original signed destination.
+        for token in re.findall(r'owner_context=([^"&]+)', page.text):
+            with app.app_context():
+                payload = _serializer().loads(token)
+            self.assertEqual(payload.get('review_context'), context)
+        delete_url = '/payslip/delete_payslip/2?owner_context=' + self.token(path)
+        response = self.client.post(delete_url)
+        self.assertEqual(response.status_code, 303, response.text)
+        self.assertEqual(urlsplit(response.location).path, '/owner-analysis/checks/monthly')
+        self.assertIn('driver_id=1', response.location)
+        self.assertEqual(Payslip.query.count(), 1)

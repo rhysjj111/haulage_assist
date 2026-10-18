@@ -26,7 +26,11 @@ def _effective_week(form, field):
         raise ValidationError("Choose a Saturday as the first affected payroll week.") from None
 
 
-class OverheadSettingsForm(FlaskForm):
+class ReviewContextForm(FlaskForm):
+    review_context = HiddenField(validators=[Optional(), Length(max=4096)])
+
+
+class OverheadSettingsForm(ReviewContextForm):
     selected_week = HiddenField(validators=[InputRequired()])
     effective_week_start = DateField("Applies from week beginning (Saturday)", validators=[InputRequired(), _effective_week])
     truck_count = IntegerField("Truck count", validators=[InputRequired(), NumberRange(min=0, max=2147483647)])
@@ -35,7 +39,7 @@ class OverheadSettingsForm(FlaskForm):
     fingerprint = HiddenField(validators=[InputRequired(), Length(min=64, max=64)])
 
 
-class IssueVerificationForm(FlaskForm):
+class IssueVerificationForm(ReviewContextForm):
     week_start = HiddenField(validators=[InputRequired()])
     issue_key = HiddenField(validators=[InputRequired(), Length(max=255)])
     fingerprint = HiddenField(validators=[InputRequired(), Length(min=64, max=64)])
@@ -44,14 +48,14 @@ class IssueVerificationForm(FlaskForm):
     note = TextAreaField("What was checked?", validators=[InputRequired(), Length(max=4000)])
 
 
-class WeekNoteForm(FlaskForm):
+class WeekNoteForm(ReviewContextForm):
     week_start = HiddenField(validators=[InputRequired()])
     fingerprint = HiddenField(validators=[InputRequired(), Length(min=64, max=64)])
     scope_key = HiddenField(default="week_note", validators=[InputRequired(), Length(max=255)])
     note = TextAreaField("Brief note", validators=[InputRequired(), Length(max=4000)])
 
 
-class WeekReviewForm(FlaskForm):
+class WeekReviewForm(ReviewContextForm):
     week_start = HiddenField(validators=[InputRequired()])
     fingerprint = HiddenField(validators=[InputRequired(), Length(min=64, max=64)])
     note = TextAreaField("Review note (optional)", validators=[Optional(), Length(max=4000)])
@@ -60,7 +64,7 @@ class WeekReviewForm(FlaskForm):
     payroll_checked = BooleanField("Employer wage costs checked", validators=[DataRequired()])
 
 
-class AbsenceForm(FlaskForm):
+class AbsenceForm(ReviewContextForm):
     week_start = HiddenField(validators=[InputRequired()])
     fingerprint = HiddenField(validators=[InputRequired(), Length(min=64, max=64)])
     driver_id = IntegerField(widget=HiddenInput(),

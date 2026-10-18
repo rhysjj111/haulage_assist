@@ -1,0 +1,67 @@
+{% extends 'std_template.html' %}
+{% macro badge(state) -%}<span class="owner-badge owner-badge-{{ state }}">{{ {'checked': 'Checked', 'needs_review': 'Needs review', 'not_reviewed': 'Not reviewed', 'outdated': 'Review out of date', 'in_progress': 'In progress', 'future': 'Future period'}[state]|default(state|replace('_', ' ')|capitalize) }}</span>{%- endmacro %}
+{% macro csrf(form, unique_id) -%}{% if form.csrf_token is defined %}{{ form.csrf_token(id=unique_id) }}{% endif %}{%- endmacro %}
+{% macro hidden(form, prefix) -%}{% for field in form %}{% if field.type in ['HiddenField', 'CSRFTokenField'] %}{{ field(id=prefix ~ '-' ~ field.name) }}{% endif %}{% endfor %}{%- endmacro %}
+{% block standard_title %}<span class="owner-page-title">Data Checks</span>{% endblock %}
+{% block standard_content %}
+{% include 'owner_analysis/_styles.html' %}
+<div class="owner-analysis owner-data-checks">
+  <div class="owner-toolbar">
+    <a class="owner-button owner-button-secondary" href="{{ back_url }}">← {{ back_label }}</a>
+    <div class="owner-segmented" aria-label="Checks period type">
+      <a href="{{ weekly_url }}"{% if period == 'weekly' %} aria-current="page"{% endif %}>Weekly</a>
+      <a href="{{ monthly_url }}"{% if period == 'monthly' %} aria-current="page"{% endif %}>Monthly</a>
+    </div>
+  </div>
+  <p class="owner-muted">Review the entries behind the figures, make corrections and record what has been checked.</p>
+  <form class="owner-filter" method="get" action="{{ filter_action }}">
+    {% for name, value in filter_fields.items() %}{% if name != ('week_start' if period == 'weekly' else 'month') %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endif %}{% endfor %}
+    {% if period == 'weekly' %}
+      <div><label for="checks-week-date">Choose a date in the payroll week</label><input id="checks-week-date" name="week_start" type="date" value="{{ selected_week.isoformat() }}" required></div>
+      <button type="submit" class="owner-button">Show week</button>
+    {% else %}
+      <div><label for="checks-month-date">Choose a payroll month</label><input id="checks-month-date" name="month" type="month" value="{{ selected_month }}" required></div>
+      <button type="submit" class="owner-button">Show month</button>
+    {% endif %}
+  </form>
+  <div class="owner-period-nav" aria-label="Checks period navigation">
+    {% if previous_period_url %}<a href="{{ previous_period_url }}">← Previous {{ 'week' if period == 'weekly' else 'month' }}</a>{% else %}<span class="owner-nav-disabled">← Previous {{ 'week' if period == 'weekly' else 'month' }}</span>{% endif %}
+    <a href="{{ current_period_url }}">Current {{ 'week' if period == 'weekly' else 'month' }}</a>
+    {% if next_period_url %}<a href="{{ next_period_url }}">Next {{ 'week' if period == 'weekly' else 'month' }} →</a>{% else %}<span class="owner-nav-disabled">Next {{ 'week' if period == 'weekly' else 'month' }} →</span>{% endif %}
+  </div>
+  <div class="owner-period-title">
+    {% if period == 'weekly' %}
+      <h2>{{ report.week_start.strftime('%d %B %Y') }} – {{ report.week_end.strftime('%d %B %Y') }}</h2>
+      {{ badge(report.review_status) }}
+      {% if report.period_state == 'in_progress' %}<p class="owner-muted owner-small">Week so far. Entries dated after {{ report.as_of.strftime('%d %b %Y') }} are excluded. Final review is available after this payroll week ends.</p>{% elif report.period_state == 'future' %}<p class="owner-muted owner-small">This payroll week has not started. Final review is unavailable.</p>{% endif %}
+    {% else %}
+      <h2>{{ report.month_name }} {{ report.year }}</h2>
+      {% if report.period_state == 'in_progress' %}<span class="owner-badge owner-badge-in_progress">Month so far</span>{% elif report.period_state == 'future' %}<span class="owner-badge owner-badge-future">Future month</span>{% endif %}
+      {{ badge(report.review_status) }}
+      <p class="owner-muted owner-small">{{ report.completed_week_count }} of {{ report.expected_week_count }} payroll weeks completed.</p>
+      <p class="owner-muted owner-small">Full payroll period: {{ report.expected_start.strftime('%d %b %Y') }} – {{ report.expected_end.strftime('%d %b %Y') }}.</p>
+      {% if report.covered_start %}<p class="owner-muted owner-small">Checks cover {{ report.covered_start.strftime('%d %b %Y') }} – {{ report.covered_end.strftime('%d %b %Y') }}.</p>{% endif %}
+      {% if report.reviewed_through %}<p class="owner-muted owner-small">Reviewed through {{ report.reviewed_through.strftime('%d %b %Y') }}.</p>{% endif %}
+    {% endif %}
+  </div>
+  {% set totals = namespace(outstanding=0) %}{% for week in weeks %}{% set totals.outstanding = totals.outstanding + week.outstanding_issues|length %}{% endfor %}
+  <section class="owner-card" aria-label="Checks summary">
+    <div class="owner-card-heading"><h2>{{ totals.outstanding }} {{ 'check' if totals.outstanding == 1 else 'checks' }} outstanding</h2>{% if recent_completed_url %}<a href="{{ recent_completed_url }}">Latest completed week</a>{% endif %}</div>
+    <p class="owner-muted owner-small">Checks cover the whole business for this period. Your driver or truck selection is kept when you return to Owner Analysis.</p>
+    <p class="owner-muted owner-small">Zero outstanding checks does not automatically mark a week as checked. Confirm the underlying earnings, fuel receipts and payroll before completing each weekly review.</p>
+    {% if period == 'monthly' %}<p class="owner-muted owner-small">Only completed Saturday–Friday payroll weeks are included, matching the monthly figures. Each week is reviewed separately.</p>{% endif %}
+  </section>
+
+  {% for week in weeks %}{% include 'owner_analysis/_weekly_checks.html' %}{% else %}
+    <section class="owner-card"><h2>No completed payroll weeks yet</h2><p class="owner-muted">Monthly checks appear as each included payroll week finishes.</p></section>
+  {% endfor %}
+
+  {% if period == 'monthly' and pending_weeks|default([]) %}
+  <section class="owner-card" aria-label="Weeks not yet included">
+    <h2>Weeks not yet included</h2>
+    <p class="owner-muted">Unfinished payroll weeks are excluded from the monthly figures, check count and review status. Open a week to see its current checks.</p>
+    <ul class="owner-list">{% for pending in pending_weeks %}<li><a href="{{ pending.checks_url }}">Week starting {{ pending.week_start.strftime('%d %b %Y') }}</a>{% if pending.is_active %} · In progress{% else %} · Not yet completed{% endif %}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

@@ -53,19 +53,4 @@
   </section>
   {% endif %}
 
-  <section class="owner-card" style="margin-top: 1rem;">
-    <h2>Relevant checks</h2>
-    <p class="owner-muted owner-small">The review status covers the whole period. Open the relevant week to correct an entry, add an explanation or verify a check.</p>
-    {% for issue in breakdown.issues %}
-      <div class="owner-issue">
-        <div class="owner-issue-title">{{ issue.title|default(issue.label|default(issue.code|default('Check'))) }}</div>
-        {% if issue.message|default('') %}<p>{{ issue.message }}</p>{% endif %}
-        {% if issue.context_label|default('') %}<p class="owner-small owner-muted">{{ issue.context_label }}</p>{% endif %}
-        {% if issue.week_start|default(none) %}<p class="owner-small owner-muted">Week {{ issue.week_start.strftime('%d %b %Y') }} – {{ issue.week_end.strftime('%d %b %Y') }}</p>{% endif %}
-        {% if issue.verified|default(false) %}<span class="owner-badge owner-badge-checked">Verified</span>{% endif %}
-      </div>
-    {% else %}<p>No outstanding checks for this selection.</p>{% endfor %}
-    {% if breakdown.weekly_links %}<div class="owner-week-links">{% for week in breakdown.weekly_links %}<a class="owner-button owner-button-secondary" href="{{ week.url }}">Open week {{ week.week_start.strftime('%d %b') }}</a>{% endfor %}</div>{% endif %}
-    {% if breakdown.history %}<details><summary>Explanations and verification history</summary>{% for entry in breakdown.history %}<div class="owner-history-entry"><p class="owner-small owner-muted">{{ entry.label|default(entry.action|default('Note')) }}{% if entry.context_label|default('') %} · {{ entry.context_label }}{% endif %}{% if entry.week_start|default(none) %} · Week {{ entry.week_start.strftime('%d %b %Y') }}{% endif %}{% if entry.created_at_label|default('') %} · {{ entry.created_at_label }}{% endif %}</p><p class="owner-note">{{ entry.note|default('') }}</p></div>{% endfor %}</details>{% endif %}
-  </section>
 </section>

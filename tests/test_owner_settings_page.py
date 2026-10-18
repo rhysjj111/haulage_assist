@@ -218,7 +218,8 @@ class OwnerSettingsPageTests(OwnerTestCase):
         self.assertNotIn("overhead_form", context)
         self.assertNotIn("truck_count", _Inputs(response.text).values)
         self.assertNotIn("allowance_per_truck", _Inputs(response.text).values)
-        issue = next(item for item in context["report"]["outstanding_issues"]
+        _, checks_context = self.get_page("/owner-analysis/checks?week_start=2026-10-03")
+        issue = next(item for item in checks_context["report"]["outstanding_issues"]
                      if item["code"] == "missing_overhead_settings")
         target = urlsplit(issue["correction_url"])
         self.assertEqual(target.path, "/owner-analysis/overheads")
