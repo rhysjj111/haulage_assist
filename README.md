@@ -3,6 +3,11 @@
 Owner Analysis implementation, setup, database changes and verification are
 documented in [docs/owner-analysis.md](docs/owner-analysis.md).
 
+To preview the review branch in a new GitHub Codespace, follow
+[Codespaces review setup](docs/codespaces-review.md). The supplied development
+container prepares a separate database and sample data automatically; start the
+preview with `python3 run.py` and open port **8080**.
+
 Live site: https://jjcalc-d6c8df6b66e9.herokuapp.com/ <br>
 Github: https://github.com/rhysjj111/PROJECT3_WAGE_CALCULATOR
 
