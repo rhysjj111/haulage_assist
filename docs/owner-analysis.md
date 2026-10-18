@@ -40,6 +40,11 @@ The old Weekly Analysis and Monthly Analysis menu links are removed; their
 existing routes remain available. The weekly/monthly switch within Owner
 Analysis and contextual back links retain their selected report/check period.
 
+Owner Analysis and Data Checks use compact native week/month pickers. Selecting
+a valid new date or month loads that period immediately without a Show button,
+preserving the selected view and report context. Blank, invalid and unchanged
+values do not navigate. Existing previous/current/next period links remain.
+
 ## Figures and periods
 
 - Recorded earnings are Job amounts plus Day additional earnings, each counted

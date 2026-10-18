@@ -13,10 +13,9 @@
     </div>
     {% include 'owner_analysis/_view_switch.html' %}
   </div>
-  <form class="owner-filter" method="get" action="{{ url_for('owner_analysis.weekly') }}">
+  <form class="owner-filter owner-period-picker" data-owner-period-picker method="get" action="{{ url_for('owner_analysis.weekly') }}">
     {% for name, value in view_args.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
-    <div><label for="owner-week-date">Choose a date in the payroll week</label><input id="owner-week-date" name="week_start" type="date" value="{{ report.week_start.isoformat() }}" required></div>
-    <button type="submit" class="owner-button">Show week</button>
+    <div><label for="owner-week-date">Week</label><input id="owner-week-date" data-owner-period-input name="week_start" type="date" value="{{ report.week_start.isoformat() }}" required aria-describedby="owner-week-date-help"><span id="owner-week-date-help" class="owner-sr-only">Choose a date to load its payroll week automatically.</span></div>
   </form>
   <div class="owner-period-nav" aria-label="Week navigation">
     {% if previous_week %}<a href="{{ url_for('owner_analysis.weekly', week_start=previous_week, **view_args) }}">← Previous week</a>{% else %}<span class="owner-nav-disabled">← Previous week</span>{% endif %}
@@ -56,3 +55,4 @@
   {% if analysis_view != 'overview' %}{% include 'owner_analysis/_entity_dialog.html' %}{% endif %}
 </div>
 {% endblock %}
+{% block additional_js %}<script src="{{ url_for('static', filename='js/owner-period-picker.js') }}" defer></script>{% endblock %}

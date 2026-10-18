@@ -13,15 +13,14 @@
       <a href="{{ monthly_url }}"{% if period == 'monthly' %} aria-current="page"{% endif %}>Monthly</a>
     </div>
   </div>
-  <form class="owner-filter" method="get" action="{{ filter_action }}">
+  <form class="owner-filter owner-period-picker" data-owner-period-picker method="get" action="{{ filter_action }}">
     {% for name, value in filter_fields.items() %}{% if name != ('week_start' if period == 'weekly' else 'month') %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endif %}{% endfor %}
     {% if period == 'weekly' %}
-      <div><label for="checks-week-date">Choose a date in the payroll week</label><input id="checks-week-date" name="week_start" type="date" value="{{ selected_week.isoformat() }}" required></div>
-      <button type="submit" class="owner-button">Show week</button>
+      <div><label for="checks-week-date">Week</label><input id="checks-week-date" data-owner-period-input name="week_start" type="date" value="{{ selected_week.isoformat() }}" required aria-describedby="checks-period-help"></div>
     {% else %}
-      <div><label for="checks-month-date">Choose a payroll month</label><input id="checks-month-date" name="month" type="month" value="{{ selected_month }}" required></div>
-      <button type="submit" class="owner-button">Show month</button>
+      <div><label for="checks-month-date">Month</label><input id="checks-month-date" data-owner-period-input name="month" type="month" value="{{ selected_month }}" required aria-describedby="checks-period-help"></div>
     {% endif %}
+    <span id="checks-period-help" class="owner-sr-only">Choosing a {{ 'date' if period == 'weekly' else 'month' }} loads its checks automatically.</span>
   </form>
   <div class="owner-period-nav" aria-label="Checks period navigation">
     {% if previous_period_url %}<a href="{{ previous_period_url }}">← Previous {{ 'week' if period == 'weekly' else 'month' }}</a>{% else %}<span class="owner-nav-disabled">← Previous {{ 'week' if period == 'weekly' else 'month' }}</span>{% endif %}
@@ -61,3 +60,4 @@
   {% endif %}
 </div>
 {% endblock %}
+{% block additional_js %}<script src="{{ url_for('static', filename='js/owner-period-picker.js') }}" defer></script>{% endblock %}

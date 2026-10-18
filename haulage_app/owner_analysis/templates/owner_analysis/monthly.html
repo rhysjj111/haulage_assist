@@ -13,11 +13,10 @@
     </div>
     {% include 'owner_analysis/_view_switch.html' %}
   </div>
-  <form class="owner-filter" method="get" action="{{ url_for('owner_analysis.monthly') }}">
+  <form class="owner-filter owner-period-picker" data-owner-period-picker method="get" action="{{ url_for('owner_analysis.monthly') }}">
     {% for name, value in view_args.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
     <input type="hidden" name="week_start" value="{{ weekly_toggle_week }}">
-    <div><label for="owner-month-date">Choose a payroll month</label><input id="owner-month-date" name="month" type="month" value="{{ selected_month }}" required></div>
-    <button type="submit" class="owner-button">Show month</button>
+    <div><label for="owner-month-date">Month</label><input id="owner-month-date" data-owner-period-input name="month" type="month" value="{{ selected_month }}" required aria-describedby="owner-month-date-help"><span id="owner-month-date-help" class="owner-sr-only">Choose a payroll month to load it automatically.</span></div>
   </form>
   <div class="owner-period-nav" aria-label="Month navigation">
     {% if previous_month %}<a href="{{ url_for('owner_analysis.monthly', month=previous_month, **view_args) }}">← Previous month</a>{% else %}<span class="owner-nav-disabled">← Previous month</span>{% endif %}
@@ -98,3 +97,4 @@
   {% if analysis_view != 'overview' %}{% include 'owner_analysis/_entity_dialog.html' %}{% endif %}
 </div>
 {% endblock %}
+{% block additional_js %}<script src="{{ url_for('static', filename='js/owner-period-picker.js') }}" defer></script>{% endblock %}
