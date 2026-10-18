@@ -1,0 +1,25 @@
+{% extends 'std_template.html' %}
+{% block standard_title %}<span class="owner-page-title">Review week details</span>{% endblock %}
+{% block standard_content %}
+{% include 'owner_analysis/_styles.html' %}
+{% include 'owner_analysis/_investigation_styles.html' %}
+<div class="owner-analysis owner-investigation-page">
+  <div class="owner-toolbar"><a class="owner-button owner-button-secondary" href="{{ back_url }}">← {{ back_label|default('Back to Data Checks') }}</a></div>
+  <div class="owner-investigation-layout">
+    <section class="owner-card owner-investigation-summary" aria-labelledby="investigation-check-heading">
+      <p class="owner-investigation-label">Selected check</p>
+      <h2 id="investigation-check-heading">{{ issue.title|default(issue.label|default(issue.code|replace('_', ' ')|capitalize)) }}</h2>
+      <p>{{ issue.message }}</p>
+      {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
+      {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
+      <p class="owner-muted owner-small">Payroll week: {{ week_context.week_start.strftime('%d %b') }} – {{ week_context.week_end.strftime('%d %b %Y') }}.</p>
+      <div class="owner-investigation-actions">
+        {% if correction_url|default(issue.correction_url|default(none)) %}<a class="owner-button" href="{{ correction_url|default(issue.correction_url) }}">Correct entry</a>{% endif %}
+        {% if issue.fuel_flag_correction_url|default(none) %}<a class="owner-button owner-button-secondary" href="{{ issue.fuel_flag_correction_url }}">Correct fuel flag</a>{% endif %}
+      </div>
+      <p class="owner-muted owner-small" style="margin-top:1rem">Review the weekly details alongside this check. Explanations, day-status actions and final weekly review remain on Data Checks.</p>
+    </section>
+    {% include 'owner_analysis/_week_context.html' %}
+  </div>
+</div>
+{% endblock %}

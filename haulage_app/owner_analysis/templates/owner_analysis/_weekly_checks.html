@@ -17,6 +17,7 @@
     <p>{{ issue.message }}</p>
     {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
     {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
+    {% if issue.investigation_url|default(none) %}<a href="{{ issue.investigation_url }}" class="owner-button owner-button-secondary">View week details</a>{% endif %}
     {% if issue.correction_url|default(none) %}<a href="{{ issue.correction_url }}" class="owner-button owner-button-secondary">Correct entry</a>{% endif %}
     {% if issue.fuel_flag_correction_url|default(none) %}<a href="{{ issue.fuel_flag_correction_url }}" class="owner-button owner-button-secondary">Correct fuel flag</a>{% endif %}
     {% if issue.can_verify and verification_form %}

@@ -2,8 +2,13 @@
 {% import 'macros.html' as entry_macros %}
 {% block header %}<h4>Review {{ 'fuel flag' if kind == 'fuel_flag' else kind }}</h4>{% endblock %}
 {% block main %}
-<div class="col s12 m10 offset-m1 l8 offset-l2" style="padding-bottom: 2rem; overflow-wrap: anywhere;">
+{% if week_context|default(none) %}
+{% include 'owner_analysis/_styles.html' %}
+{% include 'owner_analysis/_investigation_styles.html' %}
+{% endif %}
+<div class="col s12 {% if week_context|default(none) %}owner-correction-shell{% else %}m10 offset-m1 l8 offset-l2{% endif %}" style="padding-bottom: 2rem; overflow-wrap: anywhere;">
   <p><a href="{{ back_url }}">Back to Data Checks</a></p>
+  {% if week_context|default(none) %}<div class="owner-correction-layout"><div class="owner-correction-form">{% endif %}
   <p>Payroll week: {{ f.display_date(week) }} – {{ f.display_date(week_end) }}.</p>
   <p>This form covers only the record selected from Data Checks.</p>
   {% if error %}<p class="red-text" role="alert">{{ error }}</p>{% endif %}
@@ -16,7 +21,7 @@
         <p>Wage: {{ f.fd_currency(row.total_wage) }} · Employer cost: {{ f.fd_currency(row.total_cost_to_employer) }}</p>
         <p><a href="{{ row.edit_url }}">Open this payslip</a></p>
         <form method="post" action="{{ url_for('payslip.delete_payslip', item_id=row.id, owner_context=token) }}">
-          {{ form.hidden_tag() }}
+          {% for field in form %}{% if field.type in ['HiddenField', 'CSRFTokenField'] %}{{ field(id='delete-payslip-' ~ row.id ~ '-' ~ field.name) }}{% endif %}{% endfor %}
           <button class="btn red darken-3" type="submit">Delete this duplicate payslip</button>
         </form>
       </div></section>
@@ -41,5 +46,6 @@
       {% endif %}
     </form>
   {% endif %}
+  {% if week_context|default(none) %}</div>{% include 'owner_analysis/_week_context.html' %}</div>{% endif %}
 </div>
 {% endblock %}

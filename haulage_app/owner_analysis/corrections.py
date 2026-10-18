@@ -20,6 +20,7 @@ from haulage_app import db, f
 from haulage_app.models import Day, Driver, Fuel, Job, Payslip, Truck
 from .dates import validate_week_start, week_end
 from .navigation import checks_url, read_review_context
+from .investigation import build_week_context
 
 
 class CorrectionForm(FlaskForm):
@@ -349,6 +350,12 @@ def _render(context, error=None):
         return _render_form(context, error=error)
 
 
+def _nearby_requested():
+    if len(request.args.getlist('nearby')) > 1 or request.args.get('nearby', '0') not in {'0', '1'}:
+        abort(400, 'Choose whether to show nearby payslips.')
+    return request.args.get('nearby') == '1'
+
+
 def _render_form(context, error=None):
     token, payload, week, basis, scope = context
     kind, mode = payload['kind'], payload['mode']
@@ -388,19 +395,34 @@ def _render_form(context, error=None):
             issue = {'code': 'payslip_amount_out_of_range', 'record_type': 'payslip', 'record_id': row['id']}
             group_rows.append(dict(row, edit_url=correction_url(week, issue, {'review_basis': basis},
                                                                review_context=payload.get('review_context'))))
+    truck_id = payload.get('truck_id')
+    on_date = date.fromisoformat(payload['date']) if payload.get('date') else None
+    if entry is not None:
+        on_date = entry.day.date if kind == 'job' else entry.date
+        if kind in ('day', 'fuel'):
+            truck_id = entry.truck_id
+    include_nearby = _nearby_requested()
+    details = build_week_context(week, basis, driver_id=driver_id, truck_id=truck_id,
+        on_date=on_date, target_type=kind, target_id=payload.get('record_id'),
+        include_nearby=include_nearby)
+    endpoint = f'{"fuel" if kind == "fuel_flag" else kind}.add_{"fuel" if kind == "fuel_flag" else kind}'
+    args = dict(item_id=payload.get('record_id', 0), tab='edit' if mode == 'edit' else 'entry', owner_context=token)
     return render_template('owner_correction_entry.html', kind=kind, mode=mode, entry=entry, values=values,
             drivers=drivers, trucks=trucks, form=form, token=token, week=week, week_end=week_end(week),
             back_url=checks_url(week, payload.get('review_context')),
+            week_context=details,
+            nearby_url=url_for(endpoint, **args, nearby='1', _anchor='nearby-payslips') if driver_id is not None else None,
+            nearby_hide_url=url_for(endpoint, **args),
             error=error, split_read_only=split_read_only, group_rows=group_rows,
             macro_type='edit' if mode == 'edit' and not error else 'add',
-            action=url_for(f'{"fuel" if kind == "fuel_flag" else kind}.add_{"fuel" if kind == "fuel_flag" else kind}',
-                           item_id=payload.get('record_id', 0), tab='edit' if mode == 'edit' else 'entry', owner_context=token))
+            action=url_for(endpoint, **args, **({'nearby': '1'} if include_nearby else {})))
 
 
 def owner_entry_response(kind, item_id, tab):
     context = _load_context(kind, item_id)
     if context is None:
         return None
+    _nearby_requested()
     token, payload, week, basis, scope = context
     if request.method == 'POST':
         form = CorrectionForm()
@@ -425,6 +447,7 @@ def owner_mutation_response(kind, item_id, action='edit'):
     context = _load_context(kind, item_id, action=action)
     if context is None:
         return None
+    _nearby_requested()
     if action != 'delete':
         # The bounded form uses its own POST path, never the broad legacy editor.
         return owner_entry_response(kind, item_id, 'edit')

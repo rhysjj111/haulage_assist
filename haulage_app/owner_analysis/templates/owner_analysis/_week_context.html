@@ -1,0 +1,93 @@
+{% macro context_money(value) -%}{% if value is not none %}£{{ '%.2f'|format(value / 100) }}{% else %}—{% endif %}{%- endmacro %}
+{% macro context_payslips(rows, nearby=false) -%}
+<div class="owner-table-wrap">
+  <table class="owner-context-table owner-context-payslip-table">
+    <thead><tr><th scope="col">Driver</th><th scope="col">Payslip date</th><th scope="col">Wage</th><th scope="col">Employer cost</th></tr></thead>
+    <tbody>{% for slip in rows %}
+      <tr class="{% if slip.highlighted %}owner-context-payslip-highlighted {% endif %}{% if slip.selected_record|default(false) %}owner-context-payslip-selected{% endif %}" data-payslip-id="{{ slip.id }}">
+        <th scope="row">{{ slip.driver_name }}{% if slip.selected_record|default(false) %}<span class="owner-context-tag">Selected record</span>{% endif %}{% if nearby and slip.week_start|default(none) %}<span class="owner-small owner-muted" style="display:block">Week starting {{ slip.week_start.strftime('%d %b') }}</span>{% endif %}</th>
+        <td>{{ slip.date.strftime('%d %b %Y') }}{% if nearby and slip.future_dated|default(false) %}<span class="owner-context-tag">Future-dated</span>{% endif %}</td><td>{{ context_money(slip.total_wage) }}</td><td>{{ context_money(slip.total_cost_to_employer) }}</td>
+      </tr>
+    {% endfor %}</tbody>
+  </table>
+</div>
+{%- endmacro %}
+<div class="owner-analysis owner-week-context" aria-label="Payroll week investigation details">
+  <section class="owner-card" aria-labelledby="week-context-heading">
+    <div class="owner-card-heading"><h2 id="week-context-heading">Week at a glance</h2><span class="owner-small owner-muted">{{ week_context.week_start.strftime('%d %b') }} – {{ week_context.week_end.strftime('%d %b %Y') }}</span></div>
+    <p class="owner-context-scope"><strong>{% if week_context.scope == 'driver' %}{{ week_context.driver_name }}{% elif week_context.scope == 'truck' %}{{ week_context.truck_registration }}{% else %}All recorded driver entries{% endif %}</strong></p>
+    {% if week_context.scope == 'truck' %}<p class="owner-muted owner-small">Drivers and day assignments recorded against this truck. A day records one truck even if the driver switched vehicles; earnings are not attributed to trucks.</p>{% endif %}
+    <div class="owner-context-metrics">
+      <div class="owner-context-metric"><span>Working {{ 'days' if week_context.scope == 'driver' else 'driver-days' }}</span><strong>{{ week_context.summary.working_days }}</strong></div>
+      <div class="owner-context-metric"><span>Holiday {{ 'days' if week_context.scope == 'driver' else 'driver-days' }}</span><strong>{{ week_context.summary.holiday_days }}</strong></div>
+      <div class="owner-context-metric"><span>Absent {{ 'days' if week_context.scope == 'driver' else 'driver-days' }}</span><strong>{{ week_context.summary.absent_days }}</strong></div>
+      {% if week_context.scope == 'driver' %}<div class="owner-context-metric"><span>Recorded earnings</span><strong>{{ context_money(week_context.summary.earnings) }}</strong></div>{% else %}<div class="owner-context-metric"><span>Recorded driver-days</span><strong>{{ week_context.summary.recorded_days }}</strong></div>{% endif %}
+    </div>
+    <p class="owner-muted owner-small">{% if week_context.scope == 'driver' %}A blank day says “No entry”; it does not mean Holiday or Absent. {% endif %}{% if week_context.as_of < week_context.week_end %}Entries after {{ week_context.as_of.strftime('%d %b %Y') }} are excluded; future dates are shown as not yet due.{% else %}Recorded entries for the full Saturday–Friday payroll week.{% endif %}</p>
+    <table class="owner-context-table owner-context-days">
+      <thead><tr><th scope="col" class="owner-context-date">Day</th><th scope="col">{% if week_context.scope == 'driver' %}Status and truck{% else %}Driver, status and truck{% endif %}</th>{% if week_context.scope == 'driver' %}<th scope="col" class="owner-context-amount">Earnings</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for day in week_context.days %}
+        <tr class="owner-context-day{% if day.highlighted %} owner-context-day-highlighted{% endif %}" data-date="{{ day.date.isoformat() }}">
+          <th scope="row" class="owner-context-date">{{ day.date.strftime('%a') }}<span class="owner-small owner-muted" style="display:block">{{ day.date.strftime('%d %b') }}</span>{% if day.highlighted %}<span class="owner-context-tag">Selected date</span>{% endif %}</th>
+          <td>
+            {% if day.is_future %}<span class="owner-muted">Not yet due</span>
+            {% elif not day.entries %}<span class="owner-muted">No entry{% if week_context.scope == 'truck' %} for this truck{% endif %}</span>
+            {% else %}
+              {% if day.duplicate_entries %}<p class="owner-small owner-table-note">Multiple entries are recorded for this driver and date. Check the records together.</p>{% endif %}
+              {% for entry in day.entries %}
+              <div class="owner-context-entry{% if entry.highlighted %} owner-context-entry-highlighted{% endif %}" data-day-id="{{ entry.id }}">
+                {% if week_context.scope != 'driver' %}<p><strong>{{ entry.driver_name }}</strong></p>{% endif %}
+                <span class="owner-context-status">{{ entry.status_label }}</span><span class="owner-small owner-muted" style="display:block">{{ entry.truck_registration or 'No truck recorded' }}</span>
+                {% if entry.highlighted %}<span class="owner-context-tag">Selected entry</span>{% endif %}
+                {% if week_context.scope == 'driver' and (entry.jobs or entry.additional_earned) %}
+                <details>
+                  <summary>{{ entry.jobs|length }} {{ 'job' if entry.jobs|length == 1 else 'jobs' }}{% if entry.additional_earned %} and additional earnings{% endif %}</summary>
+                  {% for job in entry.jobs %}<div class="owner-context-job{% if job.highlighted|default(false) or (week_context.target_type == 'job' and week_context.target_id == job.id) %} owner-context-job-highlighted{% endif %}" data-job-id="{{ job.id }}">
+                    <p>{{ job.collection }} → {{ job.delivery }}</p><p><strong>{{ context_money(job.earned) }}</strong>{% if job.split %} <span class="owner-context-tag">Split allocation</span>{% endif %}</p>
+                    {% if job.notes %}<p class="owner-small owner-muted owner-context-job-note">{{ job.notes }}</p>{% endif %}
+                  </div>{% endfor %}
+                  {% if entry.additional_earned %}<p class="owner-small">Additional day earnings: <strong>{{ context_money(entry.additional_earned) }}</strong></p>{% endif %}
+                </details>
+                {% endif %}
+              </div>
+              {% endfor %}
+            {% endif %}
+          </td>
+          {% if week_context.scope == 'driver' %}<td class="owner-context-amount">{{ context_money(day.earnings) }}{% if day.duplicate_entries %}<span class="owner-small owner-muted" style="display:block">All recorded entries</span>{% endif %}</td>{% endif %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="owner-muted owner-small">These details are read-only. Use the selected check’s correction action to change a record.</p>
+  </section>
+  {% if week_context.scope == 'truck' %}
+  <section class="owner-card" aria-labelledby="week-fuel-heading">
+    <h2 id="week-fuel-heading">Fuel receipts for this week</h2>
+    <p class="owner-muted owner-small">Recorded purchases for {{ week_context.truck_registration }}, using the receipt date. Litres purchased do not measure fuel consumed during the week.</p>
+    {% if week_context.fuel_entries %}
+    <div class="owner-table-wrap"><table class="owner-context-table owner-context-fuel-table">
+      <thead><tr><th scope="col">Receipt date</th><th scope="col">Fuel card</th><th scope="col">Litres</th><th scope="col">Cost</th></tr></thead>
+      <tbody>{% for receipt in week_context.fuel_entries %}<tr{% if receipt.highlighted %} class="owner-context-fuel-highlighted"{% endif %} data-fuel-id="{{ receipt.id }}">
+        <th scope="row">{{ receipt.date.strftime('%d %b %Y') }}{% if receipt.highlighted %}<span class="owner-context-tag">Selected record</span>{% endif %}</th><td>{{ receipt.fuel_card_name or 'Not recorded' }}</td><td>{{ '%.2f'|format(receipt.fuel_volume / 100) }}</td><td>{{ context_money(receipt.fuel_cost) }}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p>No fuel receipts recorded for this truck this week.</p>{% endif %}
+  </section>
+  {% endif %}
+  <section class="owner-card" aria-labelledby="week-payslips-heading">
+    <h2 id="week-payslips-heading">Payslips for this week</h2>
+    <p class="owner-muted owner-small">Recorded payslips for all drivers, using their payslip dates within this payroll week.{% if week_context.as_of < week_context.week_end %} Only payslips dated through {{ week_context.as_of.strftime('%d %b %Y') }} are shown, matching the week-so-far figures.{% endif %}{% if week_context.driver_id %} {{ week_context.driver_name }} is highlighted.{% endif %}</p>
+    {% if week_context.driver_payslip_missing %}<p class="owner-notice">No payslip recorded for {{ week_context.driver_name }} this week{% if week_context.as_of < week_context.week_end %} through {{ week_context.as_of.strftime('%d %b %Y') }}{% endif %}.</p>{% endif %}
+    {% if week_context.payslips %}{{ context_payslips(week_context.payslips) }}{% else %}<p>No payslips recorded for this week.</p>{% endif %}
+    {% if week_context.driver_id and nearby_url|default(none) and not week_context.nearby_loaded %}<p style="margin-top:1rem"><a href="{{ nearby_url }}">Show this driver’s nearby payslips</a></p>{% endif %}
+    {% if week_context.nearby_loaded %}
+    <div class="owner-context-nearby" id="nearby-payslips">
+      <div class="owner-card-heading"><h3>Nearby payslips</h3>{% if nearby_hide_url|default(none) %}<a class="owner-small" href="{{ nearby_hide_url }}">Hide nearby payslips</a>{% endif %}</div>
+      <p class="owner-muted owner-small">{{ week_context.driver_name }}’s payslips from the preceding and following payroll weeks. These are separate from the selected week’s figures. Already-recorded payslips dated after today are labelled “Future-dated”.</p>
+      {% if week_context.nearby_payslips %}{{ context_payslips(week_context.nearby_payslips, nearby=true) }}{% else %}<p>No nearby payslips recorded for this driver.</p>{% endif %}
+      {% if week_context.nearby_truncated %}<p class="owner-table-note">Showing the first 50 nearby records.</p>{% endif %}
+    </div>
+    {% endif %}
+  </section>
+</div>

@@ -179,6 +179,8 @@ class OwnerCorrectionTests(OwnerTestCase):
         self.assertEqual(page.status_code, 200, page.text)
         self.assertIn('Payslip #1', page.text)
         self.assertIn('Payslip #2', page.text)
+        ids = re.findall(r'\sid="([^"]+)"', page.text)
+        self.assertEqual(len(ids), len(set(ids)), 'Each duplicate-payslip form needs unique field IDs')
         delete_url = '/payslip/delete_payslip/2?owner_context=' + self.token(path)
         self.assertEqual(self.client.post('/payslip/delete_payslip/999?owner_context=' + self.token(path)).status_code, 400)
         response = self.client.post(delete_url)

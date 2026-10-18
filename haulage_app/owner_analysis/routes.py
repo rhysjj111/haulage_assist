@@ -29,6 +29,7 @@ from haulage_app.owner_analysis.navigation import (
     analysis_url as review_analysis_url, checks_url as review_checks_url,
     read_review_context, review_context_for,
 )
+from haulage_app.owner_analysis.investigation import build_week_context
 from haulage_app.owner_analysis.reviews import (
     get_reviewed_week, save_issue_verification, save_week_note, save_week_review,
 )
@@ -149,6 +150,8 @@ def _prepare_week_presentation(report, *, correction_links=False, review_context
             issue.get("driver_name"), issue.get("truck_registration"),
             issue.get("date").strftime("%d %b %Y") if issue.get("date") else None) if value)
         if correction_links:
+            issue["investigation_url"] = url_for("owner_analysis.investigate", week_start=week.isoformat(),
+                issue_key=issue["key"], **({"review_context": review_context} if review_context else {}))
             issue["correction_url"] = url_for("owner_analysis.overhead_settings", week_start=week.isoformat(),
                 **({"review_context": review_context} if review_context else {})) if issue["code"] == "missing_overhead_settings" else correction_url(week, issue, report=report, review_context=review_context)
             issue["fuel_flag_correction_url"] = fuel_flag_correction_url(week, issue, report=report, review_context=review_context) if issue["code"] == "missing_fuel_receipt" else None
@@ -361,6 +364,48 @@ def monthly():
 @owner_analysis_bp.route("/owner-analysis/checks/monthly", methods=["GET"])
 def monthly_checks():
     return _monthly_response(checks_page=True)
+
+
+@owner_analysis_bp.route("/owner-analysis/checks/investigate", methods=["GET"])
+def investigate():
+    allowed = {"week_start", "issue_key", "review_context", "nearby"}
+    if set(request.args) - allowed or any(len(request.args.getlist(key)) != 1 for key in request.args):
+        abort(400, description="Reopen the week details from Data Checks.")
+    if request.args.get("nearby", "0") not in {"0", "1"}:
+        abort(400, description="Choose whether to show nearby payslips.")
+    include_nearby = request.args.get("nearby") == "1"
+    try:
+        week = _parse_week(request.args.get("week_start"), normalize=True)
+        week_end(week)
+    except (ValueError, OverflowError) as exc:
+        abort(400, description=str(exc))
+    key = request.args.get("issue_key")
+    if not key or len(key) > 255:
+        abort(400, description="Please select a check to investigate.")
+    token = _validated_review_context(request.args.get("review_context"), week)
+    if token and read_review_context(token)["period"] == "monthly" and week_end(week) >= today_london():
+        abort(400, description="Monthly checks cover completed payroll weeks only.")
+    token = token or review_context_for("weekly", week)
+    # The selected driver/truck/date comes from the actual check, never from
+    # independent query parameters that could silently switch the subject.
+    with db.session.no_autoflush:
+        report = _prepare_week_presentation(get_reviewed_week(week, as_of=today_london()),
+            correction_links=True, review_context=token)
+        issue = next((item for item in report["issues"] if item["key"] == key), None)
+        if issue is None:
+            abort(404, description="This check is no longer present. Reopen Data Checks for the updated week.")
+        details = build_week_context(week, report["review_basis"], driver_id=issue.get("driver_id"),
+            truck_id=issue.get("truck_id"), on_date=issue.get("date"),
+            target_type=issue.get("record_type"), target_id=issue.get("record_id"),
+            as_of=report["as_of"], include_nearby=include_nearby)
+        args = {"week_start": week.isoformat(), "issue_key": key, "review_context": token}
+        return render_template("owner_analysis/investigate.html", report=report, issue=issue,
+            week_context=details, week=week, week_end=report["week_end"],
+            back_url=review_checks_url(week, token), back_label="Back to Data Checks",
+            correction_url=issue.get("correction_url"),
+            nearby_url=url_for("owner_analysis.investigate", **args, nearby="1", _anchor="nearby-payslips")
+                       if issue.get("driver_id") is not None else None,
+            nearby_hide_url=url_for("owner_analysis.investigate", **args))
 
 
 def _add_check_forms(report, token):

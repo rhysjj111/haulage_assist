@@ -96,8 +96,25 @@ is no month-wide signoff. Informational checks remain in the outstanding count.
 Explicit business notes for a week remain visible read-only on Owner Analysis.
 Adding another note preserves earlier notes; lengthy notes have a short preview
 and an expandable full version. Per-issue explanations and verification history
-stay on Data Checks. Investigation week details and further simplification of
-individual correction forms are separate later steps.
+stay on Data Checks.
+
+Each check has a read-only **View week details** link. The same investigation
+panel appears beside the existing correction forms on desktop. It shows all
+seven dates, actual Working/Holiday/Absent entries and explicit unknown gaps,
+recorded trucks, jobs/additional earnings, and the selected week's payslips for
+all drivers. The selected date, driver and record are highlighted. Dates after
+today are not yet due and are excluded from the week-so-far context and totals.
+Truck context shows recorded day assignments and fuel receipts without
+attributing driver earnings to trucks or inferring downtime from blank days.
+
+**Show this driver's nearby payslips** is an explicit, bounded read-only request
+for the preceding and following payroll weeks, capped at 50 records. Nearby
+records stay separate from the selected week's figures. Already-recorded
+future-dated nearby slips are visible and labelled, to help identify a mistaken
+pay date. No nearby history query is run on initial page loading. The subject
+comes from the actual check or signed correction, not independent driver/truck
+query overrides. Further simplification of individual correction forms is a
+separate later step.
 
 Legitimate exceptions require an explanation. Missing days require an actual Day
 record (Working, Holiday or Absent). Unknown fuel and overhead costs cannot be
