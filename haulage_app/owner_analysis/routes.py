@@ -36,7 +36,7 @@ from haulage_app.owner_analysis.navigation import (
 from haulage_app.owner_analysis.investigation import build_week_context
 from haulage_app.owner_analysis.entity_details import build_entity_details
 from haulage_app.owner_analysis.reviews import (
-    get_reviewed_week, save_issue_verification, save_week_note, save_week_review,
+    get_reviewed_week, save_issue_verification, save_week_note, save_week_review, undo_week_review,
 )
 
 
@@ -187,6 +187,16 @@ _ISSUE_LABELS = {
     "employer_cost_below_wage": "Employer cost needs checking", "invalid_day_status": "Day status needs correcting",
 }
 
+_CHECK_LIST_LABELS = {
+    **_ISSUE_LABELS,
+    "missing_payslip": "Missing payslip",
+    "working_day_without_earnings": "No earnings recorded",
+    "missing_overhead_settings": "Overheads not set",
+    "possible_duplicate_fuel": "Possible duplicate fuel",
+    "working_day_without_truck": "Missing truck assignment",
+    "earnings_on_nonworking_day": "Earnings on Holiday / Absent day",
+}
+
 
 def _label_history(report):
     subjects = []
@@ -204,6 +214,7 @@ def _label_history(report):
             truck_names.update({row.id: row.registration for row in Truck.query.filter(Truck.id.in_(truck_ids - truck_names.keys()))})
     for item, code, details in subjects:
         item["label"] = {"week_note": "Week note", "week_review": "Week reviewed",
+                         "week_review_undo": "Weekly review undone",
                          "recorded_absence": "Holiday or absence recorded"}.get(code, _ISSUE_LABELS.get(code, "Entry checked"))
         item["decision_label"] = {"verified": "Verified", "confirmed_zero": "Confirmed no payroll cost",
                                   "dismissed": "Dismissed", "awaiting_invoice": "Awaiting fuel invoice"}.get(item["decision"], "")
@@ -224,6 +235,11 @@ def _prepare_week_presentation(report, *, correction_links=False, review_context
     week = report["week_start"]
     for issue in report["issues"]:
         issue["label"] = _ISSUE_LABELS.get(issue["code"], "Entry needs checking")
+        issue["short_subject"] = (issue.get("driver_name") or issue.get("truck_registration")
+            or report["driver_names"].get(issue.get("driver_id"))
+            or report["truck_names"].get(issue.get("truck_id")) or "Business")
+        issue["check_label"] = _CHECK_LIST_LABELS.get(issue["code"], issue["label"])
+        issue["check_day"] = issue["date"].strftime("%A") if issue.get("date") else ""
         issue["context_label"] = issue.get("record_label") or " · ".join(str(value) for value in (
             issue.get("driver_name"), issue.get("truck_registration"),
             issue.get("date").strftime("%d %b %Y") if issue.get("date") else None) if value)
@@ -236,6 +252,19 @@ def _prepare_week_presentation(report, *, correction_links=False, review_context
             issue["review_url"] = issue["correction_url"] if issue["code"] == "missing_overhead_settings" else issue["investigation_url"]
         issue["can_confirm_zero"] = "confirmed_zero" in issue.get("verification_decisions", [])
         issue["can_mark_absence"] = issue["code"] == "missing_day"
+    # Keep rows concise, but distinguish separate records with the same subject,
+    # check and day without repeating full dates or descriptions.
+    row_groups = {}
+    for issue in report["issues"]:
+        if not issue.get("resolved"):
+            identity = (issue["code"], issue.get("driver_id"), issue.get("truck_id"), issue.get("date"))
+            row_groups.setdefault(identity, []).append(issue)
+    for group in row_groups.values():
+        if len(group) > 1:
+            for issue in group:
+                if issue.get("record_id") is not None:
+                    label = {"fuel": "Receipt", "payslip": "Payslip", "job": "Job", "day": "Day"}.get(issue.get("record_type"), "Entry")
+                    issue["check_reference"] = f"{label} #{issue['record_id']}"
     outstanding_keys = {item["key"] for item in report["outstanding_issues"]}
     report["outstanding_issues"] = [item for item in report["issues"] if item["key"] in outstanding_keys]
     report["can_review"] = report["period_state"] == "finished" and not report["outstanding_issues"]
@@ -603,7 +632,8 @@ def _add_check_forms(report, token):
         "verification": IssueVerificationForm(data={"week_start": week, "review_context": token}),
         "absence": AbsenceForm(data={"week_start": week, "review_context": token}),
         "note": WeekNoteForm(data={**common, "scope_key": "week_note"}),
-        "review": WeekReviewForm(data=common),
+        "review": WeekReviewForm(data={**common, "review_id": report["last_review_id"],
+            "action": "undo" if report["review_status"] == "checked" else "check"}),
     }
     # Sort only the presentation list; the rule identities and fingerprints
     # remain unchanged. Optional checks stay outside the final-review queue.
@@ -783,8 +813,13 @@ def week_note():
 @owner_analysis_bp.route("/owner-analysis/review", methods=["POST"])
 def review_week():
     form = WeekReviewForm()
-    return _post(form, lambda week: save_week_review(week, form.fingerprint.data,
-        note=form.note.data or "", as_of=today_london()), "Week marked reviewed.")
+    if any(len(request.form.getlist(name)) != 1 for name in ("week_start", "fingerprint", "review_id", "action")):
+        abort(400, description="Reopen Data Checks before changing the weekly review.")
+    def save(week):
+        action = undo_week_review if form.action.data == "undo" else save_week_review
+        action(week, form.fingerprint.data, expected_review_id=form.review_id.data, as_of=today_london())
+    return _post(form, save,
+        "Weekly review undone." if form.action.data == "undo" else "Week marked as checked.")
 
 
 @owner_analysis_bp.route("/owner-analysis/absence", methods=["POST"])

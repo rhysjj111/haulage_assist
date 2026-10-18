@@ -52,15 +52,20 @@
   .owner-issue { padding: .9rem 0; border-top: 1px solid #e4eaed; }
   .owner-issue:first-of-type { border-top: 0; }
   .owner-issue-title { font-weight: 600; margin-bottom: .25rem; }
-  .owner-check-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: center; }
-  .owner-check-summary h3 { margin-bottom: .25rem; }
-  .owner-check-description { min-width: 0; }
-  .owner-check-description p { margin: .15rem 0; }
-  .owner-check-action { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .7rem; }
-  .owner-check-group { padding-top: 1rem; margin: .4rem 0; border-top: 1px solid #e4eaed; }
-  .owner-check-group .owner-card-heading { margin-bottom: .3rem; }
-  .owner-check-group .owner-card-heading h3 { font-size: 1.15rem; }
-  .owner-check-group .owner-check-summary h3 { font-size: 1rem; margin: 0; }
+  .owner-checks-total h2 { margin: 0; }
+  .owner-analysis .owner-check-table { width: 100%; table-layout: fixed; margin: .15rem 0 .3rem; border-collapse: collapse; }
+  .owner-analysis .owner-check-table th, .owner-analysis .owner-check-table td { padding: .95rem .85rem; text-align: left; vertical-align: middle; border-bottom: 1px solid #e4eaed; }
+  .owner-analysis .owner-check-table thead th { padding-top: .65rem; padding-bottom: .65rem; background: #f4f7f9; color: #54636a; font-size: .85rem; font-weight: 600; }
+  .owner-analysis .owner-check-table thead th:first-child { width: 31%; }
+  .owner-analysis .owner-check-table thead th:last-child { width: 7.5rem; }
+  .owner-analysis .owner-check-table tbody th { font-weight: 600; }
+  .owner-analysis .owner-check-table tbody tr:last-child > * { border-bottom: 0; }
+  .owner-analysis .owner-check-table tbody tr:hover { background: #f8fafb; }
+  .owner-analysis .owner-check-table .owner-check-review { text-align: right; white-space: nowrap; }
+  .owner-check-review a { display: inline-block; padding: .4rem 0 .4rem .65rem; font-weight: 600; }
+  .owner-check-secondary { display: block; margin-top: .2rem; color: #54636a; font-size: .85rem; }
+  .owner-week-review { margin-top: 1.1rem; padding-top: .9rem; border-top: 1px solid #dce3e6; }
+  .owner-analysis .owner-week-review-form { margin-top: 0; }
   .owner-analysis details { margin-top: .6rem; }
   .owner-optional-checks { border-top: 1px solid #dce3e6; padding-top: .6rem; }
   .owner-analysis summary { cursor: pointer; color: #245a86; padding: .35rem 0; }
@@ -95,8 +100,9 @@
   .owner-history-entry:last-child { border-bottom: 0; }
   @media (max-width: 992px) { .owner-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 600px) {
-    .owner-check-summary { grid-template-columns: 1fr; gap: .5rem; }
-    .owner-check-action { justify-content: flex-start; }
+    .owner-analysis .owner-check-table th, .owner-analysis .owner-check-table td { padding: .75rem .4rem; font-size: .9rem; }
+    .owner-analysis .owner-check-table thead th:first-child { width: 30%; }
+    .owner-analysis .owner-check-table thead th:last-child { width: 5.5rem; }
     .owner-page-title { font-size: 1.8rem; margin-left: 1.1rem; }
     .owner-analysis { padding-bottom: 2rem; }
     .owner-analysis h2 { font-size: 1.4rem; }

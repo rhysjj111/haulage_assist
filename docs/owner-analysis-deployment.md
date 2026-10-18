@@ -147,10 +147,12 @@ entries or changing actual payroll values:
 3. Drivers and Trucks views, their detail popups, and switches between week/month.
    Blank weekends are not absences; actual recorded weekend work remains visible.
 4. Data Checks has one Review action for a check, with the relevant evidence and
-   form together. Grouped missing weekdays retain their individual dates.
+   form together. The compact table retains each missing weekday as its own row.
 5. Fuel price-per-litre/possible-duplicate and payroll warnings show the source
    figures. Essential and optional checks are clearly distinguished, with
-   optional information not blocking sign-off.
+   optional information not blocking sign-off. Weekly review has one Mark as
+   checked/Undo button, with no tickboxes or optional review note. Undo records
+   the revoked sign-off in history and preserves entries and check decisions.
 6. Missing costs and entries remain visible. An awaiting-invoice note retains
    the outstanding fuel cost; a dismissal never supplies a missing cost or
    deletes a receipt. Incomplete figures are not presented as final profit.

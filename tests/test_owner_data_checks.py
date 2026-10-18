@@ -10,8 +10,10 @@ from urllib.parse import parse_qs, urlsplit
 from sqlalchemy import func, select, text
 
 from owner_test_support import OwnerTestCase, db
+from test_owner_unified_review import _ReviewHTML
 from haulage_app.models import Job
 from haulage_app.owner_analysis.models import OwnerIssueVerification, OwnerWeekReview
+from haulage_app.owner_analysis.reviews import save_issue_verification
 
 
 class _Forms(HTMLParser):
@@ -94,7 +96,7 @@ class OwnerDataChecksTests(OwnerTestCase):
         for week in context["weeks"]:
             self.assertEqual(week["forms"]["note"].week_start.data, week["week_start"].isoformat())
             self.assertEqual(week["forms"]["review"].fingerprint.data, week["week_fingerprint"])
-        self.assertIn("Mark week as checked", response.text)
+        self.assertIn("Mark as checked", response.text)
 
     def test_partial_month_only_contains_finished_weeks_and_matching_issue_count(self):
         response, checks = self.get_page("/owner-analysis/checks/monthly?month=2026-10")
@@ -132,7 +134,7 @@ class OwnerDataChecksTests(OwnerTestCase):
                 with self.subTest(base=base, suffix=suffix):
                     response, context = self.get_page(base + suffix)
                     self.assertNotRegex(response.text, r'<form\b[^>]*method=["\']post["\']')
-                    for label in ("Explain or verify this check", "Mark week as checked",
+                    for label in ("Explain or verify this check", "Mark as checked",
                                   "Explanations and verification history", "Review check", "Record Holiday or Absent"):
                         self.assertNotIn(label, response.text)
                     self.assertNotIn("owner_context=", response.text)
@@ -160,11 +162,11 @@ class OwnerDataChecksTests(OwnerTestCase):
         report = context["report"]
         self.assertEqual(report["outstanding_issues"], [])
         self.assertEqual(report["review_status"], "not_reviewed")
-        self.assertIn("Mark week as checked", response.text)
+        self.assertIn("Mark as checked", response.text)
         form = context["weeks"][0]["forms"]["review"]
         payload = {"week_start": "2026-10-03", "fingerprint": form.fingerprint.data,
-                   "review_context": form.review_context.data, "earnings_checked": "on",
-                   "fuel_checked": "on", "payroll_checked": "on", "note": "All sources checked."}
+                   "review_context": form.review_context.data,
+                   "review_id": form.review_id.data, "action": form.action.data}
         response = self.client.post("/owner-analysis/review", data=payload)
         self.assert_target(response, "/owner-analysis/checks", week_start="2026-10-03")
         _, context = self.get_page("/owner-analysis?week_start=2026-10-03")
@@ -246,8 +248,9 @@ class OwnerDataChecksTests(OwnerTestCase):
         self.assertEqual(report["outstanding_issues"], [])
         response = self.client.post("/owner-analysis/review", data={
             "week_start": "2026-10-03", "fingerprint": report["forms"]["review"].fingerprint.data,
-            "earnings_checked": "on", "fuel_checked": "on", "payroll_checked": "on",
-            "note": "Records checked.", "review_context": report["forms"]["review"].review_context.data})
+            "review_id": report["forms"]["review"].review_id.data,
+            "action": report["forms"]["review"].action.data,
+            "review_context": report["forms"]["review"].review_context.data})
         self.assert_target(response, "/owner-analysis/checks/monthly", month="2026-10",
                            week_start="2026-10-03", view="drivers", driver_id="1")
         self.assertEqual(selected_week()["review_status"], "checked")
@@ -306,6 +309,61 @@ class OwnerDataChecksTests(OwnerTestCase):
         self.assertEqual([issue["key"] for issue in overview["report"]["outstanding_issues"]],
                          [issue["key"] for issue in filtered["report"]["outstanding_issues"]])
         self.assertIn("Bob", response.text)
+
+    def test_check_summary_is_title_only_and_rows_keep_subject_check_and_waiting_status(self):
+        self.seed_week()
+        db.session.execute(text("DELETE FROM payslip"))
+        db.session.execute(text("UPDATE day SET fuel = 1 WHERE date = '2026-10-06'"))
+        db.session.commit()
+        _, context = self.get_page("/owner-analysis/checks?week_start=2026-10-03")
+        issue = next(row for row in context["report"]["issues"] if row["code"] == "missing_fuel_receipt")
+        save_issue_verification(self.start, issue["key"], "Provider invoice expected Friday",
+                                issue["fingerprint"], decision="awaiting_invoice", as_of=date(2026, 10, 18))
+        db.session.commit()
+        for page in ("/owner-analysis/checks?week_start=2026-10-03",
+                     "/owner-analysis/checks/monthly?month=2026-10"):
+            with self.subTest(page=page):
+                response, context = self.get_page(page)
+                summary = re.search(r'<section\b[^>]*aria-label="Checks summary"[^>]*>(.*?)</section>',
+                                    response.text, re.S).group(1)
+                count = sum(len(week["outstanding_issues"]) for week in context["weeks"])
+                self.assertIn(f"{count} checks outstanding", summary)
+                self.assertNotRegex(summary, r"<(?:p|form)\b")
+                self.assertNotIn("owner-badge", summary)
+                parsed = _ReviewHTML(response.text)
+                rows = {row["key"]: row for row in parsed.checks}
+                report = next(week for week in context["weeks"] if week["week_start"] == self.start)
+                for current in report["outstanding_issues"]:
+                    row = rows[current["key"]]
+                    self.assertEqual(row["tag"], "tr")
+                    self.assertIn(current["short_subject"], row["text"])
+                    self.assertIn(current["check_label"], row["text"])
+                    self.assertNotIn(current["message"], row["text"])
+                    self.assertNotIn("Needs attention", row["text"])
+                    self.assertNotIn("To review", row["text"])
+                    self.assertEqual(len(row["links"]), 1)
+                    if current.get("date"):
+                        self.assertIn(current["date"].strftime("%A"), row["text"])
+                        self.assertNotIn(current["date"].strftime("%d %b"), row["text"])
+                waiting = rows[issue["key"]]
+                self.assertIn("Awaiting invoice", waiting["text"])
+                self.assertNotIn("Provider invoice expected Friday", waiting["text"],
+                                 "The review page keeps explanations; the list stays compact")
+
+    def test_separate_receipt_checks_for_same_truck_and_day_have_distinct_references(self):
+        self.seed_week()
+        ids = [self.add_fuel(fuel_cost=amount) for amount in (1000, 2000)]
+        response, context = self.get_page("/owner-analysis/checks?week_start=2026-10-03")
+        issues = [issue for issue in context["report"]["outstanding_issues"]
+                  if issue["code"] == "fuel_price_unusual"]
+        self.assertCountEqual([issue["record_id"] for issue in issues], ids)
+        rows = {row["key"]: row for row in _ReviewHTML(response.text).checks}
+        for issue in issues:
+            row = rows[issue["key"]]
+            self.assertIn(f"Receipt #{issue['record_id']}", row["text"])
+            self.assertIn("Monday", row["text"])
+            self.assertEqual(len(row["links"]), 1)
+            self.assertEqual(row["links"][0]["href"], issue["review_url"])
 
     def test_missing_overheads_link_and_settings_form_preserve_monthly_return_to_checks(self):
         self.add_truck()

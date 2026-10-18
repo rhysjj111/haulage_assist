@@ -95,6 +95,8 @@ class OwnerWeeklyPageTests(OwnerTestCase):
                           "fingerprint": settings_context["overhead_form"].fingerprint.data},
             "note": {"week_start": "2026-10-03", "fingerprint": context["report"]["week_fingerprint"],
                      "scope_key": "week_note", "note": "Should not be saved"},
+            "review": {"week_start": "2026-10-03", "fingerprint": context["report"]["week_fingerprint"],
+                       "review_id": "0", "action": "check"},
         }
         app.config["WTF_CSRF_ENABLED"] = True
         try:
@@ -171,18 +173,17 @@ class OwnerWeeklyPageTests(OwnerTestCase):
         self.assertIn("Alice was off &lt;script&gt;", checks_response.text)
         self.assertNotEqual(context["report"]["review_status"], "checked")
 
-    def test_review_requires_each_confirmation_to_be_true_before_creating_signoff(self):
+    def test_review_requires_an_explicit_current_action_before_creating_signoff(self):
         self.seed_week()
         _, context = self.get_page("/owner-analysis?week_start=2026-10-03")
         self.assertEqual(context["report"]["outstanding_issues"], [])
         payload = {
             "week_start": "2026-10-03", "fingerprint": context["report"]["week_fingerprint"],
-            "earnings_checked": "on", "fuel_checked": "on", "payroll_checked": "on",
-            "note": "All source records checked.",
+            "review_id": "0", "action": "check",
         }
-        for field in ("earnings_checked", "fuel_checked", "payroll_checked"):
-            with self.subTest(unchecked=field):
-                response = self.client.post("/owner-analysis/review", data=dict(payload, **{field: "false"}))
+        for invalid in ({"action": ""}, {"action": "unknown"}, {"review_id": ""}, {"review_id": "-1"}):
+            with self.subTest(invalid=invalid):
+                response = self.client.post("/owner-analysis/review", data=dict(payload, **invalid))
                 self.assertEqual(response.status_code, 303)
                 self.assertEqual(OwnerWeekReview.query.count(), 0)
         response = self.client.post("/owner-analysis/review", data=payload)

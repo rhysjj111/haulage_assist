@@ -135,17 +135,21 @@ invalidate a sign-off; optional explanations alone do not.
 Days, payroll and fuel share one timetable: the following Friday through Monday
 (week end +7 through +10 days). Finished weeks with outstanding financial or
 missing-entry checks show **Awaiting records** through that Monday, then **Needs
-review** from Tuesday. The due dates are shown on Data Checks. A complete week
-can be reviewed earlier. Dates never fill missing costs, dismiss a check or
-complete sign-off automatically. Monthly status uses its included completed
+review** from Tuesday. A complete week can be reviewed earlier. Dates never fill
+missing costs, dismiss a check or complete sign-off automatically. Monthly status uses its included completed
 weeks, retaining any overdue week that needs attention.
 
-Data Checks lists each outstanding issue with its subject, a short description
-and one **Review** action. Missing weekdays are grouped by driver within the
-week, with one dated review row for each gap. This presentation keeps each
-check's identity, count and explanation intact. Per-issue entry, verification and absence forms live
-on the selected check's review page. Weekly notes, verification history and
-final weekly review remain on Data Checks. Weekly/monthly links retain the originating driver/truck view;
+Data Checks shows just **X checks outstanding** in its summary. A compact table
+lists **Driver / truck**, **Check** and one **Review** action per actual issue.
+Week dates appear once on the weekly page; monthly checks retain a heading for
+each included week. Rows use weekday names where needed, with record references
+only when otherwise identical rows need distinguishing. Awaiting invoice is
+plain secondary text. Full explanations, saved reasons and badges stay off the
+list and remain available on the selected check's review page. Check identities,
+counts and correction targets are unchanged. Per-issue entry, verification and
+absence forms live on the selected check's review page. Weekly notes, history and
+final weekly review remain on Data Checks. Weekly/monthly links retain the
+originating driver/truck view;
 signed, validated report context returns corrections and settings to the same
 checks period. Only known local reporting routes are valid return destinations.
 Monthly checks and their counts include completed weeks only, matching the
@@ -223,9 +227,17 @@ Split-job allocation edits remain read-only to avoid breaking both allocations.
 Verification and review history is append-only and independent of legacy alert
 dismissals. Actual source-value fingerprints reopen a check or week when relevant
 records change. Missing/added/moved records and same-ID edits are included. A
-finished week requires explicit earnings, fuel and payroll confirmations before
-signoff. No driver, truck or month has a separate signoff. The badge always
-describes the whole period; a partly completed month can be reviewed only through
+finished week has one **Mark as checked** button, enabled only when the week
+has finished and essential checks are resolved. There are no separate earnings,
+fuel or payroll tickboxes and no optional sign-off note input. Once checked, the
+button becomes **Undo**. Undo reopens only that weekly sign-off, preserving all
+source entries, individual issue decisions and previous sign-offs. A structured
+append-only audit event records the exact review revoked; restoring old source
+values cannot revive it. A subsequent check creates a new sign-off. CSRF, source
+fingerprints and the latest review ID reject stale or repeated actions. Separate
+business notes and review history remain collapsed on Data Checks. This toggle
+uses the existing owner tables and requires no additional migration. No driver,
+truck or month has a separate signoff. The badge always describes the whole period; a partly completed month can be reviewed only through
 its last included Friday.
 
 ## Database changes and release

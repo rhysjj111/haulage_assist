@@ -39,8 +39,8 @@ class _ReviewHTML(HTMLParser):
                 self.missing_day_groups.append(group)
                 section['missing_group'] = group
             self.section_stack.append(section)
-        if tag == 'article' and 'data-owner-check-key' in attrs:
-            self.current_check = dict(key=attrs['data-owner-check-key'], links=[], forms=[])
+        if tag in ('article', 'tr') and 'data-owner-check-key' in attrs:
+            self.current_check = dict(key=attrs['data-owner-check-key'], tag=tag, links=[], forms=[], text='')
             self.checks.append(self.current_check)
             group = next((parent['missing_group'] for parent in reversed(self.section_stack)
                           if 'missing_group' in parent), None)
@@ -67,6 +67,8 @@ class _ReviewHTML(HTMLParser):
                 self.current_check['links'].append(attrs)
 
     def handle_data(self, data):
+        if self.current_check is not None:
+            self.current_check['text'] += data
         if self.current_textarea is not None:
             self.current_textarea['value'] += data
 
@@ -88,7 +90,7 @@ class _ReviewHTML(HTMLParser):
             self.current_textarea = None
         if tag == 'form':
             self.current_form = None
-        if tag == 'article':
+        if tag in ('article', 'tr'):
             self.current_check = None
 
     def correction(self, kind):
@@ -169,7 +171,7 @@ class OwnerUnifiedReviewTests(OwnerTestCase):
                 self.assertFalse(post_paths & {'/owner-analysis/verify', '/owner-analysis/absence'})
                 self.assertFalse(any('/add_' in action for action in post_paths))
 
-    def test_missing_weekdays_group_once_per_driver_and_week_without_losing_date_targets_or_counts(self):
+    def test_missing_weekdays_have_one_compact_row_each_without_losing_date_targets_or_counts(self):
         # Both drivers need entries in both completed October payroll weeks.
         db.session.execute(DriverEmploymentHistory.__table__.update().values(end_date=date(2026, 10, 16)))
         db.session.commit()
@@ -182,30 +184,28 @@ class OwnerUnifiedReviewTests(OwnerTestCase):
                 all_issues = []
                 for week in context['weeks']:
                     all_issues.extend(week['outstanding_issues'])
-                    self.assertIn(f"{len(week['outstanding_issues'])} outstanding", response.text)
                     for issue in week['outstanding_issues']:
                         if issue['code'] == 'missing_day':
                             identity = (week['week_start'].isoformat(), issue['driver_id'])
                             expected.setdefault(identity, []).append(issue)
                 self.assertGreaterEqual(len(expected), 2)
-                self.assertEqual(len(html.checks), len(all_issues), 'Grouping must not alter the number of raw checks')
-                identities = [(group['week'], group['driver_id']) for group in html.missing_day_groups]
-                self.assertCountEqual(identities, expected, 'Each driver gets exactly one group in each affected week')
+                self.assertEqual(len(html.checks), len(all_issues), 'Every actual check needs exactly one table row')
+                cards = {card['key']: card for card in html.checks}
                 seen_dates = []
-                for group in html.missing_day_groups:
-                    identity = (group['week'], group['driver_id'])
-                    issues = {issue['key']: issue for issue in expected[identity]}
-                    self.assertCountEqual([card['key'] for card in group['checks']], issues)
-                    for card in group['checks']:
-                        issue = issues[card['key']]
-                        seen_dates.append((group['week'], group['driver_id'], issue['date']))
+                for (week, driver_id), issues in expected.items():
+                    for issue in issues:
+                        card = cards[issue['key']]
+                        seen_dates.append((week, driver_id, issue['date']))
+                        self.assertEqual(card['tag'], 'tr')
+                        self.assertIn(issue['date'].strftime('%A'), card['text'])
+                        self.assertNotIn(issue['message'], card['text'])
                         self.assertLess(issue['date'].weekday(), 5)
                         self.assertEqual(card['forms'], [])
                         self.assertEqual(len(card['links']), 1)
                         self.assertEqual(card['links'][0]['href'], issue.get('review_url', issue['investigation_url']))
                         target = urlsplit(card['links'][0]['href'])
                         self.assertEqual(target.path, '/owner-analysis/checks/investigate')
-                        self.assertEqual(parse_qs(target.query)['week_start'], [group['week']])
+                        self.assertEqual(parse_qs(target.query)['week_start'], [week])
                         self.assertEqual(parse_qs(target.query)['issue_key'], [issue['key']])
                 expected_dates = [(week, driver, issue['date']) for (week, driver), issues in expected.items()
                                   for issue in issues]

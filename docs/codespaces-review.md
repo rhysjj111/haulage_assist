@@ -33,7 +33,7 @@ created. Open those paths on your preview's address:
 | Example | What to look for |
 | --- | --- |
 | Complete example week | Clear financial summary, driver/truck views and an explicit review status. The seeded figures are £9,625 earnings, £3,128 employer wage cost, £1,490 fuel, £1,400 overheads and £3,607 estimated result. |
-| Checks to practise | Each item has one **Review** button. Open a missing day, payslip, fuel receipt or unusual job amount to inspect the week and enter a correction on the same page. Missing fuel also offers **The fuel tick was a mistake**. |
+| Checks to practise | A compact Driver / truck, Check and Review table has one **Review** link per issue. Open a missing day, payslip, fuel receipt or unusual job amount to inspect the week and enter a correction on the same page. Missing fuel also offers **The fuel tick was a mistake**. |
 | Duplicate payslip example | Compare both entries, edit an existing payslip's amounts, explicitly confirm a duplicate removal, or verify genuinely separate payslips with an explanation. |
 | Previous month | Whole payroll weeks, monthly totals and review status. |
 | Current partial week | Only entries due so far; later dates remain outside the figures. If you create the preview at a weekend, there may be no Working days yet. |
@@ -68,6 +68,13 @@ and do not affect the main count or final weekly review.
 Days, fuel and payroll use the following Friday–Monday review window. Outstanding
 records show **Awaiting records** through Monday, then **Needs review**. A ready
 week can be signed off earlier. Monthly checks use completed payroll weeks only.
+
+On the complete example week, click **Mark as checked**. The button changes to
+**Undo**; click it to reopen the weekly review, then check the week again. No
+tickboxes or optional sign-off note are needed. Open **History** to see both the
+original review and its undo record. Source entries and per-check decisions are
+preserved. A stale page cannot undo a newer sign-off. Separate business-week
+notes remain available under a collapsed link.
 
 When updating an existing preview, stop the server with **Ctrl+C**, then run:
 

@@ -1,7 +1,7 @@
 {% extends 'std_template.html' %}
 {% macro badge(state) -%}<span class="owner-badge owner-badge-{{ state }}">{{ {'checked': 'Checked', 'needs_review': 'Needs review', 'awaiting_records': 'Awaiting records', 'not_reviewed': 'Not reviewed', 'outdated': 'Review out of date', 'in_progress': 'In progress', 'future': 'Future period'}[state]|default(state|replace('_', ' ')|capitalize) }}</span>{%- endmacro %}
 {% macro csrf(form, unique_id) -%}{% if form.csrf_token is defined %}{{ form.csrf_token(id=unique_id) }}{% endif %}{%- endmacro %}
-{% macro hidden(form, prefix) -%}{% for field in form %}{% if field.type in ['HiddenField', 'CSRFTokenField'] %}{{ field(id=prefix ~ '-' ~ field.name) }}{% endif %}{% endfor %}{%- endmacro %}
+{% macro hidden(form, prefix) -%}{% for field in form %}{% if field.type in ['HiddenField', 'CSRFTokenField'] or field.widget.input_type|default('') == 'hidden' %}{{ field(id=prefix ~ '-' ~ field.name) }}{% endif %}{% endfor %}{%- endmacro %}
 {% block standard_title %}<span class="owner-page-title">Data Checks</span>{% endblock %}
 {% block standard_content %}
 {% include 'owner_analysis/_styles.html' %}
@@ -13,7 +13,6 @@
       <a href="{{ monthly_url }}"{% if period == 'monthly' %} aria-current="page"{% endif %}>Monthly</a>
     </div>
   </div>
-  <p class="owner-muted">Review the entries behind the figures, make corrections and record what has been checked.</p>
   <form class="owner-filter" method="get" action="{{ filter_action }}">
     {% for name, value in filter_fields.items() %}{% if name != ('week_start' if period == 'weekly' else 'month') %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endif %}{% endfor %}
     {% if period == 'weekly' %}
@@ -45,12 +44,8 @@
     {% endif %}
   </div>
   {% set totals = namespace(outstanding=0) %}{% for week in weeks %}{% set totals.outstanding = totals.outstanding + week.outstanding_issues|length %}{% endfor %}
-  <section class="owner-card" aria-label="Checks summary">
-    <div class="owner-card-heading"><h2>{{ totals.outstanding }} {{ 'check' if totals.outstanding == 1 else 'checks' }} outstanding</h2>{% if recent_completed_url %}<a href="{{ recent_completed_url }}">Latest completed week</a>{% endif %}</div>
-    <p class="owner-muted owner-small">Checks cover the whole business for this period. Your driver or truck selection is kept when you return to Owner Analysis.</p>
-    <p class="owner-muted owner-small">Zero outstanding checks does not automatically mark a week as checked. Confirm the underlying earnings, fuel receipts and payroll before completing each weekly review.</p>
-    <p class="owner-muted owner-small">Optional mileage and truck details are under Other checks within each week. They do not add to this count or prevent sign-off.</p>
-    {% if period == 'monthly' %}<p class="owner-muted owner-small">Only completed Saturday–Friday payroll weeks are included, matching the monthly figures. Each week is reviewed separately.</p>{% endif %}
+  <section class="owner-card owner-checks-total" aria-label="Checks summary">
+    <h2>{{ totals.outstanding }} {{ 'check' if totals.outstanding == 1 else 'checks' }} outstanding</h2>
   </section>
 
   {% for week in weeks %}{% include 'owner_analysis/_weekly_checks.html' %}{% else %}

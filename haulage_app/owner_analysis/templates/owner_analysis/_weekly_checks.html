@@ -1,52 +1,44 @@
 {% set week_id = week.week_start.isoformat() %}
 {% set note_form = week.forms.note %}
 {% set review_form = week.forms.review %}
-<section class="owner-card" id="week-{{ week_id }}" aria-labelledby="week-heading-{{ week_id }}">
+<section class="owner-card owner-week-checks" id="week-{{ week_id }}" aria-labelledby="week-heading-{{ week_id }}">
+  {% if period == 'monthly' %}
   <div class="owner-week-heading">
     <h2 id="week-heading-{{ week_id }}">{{ week.week_start.strftime('%d %b %Y') }} – {{ week.week_end.strftime('%d %b %Y') }}</h2>
     {{ badge(week.review_status) }}
   </div>
-  {% if week.period_state == 'finished' and week.review_status != 'checked' %}
-  <p class="owner-muted owner-small">Usual review: {{ week.review_window_start.strftime('%a %d %b') }} – {{ week.review_due_date.strftime('%a %d %b %Y') }}.{% if week.review_overdue and week.outstanding_issues %} <strong>Records are overdue for review.</strong>{% elif week.outstanding_issues %} Records may still be arriving.{% endif %} You can complete the review earlier once the records are ready.</p>
-  {% endif %}
-  <div class="owner-card-heading"><h3>Outstanding checks</h3><span class="owner-badge">{{ week.outstanding_issues|length }} outstanding</span></div>
-  {% if week.outstanding_issues %}<p class="owner-muted owner-small">Financial and missing-entry checks. Changes to records or settings can reopen a check.</p>{% endif %}
-  {% set missing_groups = namespace(drivers=[]) %}
-  {% for issue in week.outstanding_issues %}
-  {% set issue_id = week_id ~ '-' ~ loop.index %}
-  {% if issue.code == 'missing_day' %}
-    {% if issue.driver_id not in missing_groups.drivers %}
-      {% set missing_groups.drivers = missing_groups.drivers + [issue.driver_id] %}
-      {% set missing_days = week.outstanding_issues|selectattr('code', 'equalto', 'missing_day')|selectattr('driver_id', 'equalto', issue.driver_id)|list %}
-      <section class="owner-check-group" data-owner-missing-days-driver="{{ issue.driver_id }}" aria-labelledby="missing-days-{{ week_id }}-{{ issue.driver_id }}">
-        <div class="owner-card-heading"><h3 id="missing-days-{{ week_id }}-{{ issue.driver_id }}">{{ issue.driver_name|default(week.driver_names.get(issue.driver_id, 'Driver ' ~ issue.driver_id), true) }} · Missing day entries</h3><span class="owner-badge owner-badge-needs_review">{{ missing_days|length }} {{ 'weekday' if missing_days|length == 1 else 'weekdays' }}</span></div>
-        <p class="owner-muted owner-small">Add the working day or confirm Holiday/Absent for each date.</p>
-        {% for missing in missing_days %}
-          {% with issue=missing, issue_id=week_id ~ '-day-' ~ missing.driver_id ~ '-' ~ missing.date.isoformat(), compact_missing_day=true %}{% include 'owner_analysis/_check_summary.html' %}{% endwith %}
-        {% endfor %}
-      </section>
-    {% endif %}
-  {% else %}
-    {% include 'owner_analysis/_check_summary.html' %}
-  {% endif %}
-  {% else %}
-  <p>No outstanding checks for this week.{% if week.review_status == 'checked' %} This week has been reviewed.{% elif week.period_state == 'finished' %} It still needs an explicit final review.{% else %} Final review is available after the week ends.{% endif %}</p>
-  {% endfor %}
+  {% else %}<h2 class="owner-sr-only" id="week-heading-{{ week_id }}">Outstanding checks</h2>{% endif %}
+  {% if week.outstanding_issues %}
+  <div class="owner-table-wrap">
+    <table class="owner-check-table" aria-label="Outstanding checks{% if period == 'monthly' %} for week starting {{ week.week_start.strftime('%d %b %Y') }}{% endif %}">
+      <thead><tr><th scope="col">Driver / truck</th><th scope="col">Check</th><th scope="col"><span class="owner-sr-only">Action</span></th></tr></thead>
+      <tbody>{% for issue in week.outstanding_issues %}{% with issue_id=week_id ~ '-' ~ loop.index %}{% include 'owner_analysis/_check_summary.html' %}{% endwith %}{% endfor %}</tbody>
+    </table>
+  </div>
+  {% else %}<p class="owner-muted">No outstanding checks.</p>{% endif %}
 
   {% if week.optional_issues %}
   <details class="owner-optional-checks" data-owner-optional-checks>
     <summary>Other checks ({{ week.optional_issues|length }})</summary>
-    <p class="owner-muted owner-small">Mileage and truck-assignment details. These do not affect the outstanding count or prevent weekly sign-off.</p>
-    {% for issue in week.optional_issues %}
-      {% with issue_id=week_id ~ '-optional-' ~ loop.index %}{% include 'owner_analysis/_check_summary.html' %}{% endwith %}
-    {% endfor %}
+    <div class="owner-table-wrap">
+      <table class="owner-check-table" aria-label="Other checks{% if period == 'monthly' %} for week starting {{ week.week_start.strftime('%d %b %Y') }}{% endif %}">
+        <thead><tr><th scope="col">Driver / truck</th><th scope="col">Check</th><th scope="col"><span class="owner-sr-only">Action</span></th></tr></thead>
+        <tbody>{% for issue in week.optional_issues %}{% with issue_id=week_id ~ '-optional-' ~ loop.index %}{% include 'owner_analysis/_check_summary.html' %}{% endwith %}{% endfor %}</tbody>
+      </table>
+    </div>
   </details>
   {% endif %}
 
-  <div class="owner-issue" id="review-{{ week_id }}">
-    <h3>Weekly notes and review</h3>
+  <div class="owner-week-review" id="review-{{ week_id }}">
+    {% if review_form and week.period_state == 'finished' %}
+    <form class="owner-week-review-form" method="post" action="{{ url_for('owner_analysis.review_week') }}">
+      {{ hidden(review_form, 'week-review-' ~ week_id) }}
+      <button type="submit" class="owner-button{% if week.review_status == 'checked' %} owner-button-secondary{% endif %}"{% if week.review_status != 'checked' and (week.outstanding_issues or week.period_state != 'finished') %} disabled{% endif %}>{% if week.review_status == 'checked' %}Undo{% else %}Mark as checked{% endif %}</button>
+    </form>
+    {% endif %}
+    {% if week.reviewed_at_label|default('') and week.review_status == 'checked' %}<p class="owner-muted owner-small">Reviewed {{ week.reviewed_at_label }}.</p>{% endif %}
     {% if note_form %}
-    <details><summary>Add a note for this week</summary>
+    <details><summary>Add a week note</summary>
       <form method="post" action="{{ url_for('owner_analysis.week_note') }}">
         {{ hidden(note_form, 'week-note-' ~ week_id) }}
         <label for="week-note-text-{{ week_id }}">Brief note</label>{{ note_form.note(id='week-note-text-' ~ week_id) }}
@@ -54,25 +46,8 @@
       </form>
     </details>
     {% endif %}
-    {% if week.period_state == 'finished' %}
-      {% if review_form %}
-      <form method="post" action="{{ url_for('owner_analysis.review_week') }}">
-        {{ hidden(review_form, 'week-review-' ~ week_id) }}
-        <p>Confirm that you have checked the underlying records before marking this week as checked.</p>
-        <label class="owner-checkbox" for="earnings-checked-{{ week_id }}">{{ review_form.earnings_checked(id='earnings-checked-' ~ week_id) }}<span>Earnings checked</span></label>
-        <label class="owner-checkbox" for="fuel-checked-{{ week_id }}">{{ review_form.fuel_checked(id='fuel-checked-' ~ week_id) }}<span>Fuel receipts checked</span></label>
-        <label class="owner-checkbox" for="payroll-checked-{{ week_id }}">{{ review_form.payroll_checked(id='payroll-checked-' ~ week_id) }}<span>Payroll checked</span></label>
-        <label for="week-review-text-{{ week_id }}">Review note (optional)</label>{{ review_form.note(id='week-review-text-' ~ week_id) }}
-        <button type="submit" class="owner-button"{% if week.outstanding_issues %} disabled{% endif %}>Mark week as checked</button>
-        {% if week.outstanding_issues %}<p class="owner-muted owner-small">Resolve or verify the outstanding checks before completing the review.</p>{% endif %}
-      </form>
-      {% endif %}
-    {% elif week.period_state == 'future' %}<p class="owner-muted">This payroll week has not started. It cannot be marked as checked.</p>
-    {% else %}<p class="owner-muted">This week can be reviewed after its final Friday has finished.</p>{% endif %}
-    {% if week.reviewed_at_label|default('') %}<p class="owner-muted owner-small">Reviewed {{ week.reviewed_at_label }}.</p>{% endif %}
-    {% if week.week_review_outdated|default(false) %}<p class="owner-notice">Records or settings have changed since the last review. Check the updated figures and review this week again.</p>{% endif %}
     {% if week.verification_history %}
-    <details><summary>Explanations and verification history</summary>
+    <details><summary>History</summary>
       {% for entry in week.verification_history %}
       <div class="owner-history-entry">
         <p class="owner-small owner-muted">{{ entry.label|default(entry.decision|default('Note')) }}{% if entry.decision_label|default('') %} · {{ entry.decision_label }}{% endif %}{% if entry.context_label|default('') %} · {{ entry.context_label }}{% endif %}{% if entry.created_at_label|default('') %} · {{ entry.created_at_label }}{% endif %}{% if entry.status|default('') %} · {{ entry.status|replace('_', ' ')|capitalize }}{% endif %}</p>
