@@ -1169,14 +1169,15 @@ from datetime import datetime
     </div>
 {% endmacro %}
 
-{% macro navigation() %}
-  {% if request.path.count('/') > 1 %}
+{% macro navigation(force_menu=false) %}
+  {% if request.path.count('/') > 1 and not force_menu %}
   <a href="{{ url_for('home') }}" class="valign-wrapper" style="text-decoration: none; color: inherit;">
     <i class="small material-icons black-text">arrow_back</i>
     <span style="font-size: 0.8rem; color: #757575; margin-left: 2px;">Home</span>
 </a>
   {% else %}
     <ul id="slide-out" class="sidenav">
+        {% if force_menu %}<li><a href="{{ url_for('home') }}"><i class="material-icons">home</i>Home</a></li>{% endif %}
         <!-- <li>
             <div class="user-view">
                 <div class="background">
@@ -1214,7 +1215,7 @@ from datetime import datetime
         </li>
 
     </ul>
-    <a href="#" data-target="slide-out" class="sidenav-trigger material-icons "><i class="small material-icons black-text">menu</i></a>
+    <a href="#" data-target="slide-out" class="sidenav-trigger material-icons "{% if force_menu %} aria-label="Open navigation menu"{% endif %}><i class="small material-icons black-text">menu</i></a>
   {% endif %}
 {% endmacro %}
 

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% set owner_navigation_menu = true %}
 {% set record_label = {'day': 'day', 'job': 'job', 'fuel': 'fuel receipt', 'payslip': 'payslip', 'fuel_flag': 'fuel marker'}[kind] %}
 {% set correction_title = 'Review duplicate payslips' if mode == 'group' else 'Review split job' if split_read_only else 'Clear mistaken fuel marker' if kind == 'fuel_flag' else ('Add ' if mode == 'add' else 'Correct ') ~ record_label %}
 {% block header %}<h4>{{ correction_title }}</h4>{% endblock %}
