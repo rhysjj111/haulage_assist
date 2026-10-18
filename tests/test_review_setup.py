@@ -1,7 +1,7 @@
 """Preview setup stays on disposable data and provides useful review scenarios."""
 
 import builtins
-from contextlib import nullcontext, redirect_stderr
+from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from datetime import date, timedelta
 from io import StringIO
 from pathlib import Path
@@ -14,6 +14,8 @@ from sqlalchemy import create_engine, event, inspect, select, text
 
 from owner_test_support import OwnerTestCase, db
 from haulage_app.models import Day, Driver, Fuel, Job, Payslip
+from haulage_app.owner_analysis.models import OwnerOverheadSetting
+from haulage_app.verification.models import Anomaly, IncorrectMileage, MissingEntryAnomaly
 from haulage_app.owner_analysis.calculations import calculate_weekly_report
 from tools import setup_review
 
@@ -120,6 +122,32 @@ class ReviewTargetSafetyTests(unittest.TestCase):
                 if configured == remote:
                     imported_app.app_context.assert_not_called()
 
+    def test_successful_setup_and_guarded_cleanup_exit_successfully_with_clear_messages(self):
+        periods = setup_review.review_dates(date(2026, 10, 21))
+        cases = (
+            (dict(seeded=True, **periods), "Created an isolated review database"),
+            (dict(seeded=False, sample_weekends_removed=8, sample_weekends_cleanup_skipped=False),
+             "Removed 8 unchanged synthetic weekend absences"),
+            (dict(seeded=False, sample_weekends_removed=0, sample_weekends_cleanup_skipped=True),
+             "Sample weekend cleanup skipped"),
+            (dict(seeded=False, sample_weekends_removed=0, sample_weekends_cleanup_skipped=False),
+             "All records and edits were preserved"),
+        )
+        imported_module = ModuleType("haulage_app")
+        imported_module.app = SimpleNamespace(
+            config={"SQLALCHEMY_DATABASE_URI": REVIEW_URL}, app_context=lambda: nullcontext())
+        imported_module.db = SimpleNamespace(metadata=Mock(), engine=SimpleNamespace(
+            url=SimpleNamespace(render_as_string=lambda **kwargs: REVIEW_URL),
+            begin=lambda: nullcontext(Mock()),
+        ))
+        for result, message in cases:
+            with self.subTest(message=message), patch.dict("sys.modules", {"haulage_app": imported_module}):
+                with patch.dict("os.environ", self.environment(), clear=True):
+                    with patch.object(setup_review, "setup_review_database", return_value=result):
+                        with redirect_stdout(StringIO()) as output:
+                            self.assertEqual(setup_review.main(), 0)
+                self.assertIn(message, output.getvalue())
+
 
 class ReviewSampleDataTests(OwnerTestCase):
     today = date(2026, 10, 21)
@@ -149,6 +177,135 @@ class ReviewSampleDataTests(OwnerTestCase):
         self.assertTrue({"missing_day", "missing_payslip", "missing_fuel_receipt",
                          "job_amount_out_of_range"} <= codes)
         self.assertIsNone(report["estimated_operating_result"])
+
+    def test_normal_weekends_are_blank_and_occasional_saturday_work_is_recorded(self):
+        self.seed()
+        periods = setup_review.review_dates(self.today)
+        clean_days = db.session.execute(select(Day).where(
+            Day.date.between(periods["clean_week"], periods["clean_week"] + timedelta(days=6)))).scalars().all()
+        self.assertEqual(len(clean_days), 20)
+        self.assertTrue(all(day.date.weekday() < 5 for day in clean_days))
+        saturday = db.session.execute(select(Day).where(
+            Day.date == periods["issue_week"])).scalars().all()
+        self.assertEqual(len(saturday), 1)
+        self.assertEqual(saturday[0].status, "working")
+        self.assertEqual(len(saturday[0].jobs), 2)
+        self.assertEqual(len(saturday[0].fuel_entries), 1)
+
+    def legacy_weekend_rows(self):
+        """Recreate only the old fixture's erroneous empty weekend records."""
+        self.seed()
+        stamp = db.session.get(Driver, 1).timestamp
+        # PostgreSQL's CURRENT_TIMESTAMP is one value for the seed transaction;
+        # SQLite's second-resolution clock can tick during a fixture insertion.
+        for name in ("driver", "truck", "driver_employment_history", "day", "job", "fuel", "payslip"):
+            table = db.metadata.tables[name]
+            db.session.execute(table.update().values(timestamp=stamp))
+        current = setup_review.review_dates(self.today)["first_week"]
+        ids = []
+        while current <= self.today:
+            if current.weekday() >= 5:
+                for driver_id in range(1, 5):
+                    exists = db.session.execute(select(Day.id).where(
+                        Day.date == current, Day.driver_id == driver_id)).first()
+                    if exists:
+                        continue
+                    ids.append(db.session.execute(Day.__table__.insert().returning(Day.id), dict(
+                        date=current, driver_id=driver_id, truck_id=None, status="absent",
+                        overnight=False, fuel=False, start_mileage=0, end_mileage=0,
+                        additional_earned=0, additional_wages=0, timestamp=stamp)).scalar_one())
+            current += timedelta(days=1)
+        db.session.commit()
+        return ids
+
+    def test_existing_original_sample_weekend_cleanup_is_idempotent(self):
+        legacy_ids = self.legacy_weekend_rows()
+        clean = setup_review.review_dates(self.today)["clean_week"]
+        before = calculate_weekly_report(clean, as_of=self.today)
+        result = setup_review.setup_review_database(
+            db.session.connection(), db.metadata, today=self.today)
+        db.session.commit()
+        self.assertFalse(result["seeded"])
+        self.assertFalse(result["sample_weekends_cleanup_skipped"])
+        self.assertEqual(result["sample_weekends_removed"], len(legacy_ids))
+        self.assertEqual(db.session.execute(select(Day.id).where(Day.id.in_(legacy_ids))).all(), [])
+        after = calculate_weekly_report(clean, as_of=self.today)
+        for key in ("earnings", "employer_cost", "fuel_spending", "overheads", "estimated_operating_result"):
+            self.assertEqual(after[key], before[key])
+        second = setup_review.setup_review_database(
+            db.session.connection(), db.metadata, today=self.today + timedelta(days=30))
+        self.assertEqual(second["sample_weekends_removed"], 0)
+        self.assertFalse(second["sample_weekends_cleanup_skipped"])
+
+    def test_cleanup_preserves_modified_weekend_entries_and_unrelated_user_changes(self):
+        legacy_ids = self.legacy_weekend_rows()
+        changes = ({"status": "holiday"}, {"status": "working"}, {"truck_id": 1},
+                   {"overnight": True}, {"fuel": True}, {"start_mileage": 1},
+                   {"end_mileage": 1}, {"additional_earned": 1}, {"additional_wages": 1},
+                   {"timestamp": date(2020, 1, 1)})
+        protected = legacy_ids[:len(changes)]
+        for identifier, values in zip(protected, changes):
+            db.session.execute(Day.__table__.update().where(Day.id == identifier).values(**values))
+        # User changes elsewhere must not block cleanup or be reset.
+        selected_job = db.session.execute(select(Job.id).order_by(Job.id).limit(1)).scalar_one()
+        db.session.execute(Job.__table__.update().where(Job.id == selected_job).values(earned=77777))
+        db.session.execute(OwnerOverheadSetting.__table__.update().values(allowance_per_truck=99999))
+        db.session.commit()
+        result = setup_review.setup_review_database(
+            db.session.connection(), db.metadata, today=self.today)
+        db.session.commit()
+        self.assertEqual(result["sample_weekends_removed"], len(legacy_ids) - len(protected))
+        self.assertEqual(set(db.session.execute(select(Day.id).where(Day.id.in_(legacy_ids))).scalars()),
+                         set(protected))
+        self.assertEqual(db.session.get(Job, selected_job).earned, 77777)
+        self.assertEqual(set(db.session.execute(select(OwnerOverheadSetting.allowance_per_truck)).scalars()),
+                         {99999})
+
+    def test_cleanup_preserves_weekend_rows_with_job_fuel_or_payslip_links(self):
+        legacy_ids = self.legacy_weekend_rows()
+        self.add_job(legacy_ids[0], earned=123)
+        self.add_fuel(day_id=legacy_ids[1])
+        self.add_payslip(day_id=legacy_ids[2], on_date=self.today + timedelta(days=90))
+        result = setup_review.setup_review_database(
+            db.session.connection(), db.metadata, today=self.today)
+        db.session.commit()
+        self.assertEqual(result["sample_weekends_removed"], len(legacy_ids) - 3)
+        self.assertEqual(set(db.session.execute(select(Day.id).where(Day.id.in_(legacy_ids))).scalars()),
+                         set(legacy_ids[:3]))
+
+    def test_cleanup_preserves_all_legacy_anomaly_day_references(self):
+        legacy_ids = self.legacy_weekend_rows()
+        dates = dict(db.session.execute(select(Day.id, Day.date).where(Day.id.in_(legacy_ids[:3]))).all())
+        db.session.execute(Anomaly.__table__.insert(), dict(id=10000, type="missing_entry"))
+        db.session.execute(MissingEntryAnomaly.__table__.insert(), dict(
+            id=10000, date=dates[legacy_ids[0]], driver_id=1, truck_id=None,
+            day_id=legacy_ids[0], table_name="JOB"))
+        db.session.execute(Anomaly.__table__.insert(), dict(id=10001, type="incorrect_mileage"))
+        db.session.execute(IncorrectMileage.__table__.insert(), dict(
+            id=10001, previous_date=dates[legacy_ids[1]], next_date=dates[legacy_ids[2]],
+            previous_end_mileage=0, next_start_mileage=0, truck_id=1,
+            previous_day_id=legacy_ids[1], next_day_id=legacy_ids[2]))
+        db.session.commit()
+        result = setup_review.setup_review_database(
+            db.session.connection(), db.metadata, today=self.today)
+        db.session.commit()
+        self.assertEqual(result["sample_weekends_removed"], len(legacy_ids) - 3)
+        self.assertEqual(set(db.session.execute(select(Day.id).where(Day.id.in_(legacy_ids))).scalars()),
+                         set(legacy_ids[:3]))
+        self.assertEqual(db.session.execute(select(MissingEntryAnomaly.day_id)).scalar_one(), legacy_ids[0])
+        mileage = db.session.execute(select(IncorrectMileage.previous_day_id, IncorrectMileage.next_day_id)).one()
+        self.assertEqual(tuple(mileage), tuple(legacy_ids[1:3]))
+
+    def test_cleanup_refuses_an_unrecognised_fixture_and_preserves_all_records(self):
+        legacy_ids = self.legacy_weekend_rows()
+        db.session.execute(Driver.__table__.update().where(Driver.id == 1).values(first_name="Real"))
+        db.session.commit()
+        result = setup_review.setup_review_database(
+            db.session.connection(), db.metadata, today=self.today)
+        self.assertTrue(result["sample_weekends_cleanup_skipped"])
+        self.assertEqual(result["sample_weekends_removed"], 0)
+        self.assertEqual(len(db.session.execute(select(Day.id).where(Day.id.in_(legacy_ids))).all()),
+                         len(legacy_ids))
 
     def test_payslip_seed_omits_database_generated_week_column(self):
         payslip_inserts = []

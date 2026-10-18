@@ -60,6 +60,33 @@ class OwnerInvestigationDataTests(OwnerTestCase):
         self.assertEqual(len(context["days"][0]["entries"][0]["jobs"]), 2)
         self.assertEqual(basis, original)
 
+    def test_blank_weekends_are_not_scheduled_or_missing_but_weekdays_still_are(self):
+        context = self.week_context()
+        self.assertEqual([row["label"] for row in context["days"][:2]],
+                         ["Not scheduled", "Not scheduled"])
+        self.assertTrue(all(row["is_non_working_day"] for row in context["days"][:2]))
+        self.assertEqual(context["summary"]["missing_days"], 5)
+        self.assertEqual(context["summary"]["absent_days"], 0)
+        self.assertEqual(context["days"][2]["label"], "No entry")
+
+    def test_recorded_weekend_work_and_explicit_absence_remain_in_the_week(self):
+        saturday = self.add_day(on_date=self.start, additional_earned=100)
+        self.add_job(saturday, earned=12345)
+        self.add_day(on_date=self.start + timedelta(days=1), status="absent")
+        context = self.week_context()
+        self.assertEqual(context["days"][0]["label"], "Working")
+        self.assertEqual(context["days"][1]["label"], "Absent")
+        self.assertEqual(context["summary"]["working_days"], 1)
+        self.assertEqual(context["summary"]["absent_days"], 1)
+        self.assertEqual(context["summary"]["earnings"], 12445)
+        self.assertEqual(context["summary"]["missing_days"], 5)
+
+    def test_future_weekends_are_not_yet_due_and_never_missing(self):
+        context = self.week_context(as_of=self.start - timedelta(days=1))
+        self.assertEqual(context["days"][0]["label"], "Not yet due")
+        self.assertEqual(context["days"][1]["label"], "Not yet due")
+        self.assertEqual(context["summary"]["missing_days"], 0)
+
     def test_future_dated_actual_records_are_excluded_from_context(self):
         past_day = self.add_day(on_date=self.start, additional_earned=101)
         self.add_job(past_day, earned=200)
@@ -73,7 +100,7 @@ class OwnerInvestigationDataTests(OwnerTestCase):
         self.assertEqual(context["days"][4]["label"], "Not yet due")
         self.assertEqual(context["days"][4]["entries"], [])
         self.assertIsNone(context["days"][4]["earnings"])
-        self.assertEqual(context["summary"]["missing_days"], 2)
+        self.assertEqual(context["summary"]["missing_days"], 1)
 
     def test_all_week_payslips_are_shown_by_date_with_selected_highlights(self):
         day = self.add_day(on_date=self.start)

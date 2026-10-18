@@ -5,7 +5,7 @@ from decimal import Decimal
 import re
 from zoneinfo import ZoneInfo
 
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import abort, flash, make_response, redirect, render_template, request, url_for
 from sqlalchemy.exc import IntegrityError
 
 from haulage_app import db
@@ -30,6 +30,7 @@ from haulage_app.owner_analysis.navigation import (
     read_review_context, review_context_for,
 )
 from haulage_app.owner_analysis.investigation import build_week_context
+from haulage_app.owner_analysis.entity_details import build_entity_details
 from haulage_app.owner_analysis.reviews import (
     get_reviewed_week, save_issue_verification, save_week_note, save_week_review,
 )
@@ -227,24 +228,24 @@ def _analysis_context(report, view, selected_id, *, selected_month=None, chosen_
     breakdown = None
     if view != "overview":
         kind = "driver" if view == "drivers" else "truck"
-        selected_label = None
         if selected_id is not None:
             view_args[f"{kind}_id"] = selected_id
-            row = report[view].get(selected_id)
-            if row is not None:
-                selected_label = row["driver_name" if kind == "driver" else "truck_registration"]
-            else:
+            if selected_id not in report[view]:
                 with db.session.no_autoflush:
                     entity = db.session.get(Driver if kind == "driver" else Truck, selected_id)
                 if entity is None:
                     abort(404, description="That driver or truck could not be found.")
-                selected_label = entity.full_name if kind == "driver" else entity.registration
-        breakdown = build_breakdown(report, kind, selected_id=selected_id, selected_label=selected_label)
+        # Old bookmarked selections still validate and retain signed return
+        # context, but the owner now sees every card and opens details directly.
+        breakdown = build_breakdown(report, kind)
         weeks = report["weeks"] if monthly_view else [report]
         breakdown["weekly_links"] = [{"week_start": item["week_start"], "week_end": item["week_end"],
             "review_status": item["review_status"], "url": url_for("owner_analysis.weekly", week_start=item["week_start"].isoformat())} for item in weeks]
-        breakdown["filter_action"] = url_for(endpoint)
-        breakdown["filter_fields"] = dict(period_args, view=view)
+        detail_args = {"month": selected_month, "return_week": chosen_week.isoformat()} if monthly_view else {
+            "week_start": report["week_start"].isoformat()}
+        for row in breakdown["rows"]:
+            row["details_url"] = url_for("owner_analysis.entity_details", kind=kind,
+                subject_id=row[f"{kind}_id"], **detail_args)
     week = chosen_week if monthly_view else report["week_start"]
     token = review_context or review_context_for("monthly" if monthly_view else "weekly", week,
         month=selected_month if monthly_view else None, view=view, selected_id=selected_id)
@@ -364,6 +365,63 @@ def monthly():
 @owner_analysis_bp.route("/owner-analysis/checks/monthly", methods=["GET"])
 def monthly_checks():
     return _monthly_response(checks_page=True)
+
+
+@owner_analysis_bp.route("/owner-analysis/details/<kind>/<int:subject_id>", methods=["GET"])
+def entity_details(kind, subject_id):
+    if kind not in {"driver", "truck"} or not 1 <= subject_id <= 2147483647:
+        abort(404, description="That driver or truck could not be found.")
+    allowed = {"week_start", "month", "return_week"}
+    if set(request.args) - allowed or any(len(request.args.getlist(key)) != 1 for key in request.args):
+        abort(400, description="Reopen the summary from Owner Analysis.")
+    today = today_london()
+    view = "drivers" if kind == "driver" else "trucks"
+    try:
+        if "month" in request.args:
+            if "week_start" in request.args or re.fullmatch(r"[0-9]{4}-[0-9]{2}", request.args["month"]) is None:
+                raise ValueError("Please select one valid payroll month.")
+            month = date.fromisoformat(request.args["month"] + "-01")
+            starts = payroll_weeks_for_month(month.year, month.month)
+            week_end(starts[-1])
+            complete = [start for start in starts if week_end(start) < today]
+            remembered = next((start for start in starts if start <= today <= week_end(start)),
+                              complete[-1] if complete else starts[0])
+            if "return_week" in request.args:
+                raw = request.args["return_week"]
+                if re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", raw) is None:
+                    raise ValueError("Please select a valid return week.")
+                remembered = _parse_week(raw)
+                if remembered not in starts:
+                    raise ValueError("The return week must belong to the selected payroll month.")
+            arguments = {"month": month, "as_of": today}
+            back_url = url_for("owner_analysis.monthly", month=_month_key(month),
+                               week_start=remembered.isoformat(), view=view)
+        else:
+            if "return_week" in request.args:
+                raise ValueError("A return week requires a payroll month.")
+            raw = request.args.get("week_start", payroll_week_start(today).isoformat())
+            if re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", raw) is None:
+                raise ValueError("Please select a valid payroll week.")
+            week = _parse_week(raw, normalize=True)
+            week_end(week)
+            arguments = {"week_start": week, "as_of": today}
+            back_url = url_for("owner_analysis.weekly", week_start=week.isoformat(), view=view)
+    except (ValueError, TypeError, OverflowError) as exc:
+        abort(400, description=str(exc))
+    # Only the clicked entity and selected period are loaded. Rendering also
+    # runs under this guard because the shared notification processor queries.
+    with db.session.no_autoflush:
+        try:
+            details = build_entity_details(kind, subject_id, **arguments)
+        except LookupError:
+            abort(404, description="That driver or truck could not be found.")
+        except (ValueError, OverflowError) as exc:
+            abort(400, description=str(exc))
+        template = "owner_analysis/_entity_details.html" if request.headers.get("X-Requested-With") == "XMLHttpRequest" else "owner_analysis/entity_details.html"
+        response = make_response(render_template(template, details=details, back_url=back_url))
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Vary"] = "X-Requested-With"
+    return response
 
 
 @owner_analysis_bp.route("/owner-analysis/checks/investigate", methods=["GET"])

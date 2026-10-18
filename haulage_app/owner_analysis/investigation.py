@@ -48,7 +48,8 @@ def build_week_context(week, basis, *, driver_id=None, truck_id=None, on_date=No
                        target_type=None, target_id=None, as_of=None, include_nearby=False):
     """Return seven dated rows plus actual payslips for a Saturday–Friday week.
 
-    Missing dates are unknown, including weekends; future dates are not yet due.
+    Blank weekends are not scheduled; missing weekdays remain unknown. Future
+    dates are not yet due. Recorded weekend work and statuses are kept as entered.
     Driver earnings use each recorded job and each day's additional amount once.
     A truck scope shows recorded day assignments but deliberately has no driver
     earnings: drivers can change trucks during a day. Dates, rather than the
@@ -178,12 +179,14 @@ def _build_week_context(week, basis, *, driver_id, truck_id, on_date,
         current = week + timedelta(days=offset)
         entries = rows_by_date[current]
         is_future = current > as_of
+        is_non_working_day = current.weekday() >= 5
         labels = list(dict.fromkeys(entry["status_label"] for entry in entries))
-        label = "Not yet due" if is_future else "No entry" if not entries else ", ".join(labels)
+        label = ("Not yet due" if is_future else ", ".join(labels) if entries else
+                 "Not scheduled" if is_non_working_day else "No entry")
         duplicate_entries = len({entry["driver_id"] for entry in entries}) < len(entries)
         dated_rows.append({
             "date": current, "highlighted": current == on_date,
-            "is_future": is_future, "entries": entries,
+            "is_future": is_future, "is_non_working_day": is_non_working_day, "entries": entries,
             "label": label, "status_label": label, "duplicate_entries": duplicate_entries,
             "earnings": sum(entry["earnings"] for entry in entries) if entries and not truck_scope else None,
             "job_earnings": sum(entry["job_earnings"] for entry in entries) if entries and not truck_scope else None,
@@ -207,7 +210,8 @@ def _build_week_context(week, basis, *, driver_id, truck_id, on_date,
                                  highlighted=target_type == "fuel" and row["id"] == target_id))
     recorded_entries = [entry for row in dated_rows for entry in row["entries"]]
     summary = dict(counts, recorded_days=len(driver_dates), duplicate_day_groups=duplicate_groups,
-                   missing_days=sum(not row["entries"] and not row["is_future"] for row in dated_rows),
+                   missing_days=sum(not row["entries"] and not row["is_future"]
+                                    and not row["is_non_working_day"] for row in dated_rows),
                    earnings=sum(entry["earnings"] for entry in recorded_entries) if not truck_scope else None,
                    fuel_spending=sum(row["fuel_cost"] for row in visible_fuel),
                    fuel_volume=sum(row["fuel_volume"] for row in visible_fuel),

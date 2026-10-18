@@ -44,6 +44,24 @@ financial information deliberately leaves the example issue week's profit
 pending. Holiday/Absent records, a one-day truck exchange and the dated overhead
 change provide other examples to inspect. Your edits affect only this preview.
 
+Driver and truck cards have read-only **View week** / **View details** popups.
+Drivers show jobs and destinations; trucks show daily readings and fuel receipts.
+Ordinary weekends have no day entry and are not counted as absences. An
+occasional Saturday job illustrates actual weekend work.
+
+When updating an existing preview, stop the server with **Ctrl+C**, then run:
+
+```bash
+git pull --ff-only
+python3 tools/setup_review.py
+python3 run.py
+```
+
+The setup keeps existing records and edits. It can remove the original demo's
+empty weekend Absent entries only when it recognises the synthetic fixture and
+the individual rows are untouched. Changed or newly entered statuses and linked
+records are preserved; a skipped cleanup is explained in the terminal.
+
 ## If setup needs retrying
 
 From the repository directory, run:

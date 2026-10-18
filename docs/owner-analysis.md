@@ -11,8 +11,21 @@ Open **Data Checks** from the menu (`/owner-analysis/checks`) to correct or veri
 entries, add weekly notes and complete weekly reviews. Its default is the latest
 finished payroll week. `/owner-analysis/checks/monthly?month=YYYY-MM` groups the
 included completed weeks. Owner Analysis keeps a compact whole-period check
-count and link on every view; a driver/truck filter does not hide checks for the
-rest of the period. Zero outstanding checks still requires an explicit review.
+count and link on every view. Driver and truck views show all cards; the review
+status covers the whole period. Zero outstanding checks still requires an explicit review.
+
+Open **View week** on a driver or truck card for a read-only popup. Driver
+details show dated jobs, collections/deliveries, notes, truck assignments,
+earnings and recorded payslips. Truck details show each day's driver and mileage
+readings, valid recorded mileage differences, and actual dated fuel receipts.
+Monthly popups group the same completed payroll weeks used by the report.
+Unfinished weeks and future-dated entries stay outside those figures.
+
+Details load only when a card is opened. Closing or changing a request cancels
+the previous load; errors offer a normal details-page link. Without JavaScript,
+the same link opens the read-only page and returns to the selected period/view.
+Individual dropdown filters have been removed. Old selection URLs still
+validate and preserve existing signed correction links, but do not hide cards.
 
 ## Figures and periods
 
@@ -26,8 +39,9 @@ rest of the period. Zero outstanding checks still requires an explicit review.
   paid absences. Missing costs remain pending until entered or explicitly
   confirmed as genuinely zero with an explanation. Duplicate and questionable
   entries require checking.
-- Driver rows include recorded working, holiday and absent days. A blank date
-  remains unknown. Period employment or recorded Day/Payslip entries determine
+- Driver rows include recorded working, holiday and absent days. Blank weekdays
+  remain unknown; blank Saturday/Sunday dates are not scheduled and do not count
+  as missing or absent. Actual recorded weekend work still counts. Period employment or recorded Day/Payslip entries determine
   membership, preserving drivers who have since left. Daily averages divide
   recorded earnings by recorded Working days; zero Working days means no average.
 - Truck rows show recorded fuel spending, purchased litres and receipt counts.
@@ -35,6 +49,9 @@ rest of the period. Zero outstanding checks still requires an explicit review.
   establish downtime. The standard per-truck weekly allowance is displayed
   separately. Historical settings identify a truck count, not registrations, so
   no historical overhead total or profit is assigned to a named truck.
+  Detail popups retain separate readings where several drivers used a truck;
+  overlapping or invalid readings do not establish an aggregate distance, and
+  a blank truck day does not establish downtime.
 - Each whole payroll week belongs to the month containing its Tuesday. Monthly
   totals include every expected finished week, even an empty one. A Friday week
   remains in progress until Saturday. Current and future weeks are listed

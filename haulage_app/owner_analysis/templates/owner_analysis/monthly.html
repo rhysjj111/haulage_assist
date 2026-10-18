@@ -4,6 +4,7 @@
 {% block standard_title %}<span class="owner-page-title">Owner Analysis</span>{% endblock %}
 {% block standard_content %}
 {% include 'owner_analysis/_styles.html' %}
+{% if analysis_view != 'overview' %}{% include 'owner_analysis/_entity_details_styles.html' %}{% endif %}
 <div class="owner-analysis">
   <div class="owner-toolbar">
     <div class="owner-segmented" aria-label="Period type">
@@ -64,7 +65,7 @@
       {% if absence.holiday_dates %}<p class="owner-muted owner-small">Holiday: {% for day in absence.holiday_dates %}{{ day.strftime('%d %b') }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
       {% if absence.absent_dates %}<p class="owner-muted owner-small">Absent: {% for day in absence.absent_dates %}{{ day.strftime('%d %b') }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
     {% else %}<p>No holidays or absences recorded in the completed weeks.</p>{% endfor %}
-    <p class="owner-muted owner-small">Blank days remain unknown. A driver being away does not confirm that their truck was unused.</p>
+    <p class="owner-muted owner-small">Missing weekday entries remain unknown; unrecorded weekends are not scheduled. A driver being away does not confirm that their truck was unused.</p>
   </section>
 
   <section class="owner-card" aria-label="Included payroll weeks">
@@ -103,5 +104,6 @@
     {% if report.active_week %}<p><a class="owner-button owner-button-secondary" href="{{ url_for('owner_analysis.weekly', week_start=report.active_week.isoformat(), **view_args) }}">Open current week</a></p>{% endif %}
   </section>
   {% endif %}
+  {% if analysis_view != 'overview' %}{% include 'owner_analysis/_entity_dialog.html' %}{% endif %}
 </div>
 {% endblock %}

@@ -23,7 +23,7 @@
       <div class="owner-context-metric"><span>Absent {{ 'days' if week_context.scope == 'driver' else 'driver-days' }}</span><strong>{{ week_context.summary.absent_days }}</strong></div>
       {% if week_context.scope == 'driver' %}<div class="owner-context-metric"><span>Recorded earnings</span><strong>{{ context_money(week_context.summary.earnings) }}</strong></div>{% else %}<div class="owner-context-metric"><span>Recorded driver-days</span><strong>{{ week_context.summary.recorded_days }}</strong></div>{% endif %}
     </div>
-    <p class="owner-muted owner-small">{% if week_context.scope == 'driver' %}A blank day says “No entry”; it does not mean Holiday or Absent. {% endif %}{% if week_context.as_of < week_context.week_end %}Entries after {{ week_context.as_of.strftime('%d %b %Y') }} are excluded; future dates are shown as not yet due.{% else %}Recorded entries for the full Saturday–Friday payroll week.{% endif %}</p>
+    <p class="owner-muted owner-small">Blank weekends are not scheduled. A blank weekday says “No entry”; it does not mean Holiday or Absent. {% if week_context.as_of < week_context.week_end %}Entries after {{ week_context.as_of.strftime('%d %b %Y') }} are excluded; future dates are shown as not yet due.{% else %}Recorded entries for the full Saturday–Friday payroll week.{% endif %}</p>
     <table class="owner-context-table owner-context-days">
       <thead><tr><th scope="col" class="owner-context-date">Day</th><th scope="col">{% if week_context.scope == 'driver' %}Status and truck{% else %}Driver, status and truck{% endif %}</th>{% if week_context.scope == 'driver' %}<th scope="col" class="owner-context-amount">Earnings</th>{% endif %}</tr></thead>
       <tbody>
@@ -32,7 +32,7 @@
           <th scope="row" class="owner-context-date">{{ day.date.strftime('%a') }}<span class="owner-small owner-muted" style="display:block">{{ day.date.strftime('%d %b') }}</span>{% if day.highlighted %}<span class="owner-context-tag">Selected date</span>{% endif %}</th>
           <td>
             {% if day.is_future %}<span class="owner-muted">Not yet due</span>
-            {% elif not day.entries %}<span class="owner-muted">No entry{% if week_context.scope == 'truck' %} for this truck{% endif %}</span>
+            {% elif not day.entries %}<span class="owner-muted">{{ day.label }}{% if week_context.scope == 'truck' and not day.is_non_working_day %} for this truck{% endif %}</span>
             {% else %}
               {% if day.duplicate_entries %}<p class="owner-small owner-table-note">Multiple entries are recorded for this driver and date. Check the records together.</p>{% endif %}
               {% for entry in day.entries %}
