@@ -36,6 +36,40 @@ h1{
     margin-bottom: 0;
 }
 
+.app-navigation.sidenav {
+    height: 100%;
+    padding: 8px 0 16px;
+}
+
+.app-navigation li > a,
+.app-navigation li > a > i.material-icons {
+    height: 40px;
+    line-height: 40px;
+}
+
+.app-navigation .divider {
+    margin: 10px 0;
+}
+
+.app-navigation-heading {
+    margin: 14px 32px 6px;
+    color: #5b616a;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+.app-navigation-trigger {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+}
+
 main {
     display: flex;
     flex-direction: column; /* Arrange items vertically */

@@ -27,6 +27,19 @@ the same link opens the read-only page and returns to the selected period/view.
 Individual dropdown filters have been removed. Old selection URLs still
 validate and preserve existing signed correction links, but do not hide cards.
 
+## Navigation
+
+The same burger menu is available on Home, existing entry/history pages, the
+wages calculator and the owner reporting/review pages. Home stays at the top;
+visible headings group **Enter data** (Job, Day, Fuel, Payslip and Expense),
+**Wages & reporting** (Wages Calculator, Owner Analysis and Data Checks) and
+**Settings** (Drivers, Trucks and Truck & overhead settings). No dropdowns are
+needed. The menu scrolls when the screen is shorter than its contents.
+
+The old Weekly Analysis and Monthly Analysis menu links are removed; their
+existing routes remain available. The weekly/monthly switch within Owner
+Analysis and contextual back links retain their selected report/check period.
+
 ## Figures and periods
 
 - Recorded earnings are Job amounts plus Day additional earnings, each counted
