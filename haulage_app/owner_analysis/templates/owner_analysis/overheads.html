@@ -1,0 +1,85 @@
+{% extends 'std_template.html' %}
+{% macro money(value) -%}{% if value is not none %}£{{ '%.2f'|format(value / 100) }}{% else %}—{% endif %}{%- endmacro %}
+{% macro hidden(form, prefix) -%}{% for field in form %}{% if field.type in ['HiddenField', 'CSRFTokenField'] %}{{ field(id=prefix ~ '-' ~ field.name) }}{% endif %}{% endfor %}{%- endmacro %}
+{% block standard_title %}<span class="owner-page-title">Truck &amp; overhead settings</span>{% endblock %}
+{% block standard_content %}
+{% include 'owner_analysis/_styles.html' %}
+<style>
+  .owner-overhead-settings .owner-settings-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .owner-overhead-settings .owner-settings-history { overflow-x: auto; }
+  .owner-overhead-settings table { width: 100%; border-collapse: collapse; }
+  .owner-overhead-settings th, .owner-overhead-settings td { padding: .8rem .6rem; border-bottom: 1px solid #e4eaed; text-align: left; vertical-align: top; }
+  .owner-overhead-settings th { color: #54636a; font-size: .88rem; font-weight: 600; }
+  .owner-overhead-settings .owner-settings-amount { text-align: right; white-space: nowrap; }
+  .owner-overhead-settings summary { font-weight: 600; }
+  @media (max-width: 600px) { .owner-overhead-settings .owner-settings-metrics { grid-template-columns: 1fr; } }
+</style>
+<div class="owner-analysis owner-overhead-settings">
+  <div class="owner-toolbar"><a href="{{ back_url }}">← {{ back_label }}</a></div>
+
+  <section class="owner-card" aria-labelledby="owner-current-settings-title">
+    <div class="owner-card-heading">
+      <h2 id="owner-current-settings-title">Current settings</h2>
+      <span class="owner-muted owner-small">Week beginning {{ current_week.strftime('%d %B %Y') }}</span>
+    </div>
+    {% if current_setting %}
+      <div class="owner-metrics owner-settings-metrics">
+        <div class="owner-metric"><span class="owner-metric-label">Truck count</span><strong class="owner-metric-value">{{ current_setting.truck_count }}</strong></div>
+        <div class="owner-metric"><span class="owner-metric-label">Weekly allowance per truck</span><strong class="owner-metric-value">{{ money(current_setting.allowance_per_truck) }}</strong></div>
+        <div class="owner-metric"><span class="owner-metric-label">Estimated overheads per week</span><strong class="owner-metric-value">{{ money(current_setting.total) }}</strong></div>
+      </div>
+      <p class="owner-muted owner-small">Applies from {{ current_setting.effective_week_start.strftime('%d %B %Y') }} until the next change.</p>
+    {% else %}
+      <p class="owner-notice">No overhead settings apply to the current week. Enter the truck count and weekly allowance below.</p>
+    {% endif %}
+    <p>Enter settings once, then add a change when the truck count or allowance changes. They carry forward automatically and include every truck counted, even when it does not go out.</p>
+    {% if selected_week != current_week %}
+      <p class="owner-muted owner-small">For report week beginning {{ selected_week.strftime('%d %B %Y') }}: {% if selected_setting %}{{ selected_setting.truck_count }} {{ 'truck' if selected_setting.truck_count == 1 else 'trucks' }} · {{ money(selected_setting.allowance_per_truck) }} per truck per week.{% else %}no overhead settings apply.{% endif %}</p>
+    {% endif %}
+  </section>
+
+  <section class="owner-card" aria-label="Change truck and overhead settings">
+    <details{% if not current_setting or overhead_form.errors or save_error %} open{% endif %}>
+      <summary>Add a change</summary>
+      {% if save_error %}<p class="owner-error-list" role="alert">{{ save_error }} <a href="{{ settings_url }}">Refresh settings</a></p>{% endif %}
+      <form method="post" action="{{ form_action }}">
+        {{ hidden(overhead_form, 'overhead-settings') }}
+        {% if overhead_form.errors %}
+          <div class="owner-error-list" role="alert"><p>Check the following before saving:</p><ul>{% for name, errors in overhead_form.errors.items() %}{% for error in errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}</ul></div>
+        {% endif %}
+        <div class="owner-form-grid">
+          <div><label for="overhead-settings-effective-week">Applies from week beginning (Saturday)</label>{{ overhead_form.effective_week_start(id='overhead-settings-effective-week') }}</div>
+          <div><label for="overhead-settings-truck-count">Truck count</label>{{ overhead_form.truck_count(id='overhead-settings-truck-count', min=0, step=1) }}</div>
+          <div><label for="overhead-settings-allowance">Weekly allowance per truck (£)</label>{{ overhead_form.allowance_per_truck(id='overhead-settings-allowance', min=0, step='0.01') }}</div>
+        </div>
+        <p class="owner-muted owner-small">Choose the first affected Saturday. Earlier weeks keep their existing settings. Saving an earlier date corrects history and can reopen previously checked weeks. Using an existing start date updates that setting.</p>
+        <button type="submit" class="owner-button">Save change</button>
+      </form>
+    </details>
+  </section>
+
+  <section class="owner-card" aria-labelledby="owner-settings-history-title">
+    <h2 id="owner-settings-history-title">Settings history</h2>
+    {% if settings_history %}
+      <div class="owner-settings-history">
+        <table>
+          <thead><tr><th scope="col">Applies from</th><th scope="col">Status</th><th scope="col" class="owner-settings-amount">Trucks</th><th scope="col" class="owner-settings-amount">Per truck / week</th><th scope="col" class="owner-settings-amount">Total / week</th></tr></thead>
+          <tbody>
+            {% for setting in settings_history %}
+              <tr>
+                <td>{{ setting.effective_week_start.strftime('%d %b %Y') }}</td>
+                <td><span class="owner-badge{% if setting.status == 'current' %} owner-badge-checked{% elif setting.status == 'scheduled' %} owner-badge-future{% endif %}">{{ {'current': 'Current', 'previous': 'Previous', 'scheduled': 'Scheduled'}[setting.status] }}</span></td>
+                <td class="owner-settings-amount">{{ setting.truck_count }}</td>
+                <td class="owner-settings-amount">{{ money(setting.allowance_per_truck) }}</td>
+                <td class="owner-settings-amount">{{ money(setting.total) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>No settings have been saved yet.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

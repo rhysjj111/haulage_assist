@@ -1,0 +1,25 @@
+{% set is_monthly = report.weeks is defined %}
+{% macro allowance(value) -%}{% if value is not none and value % 100 == 0 %}£{{ value // 100 }}{% else %}{{ money(value) }}{% endif %}{%- endmacro %}
+<div class="owner-overhead-basis owner-muted owner-small">
+  {% if overhead_basis.state == 'mixed' %}
+    <details>
+      <summary>Settings varied during this period</summary>
+      <ul class="owner-list">
+        {% for week in overhead_basis.weeks %}
+        <li>
+          <strong>{{ week.week_start.strftime('%d %b %Y') }} – {{ week.week_end.strftime('%d %b %Y') }}</strong><br>
+          {% if week.truck_count is none %}Not set{% else %}{{ week.truck_count }} {{ 'truck' if week.truck_count == 1 else 'trucks' }} × {{ allowance(week.allowance_per_truck) }}/week{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+  <p>
+    {% if overhead_basis.state == 'uniform' %}
+      Overheads: {{ overhead_basis.truck_count }} {{ 'truck' if overhead_basis.truck_count == 1 else 'trucks' }} × {{ allowance(overhead_basis.allowance_per_truck) }}/week ·
+    {% elif overhead_basis.state == 'missing' %}
+      Overhead settings not set{% if is_monthly %} for the completed weeks{% endif %} ·
+    {% endif %}
+    <a href="{{ settings_url }}" aria-label="Truck and overhead settings">Settings</a>
+  </p>
+</div>

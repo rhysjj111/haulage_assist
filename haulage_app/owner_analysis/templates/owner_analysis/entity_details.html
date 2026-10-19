@@ -1,0 +1,10 @@
+{% extends 'std_template.html' %}
+{% block standard_title %}<span class="owner-page-title">{{ details.label }}</span>{% endblock %}
+{% block standard_content %}
+{% include 'owner_analysis/_styles.html' %}
+{% include 'owner_analysis/_entity_details_styles.html' %}
+<div class="owner-analysis owner-entity-full-page">
+  <div class="owner-toolbar"><a class="owner-button owner-button-secondary" href="{{ back_url }}">← Back to Owner Analysis</a></div>
+  {% include 'owner_analysis/_entity_details.html' %}
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% set check_name = issue.check_label|default(issue.label|default(issue.code|replace('_', ' ')|capitalize), true) %}
+{% set subject = issue.short_subject|default(issue.driver_name|default(issue.truck_registration|default('Business'), true), true) %}
+<tr class="owner-check-row" id="{{ issue.anchor_id|default('check-' ~ issue_id) }}" data-owner-check-key="{{ issue.key }}">
+  <th scope="row" id="check-subject-{{ issue_id }}">{{ subject }}</th>
+  <td id="check-title-{{ issue_id }}">
+    <span>{{ check_name }}{% if issue.check_day|default('') %} · {{ issue.check_day }}{% endif %}</span>
+    {% if issue.check_reference|default('') or issue.awaiting_invoice|default(false) %}<span class="owner-check-secondary">{% if issue.check_reference|default('') %}{{ issue.check_reference }}{% if issue.awaiting_invoice|default(false) %} · {% endif %}{% endif %}{% if issue.awaiting_invoice|default(false) %}Awaiting invoice{% endif %}</span>{% endif %}
+  </td>
+  <td class="owner-check-review"><a href="{{ issue.review_url|default(issue.investigation_url) }}" aria-label="Review {{ check_name }}{% if issue.check_day|default('') %}, {{ issue.check_day }}{% endif %}{% if issue.check_reference|default('') %}, {{ issue.check_reference }}{% endif %} for {{ subject }}">Review <span aria-hidden="true">→</span></a></td>
+</tr>

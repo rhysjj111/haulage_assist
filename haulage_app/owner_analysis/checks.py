@@ -4,6 +4,11 @@ from collections import defaultdict
 from datetime import date, timedelta
 
 from haulage_app.owner_analysis.dates import validate_week_start, week_end
+from haulage_app.owner_analysis.policy import (
+    FUEL_PRICE_MAX_PENCE_PER_LITRE, FUEL_PRICE_MIN_PENCE_PER_LITRE,
+    OPTIONAL_ISSUES, PAYROLL_GAP_MIN_PENCE, PAYROLL_GAP_MULTIPLIER,
+    normalize_fuel_provider,
+)
 from haulage_app.verification.checks.period_rules import missing_fuel_dates
 
 
@@ -23,7 +28,9 @@ def build_weekly_checks(week_start, *, as_of, days, fuel_entries, payslips, empl
         for name in ("driver_id", "truck_id", "date", "record_id"):
             if details.get(name) is not None:
                 identity.append(f"{name}={details[name]}")
-        issues.append(dict(code=code, key=":".join(identity), message=message, blocking=blocking, **details))
+        optional = code in OPTIONAL_ISSUES
+        issues.append(dict(code=code, key=":".join(identity), message=message,
+                           blocking=blocking and not optional, optional=optional, **details))
 
     employed_dates = defaultdict(set)
     for period in employment_periods:
@@ -69,11 +76,30 @@ def build_weekly_checks(week_start, *, as_of, days, fuel_entries, payslips, empl
                     driver_id=day.driver_id, date=day.date, record_id=day.id)
             else:
                 expected_fuel[day.truck_id].add(day.date)
+    duplicate_fuel = defaultdict(list)
     for entry in fuel_entries:
         purchased_fuel[entry.truck_id].add(entry.date)
-        if not 100 < entry.fuel_cost < 150000 or not 100 < entry.fuel_volume < 100000:
+        raw_valid = 100 < entry.fuel_cost < 150000 and 100 < entry.fuel_volume < 100000
+        if not raw_valid:
             add("fuel_amount_out_of_range", "Fuel cost or volume is outside the entry form's permitted range.",
                 truck_id=entry.truck_id, date=entry.date, record_id=entry.id)
+        elif not (FUEL_PRICE_MIN_PENCE_PER_LITRE * entry.fuel_volume
+                  <= entry.fuel_cost * 100
+                  <= FUEL_PRICE_MAX_PENCE_PER_LITRE * entry.fuel_volume):
+            add("fuel_price_unusual", "Fuel cost per litre is unusually low or high; check the invoice line.",
+                truck_id=entry.truck_id, date=entry.date, record_id=entry.id)
+        if (type(entry.fuel_cost) is int and type(entry.fuel_volume) is int
+                and entry.fuel_cost > 0 and entry.fuel_volume > 0):
+            signature = (entry.truck_id, entry.date, normalize_fuel_provider(entry.fuel_card_name),
+                         entry.fuel_cost, entry.fuel_volume)
+            duplicate_fuel[signature].append(entry)
+    for entries in sorted(duplicate_fuel.values(), key=lambda group: min(entry.id for entry in group)):
+        if len(entries) > 1:
+            entries = sorted(entries, key=lambda entry: entry.id)
+            first = entries[0]
+            add("possible_duplicate_fuel", "Fuel entries have matching purchase details; check whether both are genuine.",
+                truck_id=first.truck_id, date=first.date, record_id=first.id,
+                record_ids=[entry.id for entry in entries])
     for truck_id, dates in sorted(expected_fuel.items()):
         for missing in missing_fuel_dates(dates, purchased_fuel[truck_id]):
             add("missing_fuel_receipt", "Fuel was marked as purchased but no receipt matches this truck and date.",
@@ -82,11 +108,16 @@ def build_weekly_checks(week_start, *, as_of, days, fuel_entries, payslips, empl
     by_driver = defaultdict(list)
     for entry in payslips:
         by_driver[entry.driver_id].append(entry)
-        if not 100 < entry.total_wage < 300000 or not 100 < entry.total_cost_to_employer < 300000:
+        raw_valid = 100 < entry.total_wage < 300000 and 100 < entry.total_cost_to_employer < 300000
+        if not raw_valid:
             add("payslip_amount_out_of_range", "Payslip amounts are outside the entry form's permitted range.",
                 driver_id=entry.driver_id, date=entry.date, record_id=entry.id)
         if entry.total_cost_to_employer < entry.total_wage:
             add("employer_cost_below_wage", "Employer cost is below the recorded wage; please check.",
+                driver_id=entry.driver_id, date=entry.date, record_id=entry.id)
+        elif (raw_valid and entry.total_cost_to_employer > PAYROLL_GAP_MULTIPLIER * entry.total_wage
+              and entry.total_cost_to_employer - entry.total_wage >= PAYROLL_GAP_MIN_PENCE):
+            add("payroll_gap_unusual", "Employer cost is much higher than take-home pay; check both payslip amounts.",
                 driver_id=entry.driver_id, date=entry.date, record_id=entry.id)
     if as_of > end:
         expected_payroll = set(employed_dates) | {day.driver_id for day in days}

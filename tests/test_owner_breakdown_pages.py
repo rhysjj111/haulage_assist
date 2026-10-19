@@ -1,4 +1,4 @@
-"""Driver and truck filters retain accounting ownership and overall readiness."""
+"""Driver and truck cards retain accounting ownership and overall readiness."""
 
 import re
 from datetime import date
@@ -46,16 +46,17 @@ class OwnerBreakdownPageTests(OwnerTestCase):
         self.seed_entities()
         _, context = self.get_page("/owner-analysis?week_start=2026-10-03&view=drivers&driver_id=1")
         rows = context["breakdown"]["rows"]
-        self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0]["earnings"], 71000)
-        self.assertEqual(rows[0]["working_days"], 1)
-        self.assertEqual(rows[0]["average_earnings_per_working_day"], 71000)
+        self.assertEqual({row["driver_id"] for row in rows}, {1, 2})
+        alice = next(row for row in rows if row["driver_id"] == 1)
+        self.assertEqual(alice["earnings"], 71000)
+        self.assertEqual(alice["working_days"], 1)
+        self.assertEqual(alice["average_earnings_per_working_day"], 71000)
         self.assertEqual(context["report"]["earnings"], 71000)
 
     def test_holiday_has_no_invented_working_day_or_average(self):
         self.seed_entities()
         _, context = self.get_page("/owner-analysis?week_start=2026-10-03&view=drivers&driver_id=2")
-        row = context["breakdown"]["rows"][0]
+        row = next(row for row in context["breakdown"]["rows"] if row["driver_id"] == 2)
         self.assertEqual(row["working_days"], 0)
         self.assertEqual(row["holiday_days"], 1)
         self.assertIsNone(row["average_earnings_per_working_day"])
@@ -73,33 +74,35 @@ class OwnerBreakdownPageTests(OwnerTestCase):
     def test_missing_payroll_shows_pending_instead_of_zero_wage_cost(self):
         self.seed_entities()
         response, context = self.get_page("/owner-analysis?week_start=2026-10-03&view=drivers&driver_id=2")
-        self.assertTrue(context["breakdown"]["rows"][0]["payroll_pending"])
+        bob = next(row for row in context["breakdown"]["rows"] if row["driver_id"] == 2)
+        self.assertTrue(bob["payroll_pending"])
         self.assertIn("Pending", response.text)
 
-    def test_filter_does_not_turn_whole_period_review_into_checked(self):
+    def test_legacy_selection_does_not_turn_whole_period_review_into_checked(self):
         self.seed_entities()
         _, overview = self.get_page("/owner-analysis?week_start=2026-10-03")
         response, detail = self.get_page("/owner-analysis?week_start=2026-10-03&view=drivers&driver_id=1")
         self.assertEqual(overview["report"]["review_status"], detail["report"]["review_status"])
         self.assertNotEqual(detail["report"]["review_status"], "checked")
-        self.assertIn("whole period", response.text)
+        self.assertIn("Across the whole payroll week", response.text)
 
-    def test_details_only_have_get_forms_and_open_overview_for_corrections(self):
+    def test_details_only_have_get_forms_and_open_checks_with_return_context(self):
         self.seed_entities()
         for suffix in ("view=drivers&driver_id=1", "view=trucks&truck_id=1"):
             response, context = self.get_page("/owner-analysis?week_start=2026-10-03&" + suffix)
             self.assertNotRegex(response.text, r'<form\b[^>]*method=["\']post["\']')
             self.assertNotIn("owner_context=", response.text)
-            for week in context["breakdown"]["weekly_links"]:
-                self.assertNotIn("view=drivers", week["url"])
-                self.assertNotIn("view=trucks", week["url"])
+            self.assertIn("/owner-analysis/checks?", context["checks_url"])
+            self.assertIn(suffix.split("&")[0], context["checks_url"])
+            self.assertIn(suffix.split("&")[1], context["checks_url"])
 
-    def test_driver_filter_and_navigation_preserve_selected_period_and_entity(self):
+    def test_no_driver_dropdown_but_legacy_navigation_preserves_period_and_entity(self):
         self.seed_entities()
         response, context = self.get_page("/owner-analysis?week_start=2026-10-03&view=drivers&driver_id=1")
         breakdown = context["breakdown"]
-        self.assertEqual(breakdown["filter_fields"]["view"], "drivers")
-        self.assertEqual(breakdown["filter_fields"]["week_start"], "2026-10-03")
+        self.assertNotIn("filter_fields", breakdown)
+        self.assertNotRegex(response.text, r'<select\b[^>]*name=["\']driver_id["\']')
+        self.assertEqual({row["driver_id"] for row in breakdown["rows"]}, {1, 2})
         links = re.findall(r'href="([^"]+)"', response.text)
         self.assertTrue(any("week_start=2026-09-26" in link and "driver_id=1" in link for link in links))
         self.assertTrue(any("month=2026-10" in link and "driver_id=1" in link for link in links))

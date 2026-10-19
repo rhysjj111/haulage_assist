@@ -1,0 +1,40 @@
+services:
+  review-app:
+    image: mcr.microsoft.com/devcontainers/python:1-3.11-bookworm
+    user: vscode
+    init: true
+    command: sleep infinity
+    volumes:
+      # Keep the checkout's actual directory name for workspaceFolder.
+      - ../..:/workspaces:cached
+    environment:
+      HAULAGE_REVIEW: "True"
+      DEVELOPMENT: "True"
+      DB_URL: postgresql://review:review@review-db:5432/haulage_review
+      SECRET_KEY: synthetic-codespaces-preview-only
+      IP: 0.0.0.0
+      PORT: "8080"
+      # run.py passes this value directly to Flask: a nonempty "False" is true.
+      DEBUG: ""
+      FLASK_DEBUG: "0"
+    depends_on:
+      review-db:
+        condition: service_healthy
+
+  review-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: review
+      POSTGRES_PASSWORD: review
+      POSTGRES_DB: haulage_review
+    volumes:
+      - review-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U review -d haulage_review"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  review-postgres:

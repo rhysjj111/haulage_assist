@@ -1,0 +1,60 @@
+{% set week_id = week.week_start.isoformat() %}
+{% set note_form = week.forms.note %}
+{% set review_form = week.forms.review %}
+<section class="owner-card owner-week-checks" id="week-{{ week_id }}" aria-labelledby="week-heading-{{ week_id }}">
+  {% if period == 'monthly' %}
+  <div class="owner-week-heading">
+    <h2 id="week-heading-{{ week_id }}">{{ week.week_start.strftime('%d %b %Y') }} – {{ week.week_end.strftime('%d %b %Y') }}</h2>
+    {{ badge(week.review_status) }}
+  </div>
+  {% else %}<h2 class="owner-sr-only" id="week-heading-{{ week_id }}">Outstanding checks</h2>{% endif %}
+  {% if week.outstanding_issues %}
+  <div class="owner-table-wrap">
+    <table class="owner-check-table" aria-label="Outstanding checks{% if period == 'monthly' %} for week starting {{ week.week_start.strftime('%d %b %Y') }}{% endif %}">
+      <thead><tr><th scope="col">Driver / truck</th><th scope="col">Check</th><th scope="col"><span class="owner-sr-only">Action</span></th></tr></thead>
+      <tbody>{% for issue in week.outstanding_issues %}{% with issue_id=week_id ~ '-' ~ loop.index %}{% include 'owner_analysis/_check_summary.html' %}{% endwith %}{% endfor %}</tbody>
+    </table>
+  </div>
+  {% else %}<p class="owner-muted">No outstanding checks.</p>{% endif %}
+
+  {% if week.optional_issues %}
+  <details class="owner-optional-checks" data-owner-optional-checks>
+    <summary>Other checks ({{ week.optional_issues|length }})</summary>
+    <div class="owner-table-wrap">
+      <table class="owner-check-table" aria-label="Other checks{% if period == 'monthly' %} for week starting {{ week.week_start.strftime('%d %b %Y') }}{% endif %}">
+        <thead><tr><th scope="col">Driver / truck</th><th scope="col">Check</th><th scope="col"><span class="owner-sr-only">Action</span></th></tr></thead>
+        <tbody>{% for issue in week.optional_issues %}{% with issue_id=week_id ~ '-optional-' ~ loop.index %}{% include 'owner_analysis/_check_summary.html' %}{% endwith %}{% endfor %}</tbody>
+      </table>
+    </div>
+  </details>
+  {% endif %}
+
+  <div class="owner-week-review" id="review-{{ week_id }}">
+    {% if review_form and week.period_state == 'finished' %}
+    <form class="owner-week-review-form" method="post" action="{{ url_for('owner_analysis.review_week') }}">
+      {{ hidden(review_form, 'week-review-' ~ week_id) }}
+      <button type="submit" class="owner-button{% if week.review_status == 'checked' %} owner-button-secondary{% endif %}"{% if week.review_status != 'checked' and (week.outstanding_issues or week.period_state != 'finished') %} disabled{% endif %}>{% if week.review_status == 'checked' %}Undo{% else %}Mark as checked{% endif %}</button>
+    </form>
+    {% endif %}
+    {% if week.reviewed_at_label|default('') and week.review_status == 'checked' %}<p class="owner-muted owner-small">Reviewed {{ week.reviewed_at_label }}.</p>{% endif %}
+    {% if note_form %}
+    <details><summary>Add a week note</summary>
+      <form method="post" action="{{ url_for('owner_analysis.week_note') }}">
+        {{ hidden(note_form, 'week-note-' ~ week_id) }}
+        <label for="week-note-text-{{ week_id }}">Brief note</label>{{ note_form.note(id='week-note-text-' ~ week_id) }}
+        <button type="submit" class="owner-button owner-button-secondary">Save note</button>
+      </form>
+    </details>
+    {% endif %}
+    {% if week.verification_history %}
+    <details><summary>History</summary>
+      {% for entry in week.verification_history %}
+      <div class="owner-history-entry">
+        <p class="owner-small owner-muted">{{ entry.label|default(entry.decision|default('Note')) }}{% if entry.decision_label|default('') %} · {{ entry.decision_label }}{% endif %}{% if entry.context_label|default('') %} · {{ entry.context_label }}{% endif %}{% if entry.created_at_label|default('') %} · {{ entry.created_at_label }}{% endif %}{% if entry.status|default('') %} · {{ entry.status|replace('_', ' ')|capitalize }}{% endif %}</p>
+        {% if entry.note %}<p class="owner-note">{{ entry.note }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </details>
+    {% endif %}
+  </div>
+</section>

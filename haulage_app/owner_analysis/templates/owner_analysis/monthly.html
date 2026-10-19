@@ -1,9 +1,10 @@
 {% extends 'std_template.html' %}
 {% macro money(value) -%}{% if value is not none %}£{{ '%.2f'|format(value / 100) }}{% else %}—{% endif %}{%- endmacro %}
-{% macro badge(state) -%}<span class="owner-badge owner-badge-{{ state }}">{{ {'checked': 'Checked', 'needs_review': 'Needs review', 'not_reviewed': 'Not reviewed', 'outdated': 'Review out of date', 'in_progress': 'In progress', 'future': 'Future month'}[state]|default(state|replace('_', ' ')|capitalize) }}</span>{%- endmacro %}
+{% macro badge(state) -%}<span class="owner-badge owner-badge-{{ state }}">{{ {'checked': 'Checked', 'needs_review': 'Needs review', 'awaiting_records': 'Awaiting records', 'not_reviewed': 'Not reviewed', 'outdated': 'Review out of date', 'in_progress': 'In progress', 'future': 'Future month'}[state]|default(state|replace('_', ' ')|capitalize) }}</span>{%- endmacro %}
 {% block standard_title %}<span class="owner-page-title">Owner Analysis</span>{% endblock %}
 {% block standard_content %}
 {% include 'owner_analysis/_styles.html' %}
+{% if analysis_view != 'overview' %}{% include 'owner_analysis/_entity_details_styles.html' %}{% endif %}
 <div class="owner-analysis">
   <div class="owner-toolbar">
     <div class="owner-segmented" aria-label="Period type">
@@ -12,11 +13,10 @@
     </div>
     {% include 'owner_analysis/_view_switch.html' %}
   </div>
-  <form class="owner-filter" method="get" action="{{ url_for('owner_analysis.monthly') }}">
+  <form class="owner-filter owner-period-picker" data-owner-period-picker method="get" action="{{ url_for('owner_analysis.monthly') }}">
     {% for name, value in view_args.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
     <input type="hidden" name="week_start" value="{{ weekly_toggle_week }}">
-    <div><label for="owner-month-date">Choose a payroll month</label><input id="owner-month-date" name="month" type="month" value="{{ selected_month }}" required></div>
-    <button type="submit" class="owner-button">Show month</button>
+    <div><label for="owner-month-date">Month</label><input id="owner-month-date" data-owner-period-input name="month" type="month" value="{{ selected_month }}" required aria-describedby="owner-month-date-help"><span id="owner-month-date-help" class="owner-sr-only">Choose a payroll month to load it automatically.</span></div>
   </form>
   <div class="owner-period-nav" aria-label="Month navigation">
     {% if previous_month %}<a href="{{ url_for('owner_analysis.monthly', month=previous_month, **view_args) }}">← Previous month</a>{% else %}<span class="owner-nav-disabled">← Previous month</span>{% endif %}
@@ -26,7 +26,6 @@
   <div class="owner-period-title">
     <h2>{{ report.month_name }} {{ report.year }}</h2>
     {% if report.period_state == 'in_progress' %}<span class="owner-badge owner-badge-in_progress">Month so far</span>{% elif report.period_state == 'future' %}<span class="owner-badge owner-badge-future">Future month</span>{% endif %}
-    {{ badge(report.review_status) }}
     <p class="owner-muted owner-small">{{ report.completed_week_count }} of {{ report.expected_week_count }} payroll weeks completed.</p>
     <p class="owner-muted owner-small">Full payroll period: {{ report.expected_start.strftime('%d %b %Y') }} – {{ report.expected_end.strftime('%d %b %Y') }}.</p>
     {% if report.covered_start %}<p class="owner-muted owner-small">Figures cover {{ report.covered_start.strftime('%d %b %Y') }} – {{ report.covered_end.strftime('%d %b %Y') }}.</p>{% endif %}
@@ -34,56 +33,58 @@
   </div>
   <p class="owner-muted owner-small">Each month contains whole Saturday–Friday payroll weeks, assigned to the month containing their Tuesday. Monthly figures add the completed weekly reports; unfinished weeks are listed separately.</p>
 
+  {% include 'owner_analysis/_review_summary.html' %}
+
   {% if analysis_view != 'overview' %}
     {% include 'owner_analysis/_breakdowns.html' %}
   {% else %}
   <section class="owner-card" aria-label="Monthly figures">
     <h2>Monthly overview</h2>
     {% if report.completed_week_count %}
-    <div class="owner-metrics">
-      <div class="owner-metric"><span class="owner-metric-label">Recorded earnings</span><strong class="owner-metric-value">{{ money(report.earnings) }}</strong></div>
-      <div class="owner-metric"><span class="owner-metric-label">Fuel spending</span><strong class="owner-metric-value">{{ money(report.fuel_spending) }}</strong></div>
-      {% set payroll_pending = report.weeks|selectattr('payroll_pending')|list|length > 0 %}
-      <div class="owner-metric"><span class="owner-metric-label">Employer wage cost</span><strong class="owner-metric-value">{% if payroll_pending and report.employer_cost == 0 %}Pending{% else %}{{ money(report.employer_cost) }}{% endif %}</strong>{% if payroll_pending and report.employer_cost != 0 %}<span class="owner-small owner-muted">Recorded subtotal · payroll pending</span>{% endif %}</div>
-      <div class="owner-metric"><span class="owner-metric-label">Estimated overheads</span><strong class="owner-metric-value">{{ money(report.overheads) }}</strong></div>
+    <div class="owner-result owner-profit">
+      <span>Estimated profit</span>
+      <strong>{% if report.estimated_operating_result is none %}Pending{% else %}{{ money(report.estimated_operating_result) }}{% endif %}</strong>
+      {% if report.estimated_operating_result is none %}<p class="owner-profit-pending">{{ report.profit_pending_reason }}</p>{% else %}<p class="owner-small owner-muted">After recorded costs and estimated overheads.</p>{% endif %}
     </div>
-    <div class="owner-result"><span>Estimated operating result</span><strong>{{ money(report.estimated_operating_result) }}</strong></div>
-    {% if report.estimated_operating_result is none %}<p class="owner-notice">One or more completed weeks has incomplete financial information. The monthly estimated operating result is unavailable until those weeks are complete.</p>{% endif %}
-    <p class="owner-muted owner-small">Fuel is spending recorded in the included payroll weeks. Wage cost comes from recorded payslips. Overheads add the allowance for each included week, including trucks that did not go out.</p>
-    {% else %}<p>No completed payroll weeks yet.</p><p class="owner-muted owner-small">Figures will appear after the first included payroll week has finished.</p>{% endif %}
+    <div class="owner-metrics">
+      <div class="owner-metric"><span class="owner-metric-label">Earnings</span><strong class="owner-metric-value">{{ money(report.earnings) }}</strong></div>
+      <div class="owner-metric"><span class="owner-metric-label">Wages · employer cost</span><strong class="owner-metric-value">{% if report.payroll_pending and report.employer_cost == 0 %}Pending{% else %}{{ money(report.employer_cost) }}{% endif %}</strong>{% if report.payroll_pending and report.employer_cost != 0 %}<span class="owner-small owner-muted">Recorded subtotal · payroll pending</span>{% endif %}</div>
+      <div class="owner-metric"><span class="owner-metric-label">Fuel</span><strong class="owner-metric-value">{% if report.fuel_pending and report.fuel_spending == 0 %}Pending{% else %}{{ money(report.fuel_spending) }}{% endif %}</strong>{% if report.fuel_pending and report.fuel_spending != 0 %}<span class="owner-small owner-muted">Recorded subtotal · fuel pending</span>{% endif %}</div>
+      <div class="owner-metric"><span class="owner-metric-label">Overheads</span><strong class="owner-metric-value">{{ money(report.overheads) }}</strong></div>
+    </div>
+    {% include 'owner_analysis/_overhead_basis.html' %}
+    {% else %}<p>No completed payroll weeks yet.</p><p class="owner-muted owner-small">Figures will appear after the first included payroll week has finished.</p>{% include 'owner_analysis/_overhead_basis.html' %}{% endif %}
   </section>
 
-  <section class="owner-card" aria-label="Monthly holiday and absence context">
-    <h2>Holidays and absences</h2>
-    {% for absence in report.absence_summary %}
-      <p><strong>{{ absence.driver_name|default(absence.name) }}</strong>: {{ absence.holiday_days }} holiday {{ 'day' if absence.holiday_days == 1 else 'days' }}, {{ absence.absent_days }} absent {{ 'day' if absence.absent_days == 1 else 'days' }}.</p>
-      {% if absence.holiday_dates %}<p class="owner-muted owner-small">Holiday: {% for day in absence.holiday_dates %}{{ day.strftime('%d %b') }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
-      {% if absence.absent_dates %}<p class="owner-muted owner-small">Absent: {% for day in absence.absent_dates %}{{ day.strftime('%d %b') }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
-    {% else %}<p>No holidays or absences recorded in the completed weeks.</p>{% endfor %}
-    <p class="owner-muted owner-small">Blank days remain unknown. A driver being away does not confirm that their truck was unused.</p>
-  </section>
+  {% include 'owner_analysis/_absence_summary.html' %}
 
-  <section aria-label="Included payroll weeks">
+  <section class="owner-card" aria-label="Included payroll weeks">
     <h2>Included payroll weeks</h2>
-    <p class="owner-muted owner-small">Checks, explanations and review status come from each weekly report. Open a week to make corrections or complete its review.</p>
-    {% for week in report.weeks %}
-    <article class="owner-card">
-      <div class="owner-week-heading"><h3>{{ week.week_start.strftime('%d %b %Y') }} – {{ week.week_end.strftime('%d %b %Y') }}</h3>{{ badge(week.review_status) }}</div>
-      <div class="owner-metrics">
-        <div class="owner-metric"><span class="owner-metric-label">Recorded earnings</span><strong class="owner-metric-value">{{ money(week.earnings) }}</strong></div>
-        <div class="owner-metric"><span class="owner-metric-label">Fuel spending</span><strong class="owner-metric-value">{{ money(week.fuel_spending) }}</strong></div>
-        <div class="owner-metric"><span class="owner-metric-label">Employer wage cost</span><strong class="owner-metric-value">{% if week.payroll_pending and week.employer_cost == 0 %}Pending{% else %}{{ money(week.employer_cost) }}{% endif %}</strong>{% if week.payroll_pending and week.employer_cost != 0 %}<span class="owner-small owner-muted">Recorded subtotal · payroll pending</span>{% endif %}</div>
-        <div class="owner-metric"><span class="owner-metric-label">Estimated overheads</span><strong class="owner-metric-value">{{ money(week.overheads) }}</strong></div>
-      </div>
-      <p>Estimated operating result: <strong>{{ money(week.estimated_operating_result) }}</strong></p>
-      {% if week.estimated_operating_result is none %}<p class="owner-small owner-muted">Financial information needs completing for this week.</p>{% endif %}
-      <p><a class="owner-button owner-button-secondary" href="{{ url_for('owner_analysis.weekly', week_start=week.week_start.isoformat()) }}">Open week</a></p>
-      {% for issue in week.outstanding_issues %}<div class="owner-issue"><div class="owner-issue-title">{{ issue.title|default(issue.label|default(issue.code|replace('_', ' ')|capitalize)) }}</div><p>{{ issue.message }}</p>{% if issue.context_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}{% if not issue.blocking %}<span class="owner-badge">Information</span>{% endif %}</div>{% else %}<p class="owner-small owner-muted">No outstanding checks.</p>{% endfor %}
-      {% if week.verification_history %}<details><summary>Explanations and verification history</summary>{% for entry in week.verification_history %}<div class="owner-history-entry"><p class="owner-muted owner-small">{{ entry.label|default(entry.decision|default('Note')) }}{% if entry.context_label|default('') %} · {{ entry.context_label }}{% endif %}{% if entry.created_at_label|default('') %} · {{ entry.created_at_label }}{% endif %}{% if entry.status|default('') %} · {{ entry.status|replace('_', ' ')|capitalize }}{% endif %}</p><p class="owner-note">{{ entry.note }}</p></div>{% endfor %}</details>{% endif %}
-    </article>
-    {% else %}<div class="owner-card"><p>No completed payroll weeks yet.</p></div>{% endfor %}
+    {% if report.weeks %}
+    <div class="owner-table-wrap">
+      <table class="owner-week-table">
+        <thead><tr><th scope="col">Payroll week</th><th scope="col">Earnings</th><th scope="col">Wages</th><th scope="col">Fuel</th><th scope="col">Overheads</th><th scope="col">Estimated profit</th><th scope="col">Review</th><th scope="col"><span class="owner-sr-only">Links</span></th></tr></thead>
+        <tbody>
+        {% for week in report.weeks %}
+          <tr>
+            <th scope="row">{{ week.week_start.strftime('%d %b') }} –<br>{{ week.week_end.strftime('%d %b %Y') }}</th>
+            <td>{{ money(week.earnings) }}</td>
+            <td>{% if week.payroll_pending and week.employer_cost == 0 %}Pending{% else %}{{ money(week.employer_cost) }}{% if week.payroll_pending %}<span class="owner-table-note">Payroll pending</span>{% endif %}{% endif %}</td>
+            <td>{% if week.fuel_pending and week.fuel_spending == 0 %}Pending{% else %}{{ money(week.fuel_spending) }}{% if week.fuel_pending %}<span class="owner-table-note">Fuel pending</span>{% endif %}{% endif %}</td>
+            <td>{{ money(week.overheads) }}</td>
+            <td><strong>{% if week.estimated_operating_result is none %}Pending{% else %}{{ money(week.estimated_operating_result) }}{% endif %}</strong>{% if week.estimated_operating_result is none %}<span class="owner-table-note">{{ week.profit_pending_reason }}</span>{% endif %}</td>
+            <td>{{ badge(week.review_status) }}</td>
+            <td class="owner-table-links"><a href="{{ url_for('owner_analysis.weekly', week_start=week.week_start.isoformat(), **view_args) }}">Open week</a>{% if week.checks_url|default(none) %}<a href="{{ week.checks_url }}">{{ week.outstanding_issues|length }} {{ 'check' if week.outstanding_issues|length == 1 else 'checks' }}</a>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}<p>No completed payroll weeks yet.</p>{% endif %}
   </section>
   {% endif %}
+
+  {% include 'owner_analysis/_business_notes.html' %}
 
   {% if report.pending_week_starts %}
   <section class="owner-card" aria-label="Weeks not yet included">
@@ -93,5 +94,7 @@
     {% if report.active_week %}<p><a class="owner-button owner-button-secondary" href="{{ url_for('owner_analysis.weekly', week_start=report.active_week.isoformat(), **view_args) }}">Open current week</a></p>{% endif %}
   </section>
   {% endif %}
+  {% if analysis_view != 'overview' %}{% include 'owner_analysis/_entity_dialog.html' %}{% endif %}
 </div>
 {% endblock %}
+{% block additional_js %}<script src="{{ url_for('static', filename='js/owner-period-picker.js') }}" defer></script>{% endblock %}

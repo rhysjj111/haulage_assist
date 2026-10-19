@@ -1,45 +1,16 @@
 {% extends 'base.html' %}
-{% import 'macros.html' as entry_macros %}
-{% block header %}<h4>Review {{ 'fuel flag' if kind == 'fuel_flag' else kind }}</h4>{% endblock %}
+{% set record_label = {'day': 'day', 'job': 'job', 'fuel': 'fuel receipt', 'payslip': 'payslip', 'fuel_flag': 'fuel marker'}[kind] %}
+{% set correction_title = 'Review duplicate payslips' if mode == 'group' else 'Review split job' if split_read_only else 'Clear mistaken fuel marker' if kind == 'fuel_flag' else ('Add ' if mode == 'add' else 'Correct ') ~ record_label %}
+{% block header %}<h4>{{ correction_title }}</h4>{% endblock %}
 {% block main %}
-<div class="col s12 m10 offset-m1 l8 offset-l2" style="padding-bottom: 2rem; overflow-wrap: anywhere;">
-  <p><a href="{{ back_url }}">Back to Owner Analysis</a></p>
-  <p>Payroll week: {{ f.display_date(week) }} – {{ f.display_date(week_end) }}.</p>
-  <p>This form covers only the record selected from the analysis check.</p>
-  {% if error %}<p class="red-text" role="alert">{{ error }}</p>{% endif %}
-  {% if mode == 'group' %}
-    <h5>Payslips recorded for this driver</h5>
-    <p>Check the records below before removing a duplicate. The recorded costs remain included until a correction is saved.</p>
-    {% for row in group_rows %}
-      <section class="card"><div class="card-content">
-        <p>Payslip #{{ row.id }} · {{ row.date }}</p>
-        <p>Wage: {{ f.fd_currency(row.total_wage) }} · Employer cost: {{ f.fd_currency(row.total_cost_to_employer) }}</p>
-        <p><a href="{{ row.edit_url }}">Open this payslip</a></p>
-        <form method="post" action="{{ url_for('payslip.delete_payslip', item_id=row.id, owner_context=token) }}">
-          {{ form.hidden_tag() }}
-          <button class="btn red darken-3" type="submit">Delete this duplicate payslip</button>
-        </form>
-      </div></section>
-    {% endfor %}
-  {% elif split_read_only %}
-    <p role="status"><strong>This is a split-job allocation.</strong> The allocations must be checked together to preserve the total. It is read-only in this correction form.</p>
-    <p>{{ entry.collection }} → {{ entry.delivery }} · {{ f.fd_currency(entry.earned) }}</p>
-  {% else %}
-    <form method="post" action="{{ action }}">
-      {{ form.hidden_tag() }}
-      {% if kind == 'day' %}
-        {{ entry_macros.day(macro_type, values, {'drivers': drivers, 'trucks': trucks}, f) }}
-      {% elif kind == 'job' %}
-        {{ entry_macros.job(macro_type, values, {'drivers': drivers}, f, allow_split=false) }}
-      {% elif kind == 'fuel' %}
-        {{ entry_macros.fuel(macro_type, values, trucks, f) }}
-      {% elif kind == 'payslip' %}
-        {{ entry_macros.payslip(macro_type, values, drivers, f) }}
-      {% elif kind == 'fuel_flag' %}
-        <p>Use this only if the fuel selector on the day entry was ticked by mistake. It clears that selector for this truck and date; no fuel cost will be created.</p>
-        <button class="btn" type="submit">Clear mistaken fuel selector</button>
-      {% endif %}
-    </form>
-  {% endif %}
+{% include 'owner_analysis/_styles.html' %}
+{% include 'owner_analysis/_investigation_styles.html' %}
+{% include 'owner_analysis/_correction_styles.html' %}
+<div class="col s12 owner-analysis owner-correction-shell">
+  <p><a href="{{ back_url }}">Back to Data Checks</a></p>
+  {% if week_context|default(none) %}<div class="owner-correction-layout">{% endif %}
+    {% with editor=correction_editor %}{% include 'owner_analysis/_correction_editor.html' %}{% endwith %}
+    {% if week_context|default(none) %}{% include 'owner_analysis/_week_context.html' %}</div>{% endif %}
 </div>
 {% endblock %}
+{% block additional_js %}{% include 'owner_analysis/_correction_scripts.html' %}{% endblock %}

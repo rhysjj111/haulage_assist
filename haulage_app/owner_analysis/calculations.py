@@ -165,9 +165,9 @@ def calculate_weekly_report(week_start, *, as_of=None):
         if issue.get("record_id") is not None:
             if issue["code"] == "job_amount_out_of_range":
                 record_type = "job"
-            elif issue["code"] == "fuel_amount_out_of_range":
+            elif issue["code"] in {"fuel_amount_out_of_range", "fuel_price_unusual", "possible_duplicate_fuel"}:
                 record_type = "fuel"
-            elif issue["code"] in {"payslip_amount_out_of_range", "employer_cost_below_wage"}:
+            elif issue["code"] in {"payslip_amount_out_of_range", "employer_cost_below_wage", "payroll_gap_unusual"}:
                 record_type = "payslip"
             else:
                 record_type = "day"

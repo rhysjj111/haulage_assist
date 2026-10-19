@@ -1,0 +1,90 @@
+{% macro entity_money(value) -%}{% if value is not none %}£{{ '%.2f'|format(value / 100) }}{% else %}—{% endif %}{%- endmacro %}
+{% macro reading(value) -%}{% if value is not none %}{{ '%.2f'|format(value / 100) }}{% else %}—{% endif %}{%- endmacro %}
+<div class="owner-entity-details" data-owner-entity-details data-entity-kind="{{ details.kind }}" data-entity-id="{{ details.subject_id }}">
+  <section class="owner-card">
+    <h2>{{ details.label }}</h2>
+    <p>{{ details.period_label }}</p>
+    {% if details.kind == 'driver' %}
+    <div class="owner-entity-summary" aria-label="Driver summary">
+      <div><span>Recorded earnings</span><strong>{{ entity_money(details.summary.earnings) }}</strong></div>
+      <div><span>Working days</span><strong>{{ details.summary.working_days }}</strong></div>
+      <div><span>Holiday days</span><strong>{{ details.summary.holiday_days }}</strong></div>
+      <div><span>Absent days</span><strong>{{ details.summary.absent_days }}</strong></div>
+    </div>
+    <p class="owner-muted owner-small">Journeys and earnings follow the driver recorded on each day. Blank weekends are not scheduled; missing weekday entries do not mean the driver was absent.</p>
+    {% else %}
+    <div class="owner-entity-summary" aria-label="Truck summary">
+      <div><span>Fuel spending</span><strong>{{ entity_money(details.summary.fuel_spending) }}</strong></div>
+      <div><span>Litres purchased</span><strong>{{ reading(details.summary.fuel_volume) }} L</strong></div>
+      <div><span>Fuel entries</span><strong>{{ details.summary.fuel_entry_count }}</strong></div>
+    </div>
+    <p class="owner-muted owner-small">Mileage readings and drivers are recorded against each day’s single truck assignment. Fuel receipts follow the truck and receipt date, including receipts without a linked day.</p>
+    {% endif %}
+    {% if details.period == 'monthly' %}<p class="owner-muted owner-small">Completed payroll weeks only.{% if details.pending_week_count %} {{ details.pending_week_count }} unfinished {{ 'week is' if details.pending_week_count == 1 else 'weeks are' }} excluded.{% endif %}</p>{% endif %}
+  </section>
+
+  {% for week in details.weeks %}
+  <section class="owner-card owner-entity-week" data-week-start="{{ week.week_start.isoformat() }}">
+    <div class="owner-card-heading"><h3>Week: {{ week.week_start.strftime('%d %b') }} – {{ week.week_end.strftime('%d %b %Y') }}</h3>{% if details.kind == 'driver' %}<span class="owner-small">Recorded earnings: <strong>{{ entity_money(week.summary.earnings) }}</strong></span>{% endif %}</div>
+    {% if week.recorded_through is none %}<p class="owner-muted owner-small">This payroll week has not started. Entries dated after today are excluded.</p>{% elif week.recorded_through < week.week_end %}<p class="owner-muted owner-small">Week so far, through {{ week.recorded_through.strftime('%d %b %Y') }}. Later entries are excluded.</p>{% endif %}
+    {% if details.kind == 'driver' %}
+    <div class="owner-table-wrap"><table class="owner-entity-table owner-entity-driver-days">
+      <thead><tr><th scope="col">Day</th><th scope="col">Status and truck</th><th scope="col">Jobs and destinations</th><th scope="col" class="owner-entity-number">Earnings</th></tr></thead>
+      <tbody>
+      {% for day in week.days %}
+        {% if day.entries %}
+          {% for entry in day.entries %}
+          <tr data-date="{{ day.date.isoformat() }}" data-day-id="{{ entry.id }}">
+            {% if loop.first %}<th scope="row" rowspan="{{ day.entries|length }}">{{ day.date.strftime('%a') }}<span class="owner-entity-date">{{ day.date.strftime('%d %b') }}</span>{% if day.entries|length > 1 %}<span class="owner-entity-tag">Multiple entries</span>{% endif %}</th>{% endif %}
+            <td><span class="owner-entity-status">{{ entry.status_label }}</span><span class="owner-entity-truck">{{ entry.truck_registration or 'No truck recorded' }}</span>{% if entry.overnight %}<span class="owner-entity-tag">Overnight</span>{% endif %}</td>
+            <td>
+              {% for job in entry.jobs %}
+              <div class="owner-entity-job" data-job-id="{{ job.id }}"><span class="owner-entity-job-route">{{ job.collection or 'Collection not recorded' }} → {{ job.delivery or 'Delivery not recorded' }}{% if job.split %} <span class="owner-entity-tag">Split allocation</span>{% endif %}{% if job.notes %}<span class="owner-entity-job-note">{{ job.notes }}</span>{% endif %}</span><strong class="owner-entity-job-earned">{{ entity_money(job.earned) }}</strong></div>
+              {% else %}<span class="owner-entity-empty">No jobs recorded</span>{% endfor %}
+              {% if entry.additional_earned %}<p class="owner-entity-additional">Additional earnings: <strong>{{ entity_money(entry.additional_earned) }}</strong></p>{% endif %}
+            </td>
+            <td class="owner-entity-number"><strong>{{ entity_money(entry.earnings) }}</strong></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr data-date="{{ day.date.isoformat() }}"{% if day.is_weekend and not day.is_future %} class="owner-entity-weekend-empty"{% endif %}><th scope="row">{{ day.date.strftime('%a') }}<span class="owner-entity-date">{{ day.date.strftime('%d %b') }}</span></th><td colspan="3" class="owner-entity-empty">{{ day.label }}</td></tr>
+        {% endif %}
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% if week.payslips %}
+    <div class="owner-entity-fuel"><h4>Recorded payslips</h4>
+      <div class="owner-table-wrap"><table class="owner-entity-table owner-entity-payslips"><thead><tr><th scope="col">Payslip date</th><th scope="col" class="owner-entity-number">Wage</th><th scope="col" class="owner-entity-number">Employer cost</th></tr></thead><tbody>{% for slip in week.payslips %}<tr data-payslip-id="{{ slip.id }}"><th scope="row">{{ slip.date.strftime('%d %b %Y') }}</th><td class="owner-entity-number">{{ entity_money(slip.total_wage) }}</td><td class="owner-entity-number">{{ entity_money(slip.total_cost_to_employer) }}</td></tr>{% endfor %}</tbody></table></div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="owner-table-wrap"><table class="owner-entity-table owner-entity-truck-days">
+      <thead><tr><th scope="col">Day</th><th scope="col">Driver and status</th><th scope="col" class="owner-entity-number">Start mileage</th><th scope="col" class="owner-entity-number">End mileage</th><th scope="col" class="owner-entity-number">Recorded miles</th></tr></thead>
+      <tbody>
+      {% for day in week.days %}
+        {% if day.entries %}
+          {% for entry in day.entries %}
+          <tr data-date="{{ day.date.isoformat() }}" data-day-id="{{ entry.id }}">
+            {% if loop.first %}<th scope="row" rowspan="{{ day.entries|length }}">{{ day.date.strftime('%a') }}<span class="owner-entity-date">{{ day.date.strftime('%d %b') }}</span></th>{% endif %}
+            <td><strong>{{ entry.driver_name }}</strong><span class="owner-entity-truck">{{ entry.status_label }}</span>{% if day.entries|length > 1 %}<span class="owner-entity-tag">Multiple assignments</span>{% endif %}{% if entry.missing_fuel_receipt %}<span class="owner-entity-date">Fuel noted; no receipt recorded for this date</span>{% endif %}</td>
+            <td class="owner-entity-number">{{ reading(entry.start_mileage) }}</td><td class="owner-entity-number">{{ reading(entry.end_mileage) }}</td><td class="owner-entity-number">{% if entry.mileage_valid %}{{ reading(entry.distance) }}{% else %}—{% if entry.status == 'worked' or entry.status == 'working' %}<span class="owner-entity-date">Check readings</span>{% endif %}{% endif %}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+        <tr data-date="{{ day.date.isoformat() }}"><th scope="row">{{ day.date.strftime('%a') }}<span class="owner-entity-date">{{ day.date.strftime('%d %b') }}</span></th><td colspan="4" class="owner-entity-empty">{{ day.label }}</td></tr>
+        {% endif %}
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <p class="owner-muted owner-small">Recorded miles are the difference between valid start and end readings. If several entries use the same truck on one day, the readings may overlap. A blank day does not show whether the truck was unused.</p>
+    <div class="owner-entity-fuel"><h4>Fuel receipts</h4>
+    {% if week.summary.fuel_entry_count %}
+      <div class="owner-table-wrap"><table class="owner-entity-table owner-entity-fuel-receipts"><thead><tr><th scope="col">Receipt date</th><th scope="col">Fuel card</th><th scope="col" class="owner-entity-number">Litres</th><th scope="col" class="owner-entity-number">Cost</th></tr></thead><tbody>
+      {% for day in week.days %}{% for receipt in day.fuel_entries %}<tr data-fuel-id="{{ receipt.id }}"><th scope="row">{{ receipt.date.strftime('%a %d %b') }}</th><td>{{ receipt.fuel_card_name or 'Not recorded' }}</td><td class="owner-entity-number">{{ reading(receipt.fuel_volume) }}</td><td class="owner-entity-number">{{ entity_money(receipt.fuel_cost) }}</td></tr>{% endfor %}{% endfor %}
+      </tbody></table></div>
+    {% else %}<p class="owner-muted owner-small">No fuel receipts recorded for this week.</p>{% endif %}
+    </div>
+    {% endif %}
+  </section>
+  {% else %}<section class="owner-card"><p>No completed payroll weeks are included in this month yet.</p></section>{% endfor %}
+</div>

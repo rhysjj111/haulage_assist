@@ -23,19 +23,57 @@
   .owner-badge-checked { background: #e4f1e7; color: #285b36; }
   .owner-badge-needs_review { background: #fff0db; color: #825015; }
   .owner-badge-not_reviewed { background: #edf0f2; color: #46545b; }
-  .owner-badge-in_progress, .owner-badge-future { background: #e4eef7; color: #285274; }
+  .owner-badge-in_progress, .owner-badge-future, .owner-badge-awaiting_records { background: #e4eef7; color: #285274; }
   .owner-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
   .owner-metric { border: 1px solid #e0e7eb; background: #f8fafb; border-radius: .4rem; padding: .9rem; min-width: 0; }
   .owner-metric-label { display: block; font-size: .87rem; color: #54636a; margin-bottom: .35rem; }
   .owner-metric-value { display: block; font-size: 1.4rem; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
   .owner-result { border-left: 4px solid #3c6c91; background: #eef4f8; border-radius: .3rem; padding: .9rem 1rem; margin-top: .8rem; }
   .owner-result strong { font-size: 1.35rem; display: block; margin-top: .25rem; }
+  .owner-profit { margin: 0 0 1.1rem; padding: 1.05rem 1.2rem; }
+  .owner-profit > span { font-size: 1rem; font-weight: 600; }
+  .owner-profit strong { font-size: 2.25rem; line-height: 1.3; }
+  .owner-analysis .owner-profit-pending { color: #795118; font-weight: 600; margin-top: .5rem; }
+  .owner-review-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem; padding: .8rem 1rem; margin: 0 0 1.2rem; border: 1px solid #dce3e6; border-radius: .4rem; background: #f8fafb; }
+  .owner-review-summary-main { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem 1rem; }
+  .owner-review-scope { display: block; margin-top: .1rem; }
+  .owner-table-wrap { width: 100%; overflow-x: auto; }
+  .owner-analysis .owner-week-table { width: 100%; min-width: 760px; margin-top: .5rem; font-size: .9rem; }
+  .owner-analysis .owner-week-table th, .owner-analysis .owner-week-table td { padding: .75rem .55rem; vertical-align: top; border-bottom: 1px solid #e3eaee; text-align: right; }
+  .owner-analysis .owner-week-table th:first-child, .owner-analysis .owner-week-table td:last-child { text-align: left; }
+  .owner-analysis .owner-week-table thead th { color: #54636a; font-weight: 600; }
+  .owner-analysis .owner-week-table tbody th { font-weight: 500; }
+  .owner-table-note { display: block; margin-top: .3rem; font-size: .8rem; color: #795118; }
+  .owner-table-links a { display: block; margin-bottom: .35rem; white-space: nowrap; }
+  .owner-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  .owner-business-note + .owner-business-note { margin-top: 1rem; padding-top: .6rem; border-top: 1px solid #e3eaee; }
+  .owner-absence-list { margin: 0; }
+  .owner-absence-list > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 1rem; padding: .65rem 0; border-top: 1px solid #e4eaed; line-height: 1.6; }
+  .owner-absence-list > div:first-child { border-top: 0; padding-top: .15rem; }
+  .owner-absence-list > div:last-child { padding-bottom: 0; }
+  .owner-absence-list dt { font-weight: 600; }
+  .owner-absence-list dd { margin: 0; }
   .owner-notice { border-left: 4px solid #d6a049; background: #fff8ec; padding: .8rem 1rem; border-radius: .25rem; margin: .8rem 0; }
   .owner-note { background: #f2f6f8; border-radius: .3rem; padding: .75rem .9rem; margin: .6rem 0; white-space: pre-wrap; }
   .owner-issue { padding: .9rem 0; border-top: 1px solid #e4eaed; }
   .owner-issue:first-of-type { border-top: 0; }
   .owner-issue-title { font-weight: 600; margin-bottom: .25rem; }
+  .owner-checks-total h2 { margin: 0; }
+  .owner-analysis .owner-check-table { width: 100%; table-layout: fixed; margin: .15rem 0 .3rem; border-collapse: collapse; }
+  .owner-analysis .owner-check-table th, .owner-analysis .owner-check-table td { padding: .95rem .85rem; text-align: left; vertical-align: middle; border-bottom: 1px solid #e4eaed; }
+  .owner-analysis .owner-check-table thead th { padding-top: .65rem; padding-bottom: .65rem; background: #f4f7f9; color: #54636a; font-size: .85rem; font-weight: 600; }
+  .owner-analysis .owner-check-table thead th:first-child { width: 31%; }
+  .owner-analysis .owner-check-table thead th:last-child { width: 7.5rem; }
+  .owner-analysis .owner-check-table tbody th { font-weight: 600; }
+  .owner-analysis .owner-check-table tbody tr:last-child > * { border-bottom: 0; }
+  .owner-analysis .owner-check-table tbody tr:hover { background: #f8fafb; }
+  .owner-analysis .owner-check-table .owner-check-review { text-align: right; white-space: nowrap; }
+  .owner-check-review a { display: inline-block; padding: .4rem 0 .4rem .65rem; font-weight: 600; }
+  .owner-check-secondary { display: block; margin-top: .2rem; color: #54636a; font-size: .85rem; }
+  .owner-week-review { margin-top: 1.1rem; padding-top: .9rem; border-top: 1px solid #dce3e6; }
+  .owner-analysis .owner-week-review-form { margin-top: 0; }
   .owner-analysis details { margin-top: .6rem; }
+  .owner-optional-checks { border-top: 1px solid #dce3e6; padding-top: .6rem; }
   .owner-analysis summary { cursor: pointer; color: #245a86; padding: .35rem 0; }
   .owner-analysis form { margin-top: .8rem; }
   .owner-analysis label { color: #34434b; font-size: .9rem; }
@@ -54,6 +92,8 @@
   .owner-filter > div { flex: 1 1 15rem; }
   .owner-filter select { margin-bottom: 0; }
   .owner-filter .owner-button { margin-bottom: 0; }
+  .owner-filter.owner-period-picker { display: block; width: min(100%, 21rem); background: none; padding: 0; }
+  .owner-period-picker input[data-owner-period-input] { margin-bottom: 0; cursor: pointer; }
   .owner-breakdown-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
   .owner-breakdown-grid > .owner-card { margin-bottom: 0; }
   .owner-breakdown-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-top: .8rem; }
@@ -68,6 +108,9 @@
   .owner-history-entry:last-child { border-bottom: 0; }
   @media (max-width: 992px) { .owner-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 600px) {
+    .owner-analysis .owner-check-table th, .owner-analysis .owner-check-table td { padding: .75rem .4rem; font-size: .9rem; }
+    .owner-analysis .owner-check-table thead th:first-child { width: 30%; }
+    .owner-analysis .owner-check-table thead th:last-child { width: 5.5rem; }
     .owner-page-title { font-size: 1.8rem; margin-left: 1.1rem; }
     .owner-analysis { padding-bottom: 2rem; }
     .owner-analysis h2 { font-size: 1.4rem; }

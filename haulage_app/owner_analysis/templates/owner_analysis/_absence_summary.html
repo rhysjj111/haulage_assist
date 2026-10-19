@@ -1,0 +1,13 @@
+{% if report.absence_summary %}
+<section class="owner-card" aria-labelledby="owner-absence-heading">
+  <h2 id="owner-absence-heading">Holidays and absences</h2>
+  <dl class="owner-absence-list">
+    {% for absence in report.absence_summary %}
+    <div>
+      <dt>{{ absence.driver_name }}</dt>
+      <dd>{% if absence.holiday_days %}{{ absence.holiday_days }} {{ 'day' if absence.holiday_days == 1 else 'days' }} holiday{% endif %}{% if absence.holiday_days and absence.absent_days %} · {% endif %}{% if absence.absent_days %}{{ absence.absent_days }} {{ 'day' if absence.absent_days == 1 else 'days' }} absent{% endif %}</dd>
+    </div>
+    {% endfor %}
+  </dl>
+</section>
+{% endif %}

@@ -1,0 +1,27 @@
+<script>
+  document.querySelectorAll('.owner-correction-editor').forEach(function (form) {
+    var status = form.querySelector('#owner-day-status');
+    var working = form.querySelector('[data-owner-working-fields]');
+    if (status && working) {
+      function showWorkingFields() {
+        var isWorking = status.value === 'working';
+        working.hidden = !isWorking;
+        working.disabled = !isWorking;
+        var truck = working.querySelector('select[name="truck_id"]');
+        if (truck) truck.required = isWorking;
+      }
+      status.addEventListener('change', showWorkingFields);
+      showWorkingFields();
+    }
+  });
+  document.querySelectorAll('[data-owner-cancel-delete]').forEach(function (button) {
+    button.hidden = false;
+    button.addEventListener('click', function () {
+      var details = button.closest('details');
+      var confirmation = details.querySelector('input[name="confirm_delete"]');
+      if (confirmation) confirmation.checked = false;
+      details.open = false;
+      details.querySelector('summary').focus();
+    });
+  });
+</script>
