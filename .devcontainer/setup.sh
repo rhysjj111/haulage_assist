@@ -26,4 +26,5 @@ fi
 .venv/bin/python tools/setup_review.py
 
 echo "Review setup ready. Start the preview with: python3 run.py"
-echo "Open port 8080 from the Ports tab and keep its Codespaces visibility Private."
+echo "Open port 8080 from the Ports tab: protocol HTTP, visibility Private."
+echo "The browser's app.github.dev preview address uses HTTPS."

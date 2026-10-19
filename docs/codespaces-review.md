@@ -19,7 +19,9 @@ Creating a Codespace does not merge or deploy the review branch.
    ```
 
 5. Open the **Ports** tab, find **8080**, and select **Open in Browser**. Keep the
-   port's Codespaces visibility **Private**, which is the default.
+   port's Codespaces visibility **Private**, which is the default. Its port
+   protocol is **HTTP**, as configured by the dev container; the browser's
+   `app.github.dev` address still uses **HTTPS**.
 
 The app stays running in that terminal. Press **Ctrl+C** to stop it; run the same
 command to start it again. Normal restarts and container rebuilds preserve the
@@ -96,6 +98,36 @@ the individual rows are untouched. Changed or newly entered statuses and linked
 records are preserved; a skipped cleanup is explained in the terminal.
 
 ## If setup needs retrying
+
+### Preview connection fails
+
+Keep `python3 run.py` running and open the preview from **Ports → 8080 → Open
+in Browser**. Each Codespace has its own preview address; an older Codespace's
+URL does not point at the new one.
+
+The review configuration explicitly sets port 8080 to **HTTP**, matching Flask.
+GitHub supplies HTTPS for the browser connection. If this configuration was
+updated after your Codespace was created, pull the branch, stop the app, and use
+**Ctrl+Shift+P → Codespaces: Rebuild Container** once to apply it. This preserves
+the review database; do not delete the Codespace or its database volume.
+
+If a connection still fails, run this in a second terminal while the app is
+running:
+
+```bash
+curl -I http://127.0.0.1:8080
+```
+
+An `HTTP/1.1 200 OK` response confirms the app is reachable locally. If the
+browser still cannot connect and refreshing it produces no Flask request log,
+the request is failing before it reaches the app. Record the browser's exact
+error and check the Ports entry's HTTP protocol and preview address. Explicit
+HTTP prevents protocol mismatches; it cannot repair every GitHub forwarding
+failure. A refused local connection means the app is not listening on 8080;
+check the running terminal for startup errors. A local 500 response instead
+needs the Flask error log.
+
+### Setup did not complete
 
 From the repository directory, run:
 

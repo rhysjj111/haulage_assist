@@ -13,6 +13,7 @@
   "portsAttributes": {
     "8080": {
       "label": "Haulage review",
+      "protocol": "http",
       "onAutoForward": "notify"
     }
   },
