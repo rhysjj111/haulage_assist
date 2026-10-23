@@ -27,8 +27,12 @@ main > .container { width: 96%; max-width: 1660px; }
 .payroll-import-week-control { flex: 0 0 192px; }
 .payroll-import input[type="date"] { box-sizing: border-box; width: 100%; height: 37px; margin: 0; padding: 5px 8px; border: 1px solid #cbd4dd; border-radius: 4px; background: #fff; font: inherit; font-size: .9rem; color: #263445; }
 .payroll-import-week-control span { display: block; }
-.payroll-import-field-error { font-size: .8rem; color: #a73333; margin-top: 5px; }
+.payroll-import-field-error { display: block; font-size: .76rem; line-height: 1.45; color: #a73333; margin-top: 5px; }
 .payroll-import-count { margin: 22px 0 9px; font-size: .9rem; color: #526171; }
+.payroll-import-check-state { display: flex; align-items: baseline; gap: 12px; margin: 0 0 12px; }
+.payroll-import-check-state p { margin: 0; }
+.payroll-import-check-state:has(p:empty):has(button[hidden]) { display: none; }
+.payroll-import-check-state button { flex-shrink: 0; padding: 0; font-size: .8rem; }
 .payroll-import-table-wrap { width: 100%; overflow-x: auto; }
 .payroll-import-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .payroll-import-table th { padding: 10px 7px; background: #f5f7f9; font-size: .77rem; font-weight: 700; color: #5a6877; vertical-align: bottom; }
@@ -41,10 +45,17 @@ main > .container { width: 96%; max-width: 1660px; }
 .payroll-import select.browser-default { box-sizing: border-box; display: block; width: 100%; height: 36px; padding: 5px 24px 5px 7px; background-color: #fff; border: 1px solid #cbd4dd; border-radius: 4px; color: #263445; font: inherit; font-size: .84rem; }
 .payroll-import input[type="number"] { box-sizing: border-box; width: 100%; height: 36px; margin: 0; padding: 5px 7px; background: #fff; border: 1px solid #cbd4dd; border-radius: 4px; text-align: right; font: inherit; font-size: .87rem; color: #263445; -moz-appearance: textfield; }
 .payroll-import input[type="number"]::-webkit-inner-spin-button, .payroll-import input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.payroll-import input[type="number"]:disabled { background: #f7f8fa; color: #7a8491; }
 .payroll-import input:focus, .payroll-import select:focus { border-color: #557ba1 !important; outline: 2px solid #dbe8f4; outline-offset: 1px; box-shadow: none !important; }
 .payroll-import input:invalid { border-color: #ba5555; }
 .payroll-import-number { text-align: right; }
 .payroll-import-match-note { display: block; margin-top: 4px; font-size: .74rem; line-height: 1.45; color: #956323; }
+.payroll-import select[aria-invalid="true"] { border-color: #ba5555; }
+.payroll-import-row-warning td { background: #fffdf8; }
+.payroll-import-existing { margin-top: 8px; font-size: .74rem; line-height: 1.5; color: #815c25; }
+.payroll-import-existing strong, .payroll-import-existing-item span, .payroll-import-existing-item a { display: block; }
+.payroll-import-existing strong { font-weight: 600; }
+.payroll-import-existing-item { margin-top: 5px; }
 .payroll-import-empty { margin: 15px 0; color: #6d7785; font-size: .9rem; }
 .payroll-import-other { margin-top: 20px; padding-top: 14px; border-top: 1px solid #e3e8ed; }
 .payroll-import-other summary { cursor: pointer; font-weight: 600; font-size: .9rem; }

@@ -49,6 +49,15 @@ driver and two amounts beside the original PDF. Other employees are excluded
 until assigned an existing driver. Real report names may not match the synthetic
 demo drivers; you can choose a demo driver manually to try the controls.
 
+Try selecting the same driver for two rows, entering an invalid amount, or
+making employer cost lower than wages. Each selected row shows the relevant
+check. Changing the week or driver also checks existing payslips: recorded
+amounts and a **View payslip** link appear alongside any matches. You can use a
+demo driver/week with an existing sample payslip to try this comparison. Choose
+**Exclude** to omit an employee; excluded rows do not affect amount checks.
+The pending/unavailable state stays visible if existing records cannot be
+checked, and **Retry check** keeps the draft edits intact.
+
 This is a preview: it has no Save action and does not change payslips, day
 entries or reports. The draft clears when the page is refreshed or the document
 is replaced. No AI account, permanent document storage, container rebuild or

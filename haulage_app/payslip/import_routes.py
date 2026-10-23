@@ -1,6 +1,7 @@
 """Temporary PDF-to-preview endpoints; no payslip-saving action."""
 
 from collections import defaultdict
+import json
 
 from flask import current_app, jsonify, make_response, render_template, request, url_for
 from flask_wtf.csrf import generate_csrf, validate_csrf
@@ -76,6 +77,7 @@ def import_preview():
             "payslip/import_preview.html",
             csrf_token=generate_csrf(),
             read_url=url_for("payslip.read_import_pdf"),
+            check_url=url_for("payslip.check_import_preview"),
         ))
     return _private_response(response)
 
@@ -113,4 +115,38 @@ def read_import_pdf():
         return _error(error.code, str(error), status)
     except SQLAlchemyError:
         return _error("preview_unavailable", "Driver choices could not be loaded. Please try again.", 503)
+    return _private_response(jsonify(payload))
+
+
+@payslip_bp.route("/import/check", methods=["POST"])
+def check_import_preview():
+    if current_app.config.get("WTF_CSRF_ENABLED", True):
+        try:
+            validate_csrf(request.headers.get("X-CSRFToken"))
+        except ValidationError:
+            return _error("csrf_failed", "Refresh this page and choose the PDF again.", 403)
+
+    from haulage_app.payslip.import_checks import (
+        MAX_CHECK_BYTES, ImportCheckInputError, existing_payslips_for_preview,
+    )
+
+    if request.mimetype != "application/json":
+        return _error("unsupported_media_type", "Send the selected payroll week and drivers as JSON.", 415)
+    if request.content_length is not None and request.content_length > MAX_CHECK_BYTES:
+        return _error("too_large", "The review request is too large. Read the PDF again.", 413)
+    content = request.stream.read(MAX_CHECK_BYTES + 1)
+    if len(content) > MAX_CHECK_BYTES:
+        return _error("too_large", "The review request is too large. Read the PDF again.", 413)
+    try:
+        # Read the bounded raw body before decoding; do not let request.json
+        # consume an arbitrary request or retain the draft in a session.
+        data = json.loads(content.decode("utf-8"))
+    except (ValueError, UnicodeError, RecursionError):
+        return _error("invalid_check", "Choose a valid payroll week and driver selections.", 400)
+    try:
+        payload = existing_payslips_for_preview(data)
+    except ImportCheckInputError as error:
+        return _error(error.code, str(error), error.status)
+    except SQLAlchemyError:
+        return _error("checks_unavailable", "Existing payslips could not be checked. Please try again.", 503)
     return _private_response(jsonify(payload))

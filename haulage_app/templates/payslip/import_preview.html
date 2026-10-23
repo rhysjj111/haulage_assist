@@ -5,7 +5,8 @@
 {% block main %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/payslip-import.css') }}">
 <section class="payroll-import" id="payroll-import"
-         data-read-url="{{ read_url }}" data-csrf-token="{{ csrf_token }}">
+         data-read-url="{{ read_url }}" data-check-url="{{ check_url }}"
+         data-csrf-token="{{ csrf_token }}">
     <div class="payroll-import-heading">
         <a class="payroll-import-back" href="{{ url_for('payslip.add_payslip', item_id=0, tab='entry') }}">← Back to payslips</a>
         <p class="payroll-import-notice">Preview only — nothing is saved.</p>
@@ -45,6 +46,10 @@
             </div>
 
             <p id="payroll-driver-count" class="payroll-import-count" aria-live="polite"></p>
+            <div class="payroll-import-check-state">
+                <p id="payroll-existing-check-status" class="payroll-import-muted" role="status" aria-live="polite"></p>
+                <button id="payroll-retry-checks" class="payroll-import-text-button" type="button" hidden>Retry check</button>
+            </div>
             <div id="payroll-driver-table-wrap" class="payroll-import-table-wrap">
                 <table class="payroll-import-table">
                     <thead><tr>
@@ -55,7 +60,7 @@
                     <tbody id="payroll-driver-rows"></tbody>
                 </table>
             </div>
-            <p id="payroll-no-driver-rows" class="payroll-import-empty" hidden>No drivers matched. Check the other employees below.</p>
+            <p id="payroll-no-driver-rows" class="payroll-import-empty" hidden>No driver entries selected. Check the other employees below.</p>
 
             <details id="payroll-other-employees" class="payroll-import-other" hidden>
                 <summary id="payroll-other-summary">Other employees</summary>

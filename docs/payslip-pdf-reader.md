@@ -17,12 +17,28 @@ delete payslips. There is no Save action, document archive or database migration
 4. Edit the week, driver and amounts locally. These changes are a preview only.
    Refreshing, clearing or replacing the document clears the draft; cancelling
    a file chooser preserves the existing preview.
+5. Review the inline checks. Selecting a driver twice flags both rows. Selected
+   amounts must contain at most two decimal places, be greater than £1 and less
+   than £3,000, and have employer cost at least equal to Total wage. Excluded
+   employees do not affect these checks.
+6. Existing payslips are checked again when the selected week or drivers change.
+   A recorded payslip shows its amounts and a **View payslip** link; nothing is
+   overwritten or excluded automatically. If more than one historical payslip
+   exists, all are shown. An unsuccessful check remains visibly unavailable
+   until retried, while your edits stay on the page.
+
+These checks help review the proposed entries; they do not confirm that payroll
+is correct or that the entries can be saved. Choosing **Exclude** explicitly
+removes an ambiguous employee from the selected entries. Changing an amount
+updates local checks without uploading the PDF or amounts again.
 
 The original viewer uses the browser's selected File through a local object
 URL. A raw copy is sent to the app for short-lived extraction. No PDF or review
 draft is stored in cookies, local storage, a database or a server file archive.
 Neither a document URL nor an uploaded filename is sent in the request path.
 The app makes no AI-service calls and does not send the PDF to another service.
+Existing-record checks send only the selected driver IDs and week to the app;
+they do not store a review draft. Their responses use `Cache-Control: no-store`.
 
 ## Agreed mapping
 
@@ -116,7 +132,8 @@ or configured database. Existing test setup selects isolated in-memory SQLite.
 The supplied report was also checked privately; it is excluded from the Git
 changes and from the synthetic fixtures.
 
-The next prototype stage adds further review checks and polish, including
-existing-payslip warnings. Actual saving remains a separate stage and must
+The next prototype stage adds actual saving and must
 revalidate the chosen week, driver, source amounts, duplicate protection and
-the app's existing day-entry requirements before any database mutation.
+the app's existing day-entry requirements before any database mutation. It must
+also repeat database checks at save time: a successful preview check is only a
+snapshot, and another employee may enter or change a payslip afterwards.
