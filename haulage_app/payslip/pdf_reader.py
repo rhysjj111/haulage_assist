@@ -11,18 +11,16 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
-from io import BytesIO
 import re
 
-from pypdf import PdfReader
-from pypdf.errors import PdfReadError
-
 from haulage_app.owner_analysis.dates import payroll_week_start, week_end
+from .pdf_text import PDFTextError, extract_pdf_text
 
 
 MAX_PDF_BYTES = 10 * 1024 * 1024
 MAX_PDF_PAGES = 20
 MAX_PDF_TEXT_CHARS = 250_000
+MAX_TABLE_LINE_CHARS = 2048
 
 
 class PayrollPDFError(ValueError):
@@ -82,7 +80,7 @@ _HEADER = re.compile(
     r"Total\s+Cost\s+Per\s+Employee$",
     re.IGNORECASE | re.MULTILINE,
 )
-_NUMBER = r"(?:\d{1,3}(?:,\d{3})+|\d+)\.\d{2}"
+_NUMBER = r"(?:\d{1,3}(?:,\d{3}){1,3}|\d{1,12})\.\d{2}"
 _MONEY = rf"(?:-?{_NUMBER}|\({_NUMBER}\))"
 _ROW = re.compile(r"^(.+?)\s+" + r"\s+".join([f"({_MONEY})"] * 5) + r"$")
 _HAS_MONEY = re.compile(_MONEY)
@@ -103,38 +101,12 @@ _FIELDS = (
 )
 
 
-def _normalise(text):
-    return text.replace("\r\n", "\n").replace("\r", "\n").replace("\xa0", " ").replace("\u2212", "-")
-
-
 def _extract_pages(content):
-    if not isinstance(content, bytes):
-        raise PayrollPDFError("invalid_pdf", "Choose a valid digital PDF management report.")
-    if len(content) > MAX_PDF_BYTES:
-        raise PayrollPDFError("too_large", "The PDF is too large. Use a report under 10 MB.")
-    if not content.lstrip().startswith(b"%PDF-"):
-        raise PayrollPDFError("invalid_pdf", "Choose a valid digital PDF management report.")
     try:
-        reader = PdfReader(BytesIO(content), strict=True)
-        if reader.is_encrypted:
-            raise PayrollPDFError("encrypted_pdf", "Password-protected PDFs are not supported. Use an unprotected copy.")
-        if len(reader.pages) > MAX_PDF_PAGES:
-            raise PayrollPDFError("too_many_pages", "Use a management report with no more than 20 pages.")
-        pages = []
-        text_length = 0
-        for page in reader.pages:
-            text = _normalise(page.extract_text() or "")
-            text_length += len(text)
-            if text_length > MAX_PDF_TEXT_CHARS:
-                raise PayrollPDFError("too_large", "The report contains too much text to read safely.")
-            pages.append(text)
-    except PayrollPDFError:
-        raise
-    except (PdfReadError, ValueError, TypeError, KeyError, IndexError, RecursionError, OverflowError):
-        raise PayrollPDFError("invalid_pdf", "The PDF could not be read. Use the original digital management report.") from None
-    if not any(text.strip() for text in pages):
-        raise PayrollPDFError("no_text", "This PDF has no readable text. Scans and photographs are not supported yet.")
-    return pages
+        return extract_pdf_text(content, max_bytes=MAX_PDF_BYTES,
+                                max_pages=MAX_PDF_PAGES, max_text_chars=MAX_PDF_TEXT_CHARS)
+    except PDFTextError as error:
+        raise PayrollPDFError(error.code, str(error)) from None
 
 
 def _read_pay_date(pages):
@@ -194,6 +166,8 @@ def _section_lines(pages):
             line = " ".join(raw_line.split())
             if not line:
                 continue
+            if len(line) > MAX_TABLE_LINE_CHARS:
+                raise PayrollPDFError("too_large", "A report line is too long to read safely. Use the original digital report.")
             section = _SECTION.fullmatch(line)
             if section:
                 number, title = section.groups()
@@ -289,6 +263,15 @@ def _read_rows(lines):
     return tuple(rows), totals
 
 
+def _report_from_pages(pages) -> PayrollReport:
+    """Validate already-bounded extracted text without loading PDF objects."""
+    pay_date = _read_pay_date(pages)
+    rows, totals = _read_rows(_table_lines(_section_lines(pages)))
+    start = payroll_week_start(pay_date)
+    return PayrollReport(pay_date=pay_date, week_start=start, week_end=week_end(start),
+                         rows=rows, totals=totals)
+
+
 def read_payroll_pdf(content: bytes) -> PayrollReport:
     """Read a complete digital report, or raise :class:`PayrollPDFError`.
 
@@ -298,9 +281,4 @@ def read_payroll_pdf(content: bytes) -> PayrollReport:
     source values for the later review stage; this is not permission to save
     them through the existing entry validators.
     """
-    pages = _extract_pages(content)
-    pay_date = _read_pay_date(pages)
-    rows, totals = _read_rows(_table_lines(_section_lines(pages)))
-    start = payroll_week_start(pay_date)
-    return PayrollReport(pay_date=pay_date, week_start=start, week_end=week_end(start),
-                         rows=rows, totals=totals)
+    return _report_from_pages(_extract_pages(content))

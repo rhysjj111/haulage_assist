@@ -1,0 +1,68 @@
+/* Loaded only by the payroll PDF preview page. */
+main { justify-content: flex-start; }
+main > .container { width: 96%; max-width: 1660px; }
+.payroll-import { width: 100%; padding: 2px 0 32px; color: #263445; }
+.payroll-import [hidden] { display: none !important; }
+.payroll-import-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.payroll-import-back, .payroll-import a { color: #315b82; }
+.payroll-import-notice { margin: 0; color: #687383; font-size: .9rem; }
+.payroll-import-upload { display: flex; align-items: center; gap: 28px; padding: 18px 22px; background: #fff; border: 1px solid #dce2e7; border-radius: 6px; }
+.payroll-import-file-control { min-width: 0; flex: 1; }
+.payroll-import label { display: block; color: #334155; font-size: .86rem; font-weight: 700; margin-bottom: 6px; }
+.payroll-import input[type="file"] { display: block; max-width: 100%; font: inherit; color: #334155; }
+.payroll-import input[type="file"]::file-selector-button { margin-right: 12px; padding: 8px 12px; color: #334155; border: 1px solid #c7d1dc; border-radius: 4px; background: #f6f8fa; font: inherit; cursor: pointer; }
+.payroll-import-upload-actions { display: flex; align-items: center; gap: 20px; }
+.payroll-import .btn { background: #333a56; border-radius: 4px; box-shadow: none; text-transform: none; font-weight: 700; white-space: nowrap; }
+.payroll-import .btn:hover { background: #45516f; }
+.payroll-import .btn:disabled { cursor: default; }
+.payroll-import-text-button { padding: 6px 0; border: 0; background: transparent; color: #52677e; font: inherit; cursor: pointer; }
+.payroll-import-text-button:hover, .payroll-import-source:hover { text-decoration: underline; }
+.payroll-import-muted { margin: 6px 0 0; color: #6d7785; font-size: .82rem; line-height: 1.55; }
+.payroll-import-status { margin: 12px 0; min-height: 1.3em; color: #52677e; font-size: .9rem; }
+.payroll-import-error { margin: 12px 0 20px; padding: 13px 16px; color: #8d2929; background: #fff1f1; border: 1px solid #f0caca; border-radius: 4px; }
+.payroll-import-review { display: grid; grid-template-columns: minmax(600px, 1.15fr) minmax(430px, 1fr); gap: 22px; align-items: start; }
+.payroll-import-entries, .payroll-import-document { min-width: 0; padding: 20px; background: #fff; border: 1px solid #dce2e7; border-radius: 6px; }
+.payroll-import-review-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.payroll-import h2 { margin: 0; font-family: inherit; font-size: 1.25rem; font-weight: 700; line-height: 1.4; color: #263445; }
+.payroll-import-week-control { flex: 0 0 192px; }
+.payroll-import input[type="date"] { box-sizing: border-box; width: 100%; height: 37px; margin: 0; padding: 5px 8px; border: 1px solid #cbd4dd; border-radius: 4px; background: #fff; font: inherit; font-size: .9rem; color: #263445; }
+.payroll-import-week-control span { display: block; }
+.payroll-import-field-error { font-size: .8rem; color: #a73333; margin-top: 5px; }
+.payroll-import-count { margin: 22px 0 9px; font-size: .9rem; color: #526171; }
+.payroll-import-table-wrap { width: 100%; overflow-x: auto; }
+.payroll-import-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.payroll-import-table th { padding: 10px 7px; background: #f5f7f9; font-size: .77rem; font-weight: 700; color: #5a6877; vertical-align: bottom; }
+.payroll-import-table th:nth-child(1) { width: 27%; }
+.payroll-import-table th:nth-child(2) { width: 29%; }
+.payroll-import-table th:nth-child(3), .payroll-import-table th:nth-child(4) { width: 22%; }
+.payroll-import-table td { padding: 12px 7px; border-bottom: 1px solid #e7ebef; vertical-align: top; font-size: .88rem; overflow-wrap: anywhere; }
+.payroll-import-source-name { display: block; font-weight: 600; line-height: 1.5; }
+.payroll-import-source { display: block; margin-top: 4px; padding: 0; background: transparent; border: 0; color: #6c7f92; font: inherit; font-size: .73rem; cursor: pointer; }
+.payroll-import select.browser-default { box-sizing: border-box; display: block; width: 100%; height: 36px; padding: 5px 24px 5px 7px; background-color: #fff; border: 1px solid #cbd4dd; border-radius: 4px; color: #263445; font: inherit; font-size: .84rem; }
+.payroll-import input[type="number"] { box-sizing: border-box; width: 100%; height: 36px; margin: 0; padding: 5px 7px; background: #fff; border: 1px solid #cbd4dd; border-radius: 4px; text-align: right; font: inherit; font-size: .87rem; color: #263445; -moz-appearance: textfield; }
+.payroll-import input[type="number"]::-webkit-inner-spin-button, .payroll-import input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.payroll-import input:focus, .payroll-import select:focus { border-color: #557ba1 !important; outline: 2px solid #dbe8f4; outline-offset: 1px; box-shadow: none !important; }
+.payroll-import input:invalid { border-color: #ba5555; }
+.payroll-import-number { text-align: right; }
+.payroll-import-match-note { display: block; margin-top: 4px; font-size: .74rem; line-height: 1.45; color: #956323; }
+.payroll-import-empty { margin: 15px 0; color: #6d7785; font-size: .9rem; }
+.payroll-import-other { margin-top: 20px; padding-top: 14px; border-top: 1px solid #e3e8ed; }
+.payroll-import-other summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
+.payroll-import-other .payroll-import-muted { margin-bottom: 10px; }
+.payroll-import-basis { margin-top: 20px; }
+.payroll-import-document-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.payroll-import-document-heading a { font-size: .83rem; white-space: nowrap; }
+.payroll-import-document > p { margin-bottom: 12px; overflow-wrap: anywhere; }
+.payroll-import-document iframe { display: block; width: 100%; height: max(650px, calc(100vh - 310px)); border: 1px solid #e0e5ea; background: #f4f6f8; }
+@media (max-width: 1150px) {
+    .payroll-import-review { grid-template-columns: minmax(0, 1fr); }
+    .payroll-import-document iframe { height: 650px; }
+}
+@media (max-width: 650px) {
+    .payroll-import-heading, .payroll-import-upload, .payroll-import-review-heading { align-items: stretch; flex-direction: column; }
+    .payroll-import-upload { gap: 16px; padding: 16px; }
+    .payroll-import-week-control { flex-basis: auto; }
+    .payroll-import-entries, .payroll-import-document { padding: 14px; }
+    .payroll-import-table { min-width: 540px; }
+    .payroll-import-document iframe { height: 500px; }
+}

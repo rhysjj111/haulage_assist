@@ -1,9 +1,28 @@
-# Payslip PDF reader: stage 1
+# Payslip PDF upload and review prototype
 
-The reader accepts the digital weekly management-report format reviewed for
-this project. It returns section 4's employee rows and amounts for a later
-upload-and-review page. Stage 1 adds no route, form, driver matching, document
-archive, migration or payslip-saving action.
+Upload a digital weekly management report from **Add Payslip → Import payroll
+PDF**. The prototype reads section 4, suggests existing active drivers and
+shows an editable table beside the original PDF. It does not create, update or
+delete payslips. There is no Save action, document archive or database migration.
+
+## Reviewing the prototype
+
+1. Choose the original digital PDF and click **Read PDF**.
+2. Check the proposed working week, driver selections, Total wage and Employer
+   cost. Each employee's **Page** link selects the source page in the viewer.
+3. Exact name matches ignore case and repeated spaces. Ambiguous matches require
+   a choice. Other employees remain under a collapsed section, excluded unless
+   an existing driver is selected. The choices use the same active-driver list
+   as manual Add Payslip; unknown names never create drivers automatically.
+4. Edit the week, driver and amounts locally. These changes are a preview only.
+   Refreshing, clearing or replacing the document clears the draft; cancelling
+   a file chooser preserves the existing preview.
+
+The original viewer uses the browser's selected File through a local object
+URL. A raw copy is sent to the app for short-lived extraction. No PDF or review
+draft is stored in cookies, local storage, a database or a server file archive.
+Neither a document URL nor an uploaded filename is sent in the request path.
+The app makes no AI-service calls and does not send the PDF to another service.
 
 ## Agreed mapping
 
@@ -22,7 +41,8 @@ confirmed mapping before a future Save stage; this reader does not alter it.
 
 ## Calling the reader
 
-After installing `requirements.txt`, application code can call:
+After installing `requirements.txt`, internal application code can call the
+reader directly for trusted local inputs:
 
 ```python
 from haulage_app.payslip.pdf_reader import PayrollPDFError, read_payroll_pdf
@@ -60,20 +80,34 @@ changed to positive amounts or automatically accepted by entry validation.
 - Reject encrypted, broken, image-only and unsupported-layout PDFs with a
   clear error. Scans, photographs and other suppliers' layouts are later work.
 
-These limits bound normal report input; they are not a complete resource sandbox
-for arbitrary hostile PDFs. A future upload route must bound the request before
-reading it, protect processing time/resources and avoid relying on Heroku disk
-or Flask session cookies to hold document/review state between requests.
+For HTTP uploads, use
+`haulage_app.payslip.pdf_processing.read_payroll_pdf_isolated(pdf_bytes)`.
+The upload endpoint requires a CSRF token, validates the PDF content type and
+reads at most 10 MiB plus one byte before rejecting an oversized request. A raw
+PDF body avoids multipart upload spooling. Responses, including errors, use
+`Cache-Control: no-store`.
 
-The reader makes no network calls and writes no files or business records.
-Callers must not log private report data or commit it as a test fixture.
+Text extraction runs in a standalone child process with a 256 MiB address-space
+limit, an eight-second CPU limit and a ten-second parent wall-clock timeout.
+The child imports no Flask/database code, inherits no app credentials and has
+file output/core dumps disabled. Extracted output is bounded and validated
+before semantic parsing in the parent. Table lines and monetary token lengths
+are also bounded. Resource failures return a generic error without partial
+entries. This bounded worker requires Linux/Unix resource controls and fails
+closed if they are unavailable; Heroku and the supplied Codespaces setup use
+Linux.
+
+The reader and worker make no network calls and write no document files or
+business records. Callers must not log private report data or commit it as a
+test fixture. The original direct-reader function is not a resource sandbox for
+untrusted uploads; use the isolated wrapper for the web endpoint.
 
 ## Validation
 
 Run the focused tests from the repository root:
 
 ```bash
-python3 -m unittest discover -s tests -p test_payslip_pdf_reader.py -v
+python3 -m unittest discover -s tests -p 'test_payslip_pdf*.py' -v
 ```
 
 The tests generate fictional PDFs in memory using the same pinned PDF library;
@@ -82,5 +116,7 @@ or configured database. Existing test setup selects isolated in-memory SQLite.
 The supplied report was also checked privately; it is excluded from the Git
 changes and from the synthetic fixtures.
 
-The next stage is a temporary PDF upload and editable review page. Actual
-payslip saving remains a separate stage after reviewing the prototype.
+The next prototype stage adds further review checks and polish, including
+existing-payslip warnings. Actual saving remains a separate stage and must
+revalidate the chosen week, driver, source amounts, duplicate protection and
+the app's existing day-entry requirements before any database mutation.

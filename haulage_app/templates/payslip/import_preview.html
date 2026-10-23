@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block header %}<h1>Import payroll PDF</h1>{% endblock %}
+
+{% block main %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/payslip-import.css') }}">
+<section class="payroll-import" id="payroll-import"
+         data-read-url="{{ read_url }}" data-csrf-token="{{ csrf_token }}">
+    <div class="payroll-import-heading">
+        <a class="payroll-import-back" href="{{ url_for('payslip.add_payslip', item_id=0, tab='entry') }}">← Back to payslips</a>
+        <p class="payroll-import-notice">Preview only — nothing is saved.</p>
+    </div>
+
+    <div class="payroll-import-upload">
+        <div class="payroll-import-file-control">
+            <label for="payroll-pdf-file">Weekly management report</label>
+            <input id="payroll-pdf-file" type="file" accept=".pdf,application/pdf"
+                   aria-describedby="payroll-file-help">
+            <p id="payroll-file-help" class="payroll-import-muted">Digital PDF · up to 10 MB</p>
+        </div>
+        <div class="payroll-import-upload-actions">
+            <button id="payroll-read-pdf" class="btn" type="button" disabled>Read PDF</button>
+            <button id="payroll-clear-pdf" class="payroll-import-text-button" type="button" hidden>Clear</button>
+        </div>
+    </div>
+
+    <p id="payroll-import-status" class="payroll-import-status" role="status" aria-live="polite"></p>
+    <div id="payroll-import-error" class="payroll-import-error" role="alert" hidden></div>
+
+    <div id="payroll-import-review" class="payroll-import-review" hidden>
+        <section class="payroll-import-entries" aria-labelledby="payroll-review-title">
+            <div class="payroll-import-review-heading">
+                <div>
+                    <h2 id="payroll-review-title">Review payslips</h2>
+                    <p id="payroll-report-date" class="payroll-import-muted"></p>
+                </div>
+                <div class="payroll-import-week-control">
+                    <label for="payroll-week-start">Week beginning</label>
+                    <input id="payroll-week-start" type="date" step="7"
+                           min="0001-01-06" max="9999-12-25"
+                           aria-describedby="payroll-week-range payroll-week-error">
+                    <span id="payroll-week-range" class="payroll-import-muted"></span>
+                    <span id="payroll-week-error" class="payroll-import-field-error" hidden></span>
+                </div>
+            </div>
+
+            <p id="payroll-driver-count" class="payroll-import-count" aria-live="polite"></p>
+            <div id="payroll-driver-table-wrap" class="payroll-import-table-wrap">
+                <table class="payroll-import-table">
+                    <thead><tr>
+                        <th scope="col">Employee</th><th scope="col">Driver</th>
+                        <th scope="col" class="payroll-import-number">Total wage (£)</th>
+                        <th scope="col" class="payroll-import-number">Employer cost (£)</th>
+                    </tr></thead>
+                    <tbody id="payroll-driver-rows"></tbody>
+                </table>
+            </div>
+            <p id="payroll-no-driver-rows" class="payroll-import-empty" hidden>No drivers matched. Check the other employees below.</p>
+
+            <details id="payroll-other-employees" class="payroll-import-other" hidden>
+                <summary id="payroll-other-summary">Other employees</summary>
+                <p class="payroll-import-muted">Excluded unless you choose an existing driver.</p>
+                <div class="payroll-import-table-wrap">
+                    <table class="payroll-import-table">
+                        <thead><tr>
+                            <th scope="col">Employee</th><th scope="col">Driver</th>
+                            <th scope="col" class="payroll-import-number">Total wage (£)</th>
+                            <th scope="col" class="payroll-import-number">Employer cost (£)</th>
+                        </tr></thead>
+                        <tbody id="payroll-other-rows"></tbody>
+                    </table>
+                </div>
+            </details>
+            <p class="payroll-import-basis payroll-import-muted">Total wage uses Total Payments before employee deductions. Employer cost uses Total Cost Per Employee.</p>
+        </section>
+
+        <section class="payroll-import-document" aria-labelledby="payroll-document-title">
+            <div class="payroll-import-document-heading">
+                <h2 id="payroll-document-title">Original report</h2>
+                <a id="payroll-open-pdf" target="_blank" rel="noopener noreferrer">Open PDF</a>
+            </div>
+            <p id="payroll-document-name" class="payroll-import-muted"></p>
+            <iframe id="payroll-pdf-preview" title="Original payroll report"
+                    referrerpolicy="no-referrer"></iframe>
+        </section>
+    </div>
+    <noscript><p class="payroll-import-error">Enable JavaScript to upload and review a payroll PDF.</p></noscript>
+</section>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/payslip-import.js') }}"></script>
+{% endblock %}

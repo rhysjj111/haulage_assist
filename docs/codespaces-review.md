@@ -6,7 +6,8 @@ Creating a Codespace does not merge or deploy the review branch.
 
 ## Open a new Codespace
 
-1. Open the repository's `owner-overhead-settings` branch on GitHub.
+1. Open the branch you want to review on GitHub: `payslip-pdf-import` for the
+   payslip PDF prototype, or `main` for the existing owner-reporting pages.
 2. Choose **Code → Codespaces → Create codespace**. If using **New with options**,
    select the **Haulage review** dev container.
 3. Wait for the development container setup to finish. It installs the packages,
@@ -28,6 +29,34 @@ command to start it again. Normal restarts and container rebuilds preserve the
 review database and your edits. Deleting the Codespace deletes this preview.
 
 ## What to review
+
+### Payslip PDF prototype
+
+The current payslip work is on the draft `payslip-pdf-import` branch. To review
+it in an existing Codespace, stop the app with **Ctrl+C** and run:
+
+```bash
+git fetch origin
+git switch payslip-pdf-import
+git pull --ff-only
+python3 -m pip install -r requirements.txt
+python3 run.py
+```
+
+Open **Add Payslip → Import payroll PDF**, or visit `/payslip/import`. Upload a
+digital weekly management report, click **Read PDF**, then check/edit the week,
+driver and two amounts beside the original PDF. Other employees are excluded
+until assigned an existing driver. Real report names may not match the synthetic
+demo drivers; you can choose a demo driver manually to try the controls.
+
+This is a preview: it has no Save action and does not change payslips, day
+entries or reports. The draft clears when the page is refreshed or the document
+is replaced. No AI account, permanent document storage, container rebuild or
+database migration is needed for this addition. Scans/photos and other report
+layouts are not supported yet. The [reader notes](payslip-pdf-reader.md) describe
+the field mapping, limits and read-only checks.
+
+### Existing owner-reporting examples
 
 The setup output gives dated links relative to the day the sample data was
 created. Open those paths on your preview's address:
