@@ -24,6 +24,11 @@ main > .container { width: 96%; max-width: 1660px; }
 .fuel-import h2 { margin: 0; font-family: inherit; font-size: 1.25rem; font-weight: 700; line-height: 1.4; color: #263445; }
 .fuel-import-source-totals { margin: 2px 0 0; text-align: right; color: #526171; font-size: .85rem; line-height: 1.6; }
 .fuel-import-selection { margin: 18px 0 10px; color: #526171; font-size: .9rem; }
+.fuel-import-check-state { display: flex; align-items: baseline; gap: 18px; margin: 0 0 14px; color: #526171; font-size: .85rem; }
+.fuel-import-check-state p { margin: 0; }
+.fuel-import-check-state [data-state="failed"] { color: #a73333; }
+.fuel-import-check-state [data-state="warning"] { color: #94621d; }
+.fuel-import-check-state button { white-space: nowrap; }
 .fuel-import-pager { display: flex; align-items: baseline; justify-content: flex-end; gap: 18px; margin: 0 0 12px; color: #6d7785; font-size: .82rem; }
 .fuel-import-pager button:disabled { color: #9aa4af; cursor: default; text-decoration: none; }
 .fuel-import-table-wrap { width: 100%; overflow-x: auto; }
@@ -50,6 +55,16 @@ main > .container { width: 96%; max-width: 1660px; }
 .fuel-import-source-warning { margin: 6px 0 0; color: #94621d; font-size: .75rem; line-height: 1.45; }
 .fuel-import-excluded > td { background: #fafbfc; }
 .fuel-import-excluded .fuel-import-source-registration { color: #687383; }
+.fuel-import-check-row > td { padding: 0 14px 13px 86px; background: #fffaf2; }
+.fuel-import-check-row.fuel-import-context-only > td { background: #fafbfc; }
+.fuel-import-check-warning { margin: 0 0 5px; color: #875919; font-size: .8rem; line-height: 1.5; }
+.fuel-import-recorded-entries { margin-top: 4px; color: #526171; font-size: .79rem; }
+.fuel-import-recorded-entries summary { cursor: pointer; }
+.fuel-import-recorded-entries ul { margin: 8px 0 0; }
+.fuel-import-recorded-entries li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: 0 0 7px; }
+.fuel-import-recorded-entries .fuel-import-recorded-match { font-weight: 600; }
+.fuel-import-recorded-entries .fuel-import-muted { margin-bottom: 6px; font-size: .76rem; }
+.fuel-import-recorded-entries a { white-space: nowrap; }
 .fuel-import-original-row > td { padding: 0; }
 .fuel-import-original { padding: 14px 18px; border-left: 3px solid #cbd7e2; background: #f6f8fa; }
 .fuel-import-original h3 { margin: 0 0 10px; color: #526171; font-size: .87rem; font-weight: 700; font-family: inherit; }

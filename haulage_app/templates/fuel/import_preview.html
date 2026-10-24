@@ -5,7 +5,8 @@
 {% block main %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/fuel-import.css') }}">
 <section class="fuel-import" id="fuel-import"
-         data-read-url="{{ read_url }}" data-csrf-token="{{ csrf_token }}">
+         data-read-url="{{ read_url }}" data-check-url="{{ check_url }}"
+         data-csrf-token="{{ csrf_token }}">
     <div class="fuel-import-heading">
         <a href="{{ url_for('fuel.add_fuel', item_id=0, tab='entry') }}">← Back to fuel</a>
         <p class="fuel-import-notice">Preview only — nothing is saved.</p>
@@ -38,6 +39,10 @@
         </div>
         <p class="fuel-import-muted">Choose the entries to include and correct any details. Open an original row to compare.</p>
         <p id="fuel-selection-summary" class="fuel-import-selection" aria-live="polite"></p>
+        <div class="fuel-import-check-state">
+            <p id="fuel-check-status" role="status" aria-live="polite"></p>
+            <button id="fuel-retry-checks" class="fuel-import-text-button" type="button" hidden>Recheck entries</button>
+        </div>
         <div id="fuel-review-pager" class="fuel-import-pager" hidden>
             <button id="fuel-previous-page" class="fuel-import-text-button" type="button">← Previous</button>
             <span id="fuel-page-description" aria-live="polite"></span>

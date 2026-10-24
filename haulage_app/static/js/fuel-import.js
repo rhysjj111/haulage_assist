@@ -14,7 +14,10 @@
     const tableBody = byId("fuel-transaction-rows");
     const previousPage = byId("fuel-previous-page");
     const nextPage = byId("fuel-next-page");
+    const checkStatus = byId("fuel-check-status");
+    const retryChecks = byId("fuel-retry-checks");
     const maxBytes = 10 * 1024 * 1024;
+    const maxCheckBytes = 2 * 1024 * 1024;
     const pageSize = 100;
     const xlsxType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     const knownIssues = new Set([
@@ -23,6 +26,10 @@
     ]);
     const knownMatchStates = new Set([
         "matched", "unmatched", "ambiguous", "registration_conflict", "missing_registration",
+    ]);
+    const knownCheckIssues = new Set([
+        "truck_unavailable", "fuel_amount_out_of_range", "fuel_price_unusual",
+        "possible_duplicate_upload", "possible_duplicate_fuel",
     ]);
     const issueLabels = {
         missing_transaction_registration: "No transaction registration in the source.",
@@ -40,6 +47,14 @@
     let trucks = [];
     let truckIds = new Set();
     let page = 0;
+    let checkController = null;
+    let checkTimer = null;
+    let checkGeneration = 0;
+    let checkPhase = "idle";
+    let checkedRows = new Map();
+    let duplicateByRow = new Map();
+    let existingByPair = new Map();
+    let matchesBySignature = new Map();
 
     function node(tag, className, text) {
         const element = document.createElement(tag);
@@ -66,6 +81,9 @@
     }
 
     function resetPreview() {
+        cancelChecks();
+        clearCheckResults();
+        checkPhase = "idle";
         rows = [];
         trucks = [];
         truckIds = new Set();
@@ -75,6 +93,9 @@
         byId("fuel-review-pager").hidden = true;
         byId("fuel-selection-summary").textContent = "";
         byId("fuel-selected-totals").textContent = "";
+        checkStatus.textContent = "";
+        checkStatus.dataset.state = "idle";
+        retryChecks.hidden = true;
     }
 
     function cancelReading() {
@@ -100,6 +121,12 @@
         const unsigned = negative ? -value : value;
         const whole = String(unsigned / 100n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         return `${negative ? "−" : ""}${whole}.${String(unsigned % 100n).padStart(2, "0")}`;
+    }
+
+    function canonicalHundredths(value) {
+        const negative = value < 0n;
+        const unsigned = negative ? -value : value;
+        return `${negative ? "-" : ""}${unsigned / 100n}.${String(unsigned % 100n).padStart(2, "0")}`;
     }
 
     function validDate(value) {
@@ -212,12 +239,13 @@
             model[field] = input.value;
             updateField(model, field, input, error);
             updateSummary();
+            scheduleChecks();
         });
         input.addEventListener("blur", () => {
             // A canonical value on blur keeps the editable figures at 2dp.
             if (field !== "date" && !fieldError(model, field)) {
                 const amount = parseHundredths(model[field]);
-                model[field] = `${amount / 100n}.${String(amount % 100n).padStart(2, "0")}`;
+                model[field] = canonicalHundredths(amount);
                 input.value = model[field];
             }
         });
@@ -246,6 +274,7 @@
             model.truckId = select.value ? Number(select.value) : null;
             updateField(model, "truck", select, error);
             updateSummary();
+            scheduleChecks();
         });
         cell.append(select, error);
         const matchNotes = {
@@ -289,10 +318,11 @@
             model.included = checkbox.checked;
             update();
             updateSummary();
+            scheduleChecks();
         });
         row.append(includeCell, sourceCell, ...fields.map((field) => field.cell));
         update();
-        return [row, createOriginalRow(source, sourceButton)];
+        return [row, createCheckRow(model), createOriginalRow(source, sourceButton)];
     }
 
     function renderPage() {
@@ -305,6 +335,288 @@
         previousPage.disabled = page === 0;
         nextPage.disabled = start + pageSize >= rows.length;
         byId("fuel-page-description").textContent = `Entries ${start + 1}–${Math.min(start + pageSize, rows.length)} of ${rows.length}`;
+        updateChecks();
+    }
+
+    function pairKey(truckId, date) {
+        return `${truckId}|${date}`;
+    }
+
+    function purchaseSignature(truckId, date, quantity, cost) {
+        return `${pairKey(truckId, date)}|${quantity}|${cost}`;
+    }
+
+    function clearCheckResults() {
+        checkedRows = new Map();
+        duplicateByRow = new Map();
+        existingByPair = new Map();
+        matchesBySignature = new Map();
+    }
+
+    function cancelChecks() {
+        checkGeneration += 1;
+        if (checkTimer !== null) window.clearTimeout(checkTimer);
+        checkTimer = null;
+        if (checkController) checkController.abort();
+        checkController = null;
+    }
+
+    function checkSnapshot() {
+        return {rows: rows.filter((model) => model.included
+            && !["date", "truck", "quantity", "cost"].some((field) => fieldError(model, field)))
+            .map((model) => ({
+                source_row: model.source.source_row, truck_id: model.truckId, date: model.date,
+                quantity: canonicalHundredths(parseHundredths(model.quantity)),
+                cost: canonicalHundredths(parseHundredths(model.cost)),
+            }))};
+    }
+
+    function validatedChecks(data, snapshot) {
+        if (!data || data.fuel_card_name !== "The Fuel Store" || !Array.isArray(data.rows)
+                || data.rows.length !== snapshot.rows.length || !Array.isArray(data.duplicate_groups)
+                || data.duplicate_groups.length > snapshot.rows.length / 2
+                || !Array.isArray(data.existing_fuel) || data.existing_fuel.length > snapshot.rows.length) {
+            throw new Error("invalid_check_response");
+        }
+        const expected = new Map(snapshot.rows.map((row) => [row.source_row, row]));
+        const result = new Map();
+        const expectedPairs = new Set();
+        const sourceBySignature = new Map();
+        for (const row of data.rows) {
+            const original = row && expected.get(row.source_row);
+            if (!original || result.has(row.source_row) || row.truck_id !== original.truck_id
+                    || row.date !== original.date || row.quantity !== original.quantity || row.cost !== original.cost
+                    || !Array.isArray(row.issues) || row.issues.length > knownCheckIssues.size
+                    || !row.issues.every((issue) => knownCheckIssues.has(issue))
+                    || new Set(row.issues).size !== row.issues.length) throw new Error("invalid_check_response");
+            result.set(row.source_row, row);
+            if (!row.issues.includes("truck_unavailable")) {
+                expectedPairs.add(pairKey(row.truck_id, row.date));
+                const signature = purchaseSignature(row.truck_id, row.date, row.quantity, row.cost);
+                if (!sourceBySignature.has(signature)) sourceBySignature.set(signature, []);
+                sourceBySignature.get(signature).push(row.source_row);
+            }
+        }
+        const duplicates = new Map();
+        const duplicateSignatures = new Set();
+        for (const group of data.duplicate_groups) {
+            if (!group || !Array.isArray(group.source_rows) || group.source_rows.length < 2
+                    || group.source_rows.length > snapshot.rows.length) throw new Error("invalid_check_response");
+            const first = result.get(group.source_rows[0]);
+            if (!first || first.issues.includes("truck_unavailable")) throw new Error("invalid_check_response");
+            const signature = purchaseSignature(first.truck_id, first.date, first.quantity, first.cost);
+            const members = sourceBySignature.get(signature);
+            if (!members || members.length !== group.source_rows.length || duplicateSignatures.has(signature)) {
+                throw new Error("invalid_check_response");
+            }
+            duplicateSignatures.add(signature);
+            const expectedMembers = new Set(members);
+            for (const sourceRow of group.source_rows) {
+                if (!expectedMembers.delete(sourceRow) || duplicates.has(sourceRow)) throw new Error("invalid_check_response");
+                // Share this group array instead of copying all references per
+                // row, which would grow quadratically for a repeated export.
+                duplicates.set(sourceRow, group.source_rows);
+            }
+            if (expectedMembers.size) throw new Error("invalid_check_response");
+        }
+        const pairs = new Map();
+        const matchingSignatures = new Map();
+        const recordIds = new Set();
+        let recordCount = 0;
+        for (const group of data.existing_fuel) {
+            const key = group && pairKey(group.truck_id, group.date);
+            if (!group || !Number.isSafeInteger(group.truck_id) || group.truck_id <= 0
+                    || !validDate(group.date) || !expectedPairs.has(key) || pairs.has(key) || !Array.isArray(group.entries)
+                    || (recordCount += group.entries.length) > 20000) throw new Error("invalid_check_response");
+            for (const entry of group.entries) {
+                if (!entry || !Number.isSafeInteger(entry.id) || entry.id <= 0 || recordIds.has(entry.id)
+                        || !validString(entry.fuel_card_name) || typeof entry.same_supplier !== "boolean"
+                        || typeof entry.quantity !== "string" || !/^-?\d{1,16}\.\d{2}$/.test(entry.quantity)
+                        || typeof entry.cost !== "string" || !/^-?\d{1,16}\.\d{2}$/.test(entry.cost)
+                        || parseHundredths(entry.quantity, true) === null || parseHundredths(entry.cost, true) === null
+                        || entry.review_url !== `/fuel/add_fuel/${entry.id}/edit`) throw new Error("invalid_check_response");
+                recordIds.add(entry.id);
+                if (entry.same_supplier) {
+                    const signature = purchaseSignature(group.truck_id, group.date, entry.quantity, entry.cost);
+                    if (!matchingSignatures.has(signature)) matchingSignatures.set(signature, []);
+                    matchingSignatures.get(signature).push(entry);
+                }
+            }
+            pairs.set(key, group.entries);
+        }
+        if (pairs.size !== expectedPairs.size) throw new Error("invalid_check_response");
+        for (const row of result.values()) {
+            const available = !row.issues.includes("truck_unavailable");
+            const signature = purchaseSignature(row.truck_id, row.date, row.quantity, row.cost);
+            const expectedDuplicate = available && sourceBySignature.get(signature).length > 1;
+            const expectedStored = available && matchingSignatures.has(signature);
+            if (row.issues.includes("possible_duplicate_upload") !== expectedDuplicate
+                    || Boolean(duplicates.has(row.source_row)) !== expectedDuplicate
+                    || row.issues.includes("possible_duplicate_fuel") !== expectedStored) throw new Error("invalid_check_response");
+        }
+        return {rows: result, duplicates, pairs, matches: matchingSignatures};
+    }
+
+    function createCheckRow(model) {
+        const row = node("tr", "fuel-import-check-row");
+        row.id = `fuel-check-row-${model.source.source_row}`;
+        row.hidden = true;
+        const cell = node("td");
+        cell.colSpan = 6;
+        row.append(cell);
+        model.checkRow = row;
+        return row;
+    }
+
+    function updateRowChecks(model) {
+        const row = model.checkRow;
+        if (!row) return;
+        const cell = row.firstElementChild;
+        cell.replaceChildren();
+        row.hidden = true;
+        if (checkPhase !== "complete" || !model.included) return;
+        const checked = checkedRows.get(model.source.source_row);
+        if (!checked) return;
+        const addWarning = (text) => cell.append(node("p", "fuel-import-check-warning", text));
+        if (checked.issues.includes("truck_unavailable")) addWarning("This truck is no longer available. Read the spreadsheet again to refresh truck choices.");
+        if (checked.issues.includes("fuel_amount_out_of_range")) addWarning("Check litres and cost against the fuel form's permitted amounts.");
+        if (checked.issues.includes("fuel_price_unusual")) addWarning("Unusual price per litre — check litres and cost.");
+        const group = duplicateByRow.get(model.source.source_row);
+        if (group) {
+            const otherRows = [];
+            for (const sourceRow of group) {
+                if (sourceRow !== model.source.source_row) otherRows.push(sourceRow);
+                if (otherRows.length === 5) break;
+            }
+            const remaining = group.length - 1 - otherRows.length;
+            addWarning(`Possible duplicate — same purchase details as ${otherRows.length === 1 ? "row" : "rows"} ${otherRows.join(", ")}${remaining ? ` and ${remaining} more` : ""}.`);
+        }
+        const signature = purchaseSignature(checked.truck_id, checked.date, checked.quantity, checked.cost);
+        const matches = matchesBySignature.get(signature) || [];
+        if (checked.issues.includes("possible_duplicate_fuel")) {
+            addWarning(matches.length === 1
+                ? `Possible duplicate — matches recorded fuel entry #${matches[0].id}.`
+                : `Possible duplicate — matches ${matches.length} recorded fuel entries.`);
+        }
+        const entries = existingByPair.get(pairKey(checked.truck_id, checked.date)) || [];
+        if (entries.length) {
+            const details = node("details", "fuel-import-recorded-entries");
+            details.append(node("summary", "", `Recorded entries for this truck and date (${entries.length})`));
+            const list = node("ul");
+            const shownIds = new Set();
+            const displayed = [];
+            // Matching entries first, then other same-day receipts as context.
+            // Each row renders at most five entries regardless of group size.
+            for (const collection of [matches, entries]) {
+                for (const entry of collection) {
+                    if (!shownIds.has(entry.id)) {
+                        shownIds.add(entry.id);
+                        displayed.push(entry);
+                    }
+                    if (displayed.length === 5) break;
+                }
+                if (displayed.length === 5) break;
+            }
+            for (const entry of displayed) {
+                const matching = entry.same_supplier && entry.quantity === checked.quantity && entry.cost === checked.cost;
+                const item = node("li", matching ? "fuel-import-recorded-match" : "");
+                item.append(node("span", "", `#${entry.id} · ${displayHundredths(parseHundredths(entry.quantity, true))} L · £${displayHundredths(parseHundredths(entry.cost, true))} · ${entry.fuel_card_name}${matching ? " · matching details" : ""}`));
+                const link = node("a", "", "View entry");
+                link.href = entry.review_url;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                item.append(link);
+                list.append(item);
+            }
+            details.append(list);
+            if (entries.length > displayed.length) {
+                const note = node("p", "fuel-import-muted", `Showing ${displayed.length} of ${entries.length} recorded entries. `);
+                const history = node("a", "", "Open fuel history to review all");
+                history.href = "/fuel/add_fuel/0/history";
+                history.target = "_blank";
+                history.rel = "noopener noreferrer";
+                note.append(history);
+                details.append(note);
+            }
+            cell.append(details);
+        }
+        row.classList.toggle("fuel-import-context-only", checked.issues.length === 0);
+        row.hidden = !cell.childElementCount;
+    }
+
+    function updateChecks() {
+        const selected = rows.filter((model) => model.included);
+        const invalid = selected.filter((model) => ["date", "truck", "quantity", "cost"].some((field) => fieldError(model, field))).length;
+        const warnings = checkPhase === "complete" ? [...checkedRows.values()].filter((row) => row.issues.length).length : 0;
+        retryChecks.hidden = !["complete", "failed"].includes(checkPhase);
+        retryChecks.textContent = checkPhase === "failed" ? "Retry checks" : "Recheck entries";
+        checkStatus.dataset.state = checkPhase === "failed" ? "failed" : warnings ? "warning" : checkPhase;
+        if (!rows.length) checkStatus.textContent = "";
+        else if (!selected.length) checkStatus.textContent = "Select entries to check for duplicates and unusual amounts.";
+        else if (["pending", "checking"].includes(checkPhase)) checkStatus.textContent = "Checking selected entries…";
+        else if (checkPhase === "failed") checkStatus.textContent = "Checks unavailable. Retry before relying on these results.";
+        else if (checkPhase === "invalid") checkStatus.textContent = "Correct the highlighted fields to check the selected entries.";
+        else if (checkPhase === "complete") {
+            const message = warnings ? `${warnings} selected ${warnings === 1 ? "entry has" : "entries have"} warnings.`
+                : invalid ? "Valid entries checked."
+                : selected.some((model) => model.source.issues.length)
+                    ? "Duplicate and amount checks complete. Source warnings remain below."
+                    : "No duplicate or amount warnings found in the selected entries.";
+            checkStatus.textContent = message + (invalid ? " Correct the highlighted fields to check all selected entries." : "");
+        } else checkStatus.textContent = "";
+        for (const model of rows.slice(page * pageSize, (page + 1) * pageSize)) updateRowChecks(model);
+    }
+
+    async function runChecks(snapshot, serial) {
+        if (serial !== checkGeneration) return;
+        const requestController = new AbortController();
+        checkController = requestController;
+        checkPhase = "checking";
+        updateChecks();
+        const timeout = window.setTimeout(() => requestController.abort(), 15000);
+        try {
+            const body = JSON.stringify(snapshot);
+            if (new Blob([body]).size > maxCheckBytes) throw new Error("check_too_large");
+            const response = await fetch(root.dataset.checkUrl, {
+                method: "POST", headers: {"Content-Type": "application/json", "X-CSRFToken": root.dataset.csrfToken},
+                body, credentials: "same-origin", cache: "no-store", signal: requestController.signal,
+            });
+            if (serial !== checkGeneration) return;
+            if (!response.ok) throw new Error("check_unavailable");
+            const data = await response.json();
+            if (serial !== checkGeneration) return;
+            const checked = validatedChecks(data, snapshot);
+            checkedRows = checked.rows;
+            duplicateByRow = checked.duplicates;
+            existingByPair = checked.pairs;
+            matchesBySignature = checked.matches;
+            checkPhase = "complete";
+        } catch (error) {
+            if (serial !== checkGeneration) return;
+            clearCheckResults();
+            checkPhase = "failed";
+        } finally {
+            window.clearTimeout(timeout);
+            if (serial === checkGeneration) {
+                checkController = null;
+                updateChecks();
+            }
+        }
+    }
+
+    function scheduleChecks(immediate = false) {
+        cancelChecks();
+        clearCheckResults();
+        const snapshot = checkSnapshot();
+        checkPhase = snapshot.rows.length ? "pending" : rows.some((model) => model.included) ? "invalid" : "idle";
+        updateChecks();
+        if (!snapshot.rows.length) return;
+        const serial = checkGeneration;
+        if (immediate) runChecks(snapshot, serial);
+        else checkTimer = window.setTimeout(() => {
+            checkTimer = null;
+            runChecks(snapshot, serial);
+        }, 500);
     }
 
     function validString(value, nullable = false) {
@@ -377,6 +689,7 @@
         renderPage();
         updateSummary();
         review.hidden = false;
+        scheduleChecks();
     }
 
     fileInput.addEventListener("change", () => {
@@ -457,6 +770,11 @@
         if ((page + 1) * pageSize >= rows.length) return;
         page += 1;
         renderPage();
+    });
+    retryChecks.addEventListener("click", () => scheduleChecks(true));
+    window.addEventListener("focus", () => {
+        // A recorded entry may have been corrected in the separate review tab.
+        if (rows.length && !busy && !["pending", "checking"].includes(checkPhase)) scheduleChecks(true);
     });
     window.addEventListener("pagehide", () => {
         cancelReading();

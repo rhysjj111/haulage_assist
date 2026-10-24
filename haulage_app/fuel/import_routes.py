@@ -1,6 +1,7 @@
 """Temporary spreadsheet upload and editable fuel review, without saving."""
 
 from collections import defaultdict
+import json
 
 from flask import current_app, jsonify, make_response, render_template, request, url_for
 from flask_wtf.csrf import generate_csrf, validate_csrf
@@ -100,6 +101,7 @@ def import_preview():
             "fuel/import_preview.html",
             csrf_token=generate_csrf(),
             read_url=url_for("fuel.read_import_xlsx"),
+            check_url=url_for("fuel.check_import_preview"),
         ))
     return _private_response(response)
 
@@ -142,3 +144,37 @@ def read_import_xlsx():
         # the browser or application logs, even for an unexpected worker fault.
         return _error("processing_failed", "The spreadsheet could not be processed. Please try again.", 503)
     return _private_response(jsonify(payload))
+
+
+@fuel_bp.route("/import/check", methods=["POST"])
+def check_import_preview():
+    if current_app.config.get("WTF_CSRF_ENABLED", True):
+        try:
+            validate_csrf(request.headers.get("X-CSRFToken"))
+        except ValidationError:
+            return _error("csrf_failed", "Refresh this page and choose the spreadsheet again.", 403)
+
+    from haulage_app.fuel.import_checks import (
+        MAX_CHECK_BYTES, ImportCheckInputError, check_fuel_for_preview,
+    )
+
+    if request.mimetype != "application/json":
+        return _error("unsupported_media_type", "Send the selected fuel entries as JSON.", 415)
+    if request.content_length is not None and request.content_length > MAX_CHECK_BYTES:
+        return _error("too_large", "The review request is too large. Select fewer entries.", 413)
+    content = request.stream.read(MAX_CHECK_BYTES + 1)
+    if len(content) > MAX_CHECK_BYTES:
+        return _error("too_large", "The review request is too large. Select fewer entries.", 413)
+    try:
+        payload = json.loads(content.decode("utf-8"))
+    except (ValueError, UnicodeError, RecursionError):
+        return _error("invalid_check", "Choose valid fuel entries to check.", 400)
+    try:
+        result = check_fuel_for_preview(payload)
+    except ImportCheckInputError as error:
+        return _error(error.code, str(error), error.status)
+    except Exception:
+        # Checks are read-only; never return SQL, edited amounts, parser text or
+        # a partial result that could be mistaken for a completed check.
+        return _error("checks_unavailable", "Fuel entries could not be checked. Please try again.", 503)
+    return _private_response(jsonify(result))

@@ -1,9 +1,9 @@
 # The Fuel Store spreadsheet import
 
-The reader and editable preview read **The Fuel Store's Transactions `.xlsx`
-export** into proposed fuel transactions. They add no database writes, truck
-creation, document archive or AI service. The supplied workbook is private and
-is not a repository fixture. Saving and existing-record checks are later stages.
+The reader, editable preview and review checks read **The Fuel Store's
+Transactions `.xlsx` export** into proposed fuel transactions. They add no
+database writes, truck creation, document archive or AI service. The supplied workbook is private and
+is not a repository fixture. Explicit batch saving is a later stage.
 
 The user confirmed **The Fuel Store** as the supplier and **Cost** as the amount
 normally entered in the app. Card Type contains different networks, so it does
@@ -22,9 +22,9 @@ not determine the app's fuel-card supplier.
 
 All rows use the supplier label **The Fuel Store**, including transactions whose
 Card Type says Esso, Shell or UK Fuels. The reader itself does not match
-registrations to database trucks. It returns both registration columns and flags a missing
-transaction registration or a disagreement, without silently substituting the
-card registration. Registration comparisons ignore case and spaces.
+registrations to database trucks. It returns both registration columns and flags
+a missing transaction registration or a disagreement, without silently
+substituting the card registration. Registration comparisons ignore case and spaces.
 
 The export contains transaction dates rather than an invoice-wide payroll week.
 Multiple purchases for the same truck/day, including identical rows, remain
@@ -110,9 +110,10 @@ Store**; network values do not change it. Dates may span several payroll weeks.
 
 Displayed source totals are calculated sums of the extracted rows. Selected
 totals use edited values and exact integer hundredths. Local field feedback
-follows the existing fuel form's volume/cost limits; it does not check previously
-recorded receipts or claim that selected entries are ready to save. Larger
-exports are paged in the browser, retaining edits and totals across pages.
+follows the existing fuel form's volume/cost limits. The read-only checks below
+compare selected entries with recorded receipts without claiming they are ready
+to save. Larger exports are paged in the browser, retaining edits and totals
+across pages.
 
 There is no save action in this stage. Drafts live only in the current page's
 memory and are discarded by Clear, choosing another file or leaving/reloading
@@ -134,6 +135,50 @@ parent validates the complete bounded result before exposing rows. Unsupported
 resource controls fail closed. This follows the supported Linux preview and
 Heroku runtime rather than providing an unbounded fallback on other platforms.
 
+## Checks on the current selection
+
+The preview checks selected, valid entries after reading the file and after an
+edit to a purchase date, truck, litres, cost or inclusion. Excluded entries are
+not part of these checks. Original source issues remain visible independently.
+
+The checks identify:
+
+- Possible duplicates within the selected rows, and against stored fuel entries,
+  using exact truck, purchase date, normalized supplier, litres and cost.
+- Unusual cost per litre, using the shared owner-review policy's inclusive
+  £0.50–£3.00/litre range. Integer products determine the threshold without
+  rounding a displayed unit price.
+- Unavailable trucks and amounts outside the existing entry form's limits.
+
+Matching purchase details are a **possible** duplicate. Fuel records have no
+invoice transaction ID or purchase time, and genuine fills may share those
+details. Warnings do not automatically remove or change rows. Different amounts
+on the same truck/day and receipts from other suppliers are comparison context,
+not duplicate warnings. Network labels are not supplier aliases. A missing Day
+does not prevent recording a fuel purchase and does not produce a warning here.
+No consumption, fuel economy or VAT calculation is introduced.
+
+Stored receipt details and local links let users compare the recorded values.
+Source unit-price disagreement remains a source warning; edits do not rewrite
+the source evidence or compare a corrected cost with an outdated source price.
+Users can recheck after reviewing recorded entries in another tab.
+
+Changes immediately invalidate old results, then debounce a new request.
+Aborted or late responses cannot restore results for an older selection.
+Pending, invalid and failed checks are distinct from a completed check with no
+duplicate or amount warnings. Failed checks provide a retry action. Every page
+of the browser's selection is checked, including rows outside the visible page.
+
+`POST /fuel/import/check` accepts bounded raw JSON and the CSRF header. It accepts
+at most 10,000 rows in a 2 MiB body, validates canonical dates and exact decimal
+strings, and returns a complete echoed selection with row issues. Queries use
+only the selected truck/date pairs in chunks of 250, inside `no_autoflush` with
+stored column values. A global 20,000-record lookup cap fails explicitly rather
+than silently returning a partial result. Duplicate-group membership and stored
+pair context are returned once per group, avoiding quadratic response sizes.
+Server-computed supplier comparisons use the same normalization as owner checks.
+No edited entries, check result, dismissal or verification is persisted.
+
 ## Validation and next stage
 
 Tests create fictional `.xlsx` files in memory. Run them from the repository
@@ -146,7 +191,7 @@ python3 -m unittest discover -s tests -p 'test_fuel_*.py' -v
 The supplied sample is checked privately against the original workbook data;
 its registrations, card numbers and financial records are excluded from Git.
 
-The next stages add existing-record/amount checks and explicit batch saving.
+The next stage adds explicit batch saving with server-side rechecks.
 Fuel may be recorded without a day entry under the existing manual workflow;
 an importer must preserve that rule and avoid guessing
 a linked day when several drivers used a truck on the same date.
