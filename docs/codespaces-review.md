@@ -6,7 +6,8 @@ Creating a Codespace does not merge or deploy the review branch.
 
 ## Open a new Codespace
 
-1. Open the repository's `owner-overhead-settings` branch on GitHub.
+1. Open the branch you want to review on GitHub: `payslip-pdf-import` for the
+   payslip PDF prototype, or `main` for the existing owner-reporting pages.
 2. Choose **Code → Codespaces → Create codespace**. If using **New with options**,
    select the **Haulage review** dev container.
 3. Wait for the development container setup to finish. It installs the packages,
@@ -28,6 +29,58 @@ command to start it again. Normal restarts and container rebuilds preserve the
 review database and your edits. Deleting the Codespace deletes this preview.
 
 ## What to review
+
+### Payslip PDF prototype
+
+The current payslip work is on the draft `payslip-pdf-import` branch. To review
+it in an existing Codespace, stop the app with **Ctrl+C** and run:
+
+```bash
+git fetch origin
+git switch payslip-pdf-import
+git pull --ff-only
+python3 -m pip install -r requirements.txt
+python3 run.py
+```
+
+Keep the package-install command when updating an older Codespace: pulling
+Python code does not install the new `pypdf` dependency. If the PDF reports that
+it could not be processed safely, install requirements in the active `.venv`
+and restart the app before retrying the original digital PDF.
+
+Open **Add Payslip → Import payroll PDF**, or visit `/payslip/import`. Upload a
+digital weekly management report, click **Read PDF**, then check/edit the week,
+driver and two amounts beside the original PDF. Other employees are excluded
+until assigned an existing driver. Real report names may not match the synthetic
+demo drivers; you can choose a demo driver manually to try the controls.
+
+Try selecting the same driver for two rows, entering an invalid amount, or
+making employer cost lower than wages. Each selected row shows the relevant
+check. Changing the week or driver also checks existing payslips: recorded
+amounts and a **View payslip** link appear alongside any matches. You can use a
+demo driver/week with an existing sample payslip to try this comparison. Choose
+**Exclude** to omit an employee; excluded rows do not affect amount checks.
+The pending/unavailable state stays visible if existing records cannot be
+checked, and **Retry check** keeps the draft edits intact.
+
+The importer now includes **Save N payslips**, which writes to this Codespace's
+sample database when clicked. Each selected driver needs a day entry on the
+Friday ending the chosen week. If one is missing, follow **Add day entry** in a
+new tab, select the shown Friday and driver, then return and click **Recheck
+entries** without rereading the PDF. Save a valid batch and check its count,
+history link and exact amounts. Trying the same week/driver again should flag
+the existing payslip. Excluded employees are never saved and an invalid batch
+does not save any of its rows.
+
+The draft clears when refreshed or replaced, while saved payslips remain in
+the sample database. A failed or interrupted save keeps the draft available;
+check recorded entries before retrying an uncertain result. No AI account,
+permanent document storage, container rebuild or database migration is needed
+for this addition. Scans/photos and other report layouts are not supported yet.
+The [reader notes](payslip-pdf-reader.md) describe the field mapping, checks,
+transaction behavior and the retained legacy database constraint.
+
+### Existing owner-reporting examples
 
 The setup output gives dated links relative to the day the sample data was
 created. Open those paths on your preview's address:
@@ -63,7 +116,7 @@ reopen if their source records change.
 Fuel typo checks compare cost per purchased litre, with broad £0.50–£3.00 limits.
 Matching truck/date/provider/litres/cost raises one possible-duplicate comparison;
 remove a receipt only after checking the actual invoice lines. Payroll compares
-take-home pay with full employer cost on the same payslip; variable bonuses are
+wages before employee deductions with full employer cost on the same payslip; variable bonuses are
 allowed. Mileage and truck-assignment hints sit under collapsed **Other checks**
 and do not affect the main count or final weekly review.
 
