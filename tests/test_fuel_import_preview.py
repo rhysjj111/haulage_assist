@@ -371,5 +371,7 @@ class FuelImportPreviewTests(OwnerTestCase):
         self.assertEqual(response.status_code, 405)
         response = self.client.post(READ, json=edited, headers={"X-CSRFToken": token})
         self.assertEqual(response.status_code, 415)
-        self.assertEqual(self.client.post("/fuel/import/save", json=edited).status_code, 404)
+        response = self.client.post("/fuel/import/save", json=edited,
+                                    headers={"X-CSRFToken": token})
+        self.assertEqual(response.status_code, 400)
         self.assertEqual(self.source_snapshot(), before)

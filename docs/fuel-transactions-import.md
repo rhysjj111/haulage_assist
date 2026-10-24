@@ -1,9 +1,10 @@
 # The Fuel Store spreadsheet import
 
-The reader, editable preview and review checks read **The Fuel Store's
-Transactions `.xlsx` export** into proposed fuel transactions. They add no
-database writes, truck creation, document archive or AI service. The supplied workbook is private and
-is not a repository fixture. Explicit batch saving is a later stage.
+Read **The Fuel Store's Transactions `.xlsx` export**, review its purchases,
+then explicitly save the selected fuel entries. Reading and checking do not
+write business records; Save adds the reviewed batch in one transaction. There
+is no truck creation, document archive or AI service. The supplied workbook is
+private and is not a repository fixture.
 
 The user confirmed **The Fuel Store** as the supplier and **Cost** as the amount
 normally entered in the app. Card Type contains different networks, so it does
@@ -115,10 +116,10 @@ compare selected entries with recorded receipts without claiming they are ready
 to save. Larger exports are paged in the browser, retaining edits and totals
 across pages.
 
-There is no save action in this stage. Drafts live only in the current page's
-memory and are discarded by Clear, choosing another file or leaving/reloading
-the page. Neither source documents nor edits are stored in browser storage,
-session cookies, database rows or an upload archive.
+Drafts live only in the current page's memory and are discarded by Clear,
+choosing another file or leaving/reloading the page. Until Save is clicked,
+neither reading nor editing creates fuel entries. Source documents and review
+drafts are not stored in browser storage, session cookies or an upload archive.
 
 `POST /fuel/import/read` accepts only the raw XLSX body with a CSRF header, with
 a 10 MiB request cap before processing. It avoids multipart temporary-file
@@ -177,9 +178,57 @@ stored column values. A global 20,000-record lookup cap fails explicitly rather
 than silently returning a partial result. Duplicate-group membership and stored
 pair context are returned once per group, avoiding quadratic response sizes.
 Server-computed supplier comparisons use the same normalization as owner checks.
-No edited entries, check result, dismissal or verification is persisted.
+Checks do not persist edited entries, results, dismissals or verifications.
 
-## Validation and next stage
+## Saving a reviewed batch
+
+**Save fuel entries** saves the selected rows across all pages, up to 500 entries
+per batch. It stays unavailable while checks are pending/failed, fields are
+invalid, a selected product is unsupported, or duplicate candidates remain.
+Correct or exclude those rows. An identical genuine purchase can be entered
+through the manual fuel form after review; confirmation cannot bypass the
+importer's duplicate protection.
+
+Original source warnings and unusual prices require a per-row confirmation.
+Changing that row's truck, date, litres, cost or inclusion clears its
+confirmation. This acknowledgement does not override amount limits or permit
+unsupported products such as AdBlue to be imported as diesel. A confirmation is
+an instruction for the current save, not a separate persisted audit record.
+
+`POST /fuel/import/save` accepts only bounded JSON with the CSRF header, up to
+512 KiB and 500 rows. It validates every row again, fixes the supplier to The
+Fuel Store, and converts decimal strings directly to integer hundredths. The
+model's float-based entry validators are not reapplied to those integers.
+It does not accept or store a source document, filename, card number or driver.
+
+Before writing, the saver locks selected truck rows in a consistent order and
+rechecks current duplicates and unusual prices. Matching candidates in the
+selection or database block the entire batch, including a repeated Save request.
+These locks serialize importer requests on PostgreSQL. Legacy manual entry
+paths do not share this locking protocol, so this is not a global uniqueness
+constraint or a permanent transaction-ID/idempotency system.
+
+Fuel can save without a Day. Matching Day rows are locked; the saver links a day
+only if exactly one record matches the selected truck and purchase date.
+Missing or multiple matches leave `day_id` empty rather than guessing a driver.
+Fuel inserts and removal of all matching legacy missing-fuel anomalies (with
+their joined base rows and feedback) share one commit. Existing fuel records
+and unrelated anomalies are not changed. Any pre-commit failure rolls back the
+whole batch. Unrelated pending ORM changes cause a refusal before the save
+transaction instead of being committed or discarded.
+
+Controls lock during Save. A confirmed success displays the count and a fuel
+history link, and locks that batch against another submission. Clear or choosing
+a new file starts a new draft. Validation/conflict failures retain the edits.
+Network failure, an unexpected response or a lost COMMIT acknowledgement can
+leave the outcome unconfirmed; the page preserves that warning, never retries
+Save automatically, and requires a manual recheck with fuel-history review
+before another attempt. Exact duplicate guards still run on every Save.
+
+No schema migration is required. This adds a new save endpoint; the existing
+manual fuel form and owner-analysis calculations retain their current behavior.
+
+## Validation
 
 Tests create fictional `.xlsx` files in memory. Run them from the repository
 root:
@@ -191,7 +240,7 @@ python3 -m unittest discover -s tests -p 'test_fuel_*.py' -v
 The supplied sample is checked privately against the original workbook data;
 its registrations, card numbers and financial records are excluded from Git.
 
-The next stage adds explicit batch saving with server-side rechecks.
-Fuel may be recorded without a day entry under the existing manual workflow;
-an importer must preserve that rule and avoid guessing
-a linked day when several drivers used a truck on the same date.
+The opt-in `test_fuel_import_save_postgres.py` starts its own disposable cluster
+on a private Unix socket. Set `FUEL_TEST_POSTGRES_BIN` to the PostgreSQL binary
+directory to test real locking, exact inserts and full transaction rollback.
+It refuses configured application database targets and never contacts Heroku.

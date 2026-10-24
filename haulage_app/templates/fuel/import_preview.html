@@ -6,10 +6,11 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/fuel-import.css') }}">
 <section class="fuel-import" id="fuel-import"
          data-read-url="{{ read_url }}" data-check-url="{{ check_url }}"
+         data-save-url="{{ save_url }}"
          data-csrf-token="{{ csrf_token }}">
     <div class="fuel-import-heading">
         <a href="{{ url_for('fuel.add_fuel', item_id=0, tab='entry') }}">← Back to fuel</a>
-        <p class="fuel-import-notice">Preview only — nothing is saved.</p>
+        <p class="fuel-import-notice">Review the entries before saving.</p>
     </div>
 
     <div class="fuel-import-upload">
@@ -64,8 +65,13 @@
         </div>
         <div class="fuel-import-footer">
             <p id="fuel-selected-totals" role="status" aria-live="polite"></p>
-            <p class="fuel-import-muted">Edits stay on this page. Nothing is saved.</p>
+            <p class="fuel-import-muted">Only selected entries will be saved.</p>
         </div>
+        <div class="fuel-import-save-actions">
+            <button id="fuel-save-entries" class="btn" type="button" disabled>Save fuel entries</button>
+            <p id="fuel-save-status" class="fuel-import-muted" role="status" aria-live="polite"></p>
+        </div>
+        <div id="fuel-save-result" class="fuel-import-save-result" role="status" hidden></div>
     </section>
     <noscript><p class="fuel-import-error">Enable JavaScript to upload and review a fuel spreadsheet.</p></noscript>
 </section>

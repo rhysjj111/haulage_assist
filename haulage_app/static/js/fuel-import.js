@@ -16,8 +16,13 @@
     const nextPage = byId("fuel-next-page");
     const checkStatus = byId("fuel-check-status");
     const retryChecks = byId("fuel-retry-checks");
+    const saveButton = byId("fuel-save-entries");
+    const saveStatus = byId("fuel-save-status");
+    const saveResult = byId("fuel-save-result");
     const maxBytes = 10 * 1024 * 1024;
     const maxCheckBytes = 2 * 1024 * 1024;
+    const maxSaveBytes = 512 * 1024;
+    const maxSaveRows = 500;
     const pageSize = 100;
     const xlsxType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     const knownIssues = new Set([
@@ -30,6 +35,10 @@
     const knownCheckIssues = new Set([
         "truck_unavailable", "fuel_amount_out_of_range", "fuel_price_unusual",
         "possible_duplicate_upload", "possible_duplicate_fuel",
+    ]);
+    const dieselProducts = new Set([
+        "DIESEL", "KEYFUELS DIESEL", "UK FUELS DIESEL", "UK FUELS DIESEL (TP)",
+        "ESSO DIESEL", "DIESEL (SHELL)",
     ]);
     const issueLabels = {
         missing_transaction_registration: "No transaction registration in the source.",
@@ -55,6 +64,32 @@
     let duplicateByRow = new Map();
     let existingByPair = new Map();
     let matchesBySignature = new Map();
+    let savePhase = "idle";
+    let saveReady = false;
+    let saveNeedsRecheck = false;
+    let saveGeneration = 0;
+
+    function editingLocked() {
+        return savePhase === "saving" || savePhase === "complete";
+    }
+
+    function syncControls() {
+        const saving = savePhase === "saving";
+        const locked = editingLocked();
+        const count = rows.filter((model) => model.included).length;
+        fileInput.disabled = saving;
+        clearButton.disabled = saving;
+        readButton.disabled = busy || locked || !chosenFile;
+        previousPage.disabled = saving || page === 0;
+        nextPage.disabled = saving || (page + 1) * pageSize >= rows.length;
+        retryChecks.disabled = saving || savePhase === "complete";
+        for (const input of tableBody.querySelectorAll("input, select")) input.disabled = locked;
+        for (const button of tableBody.querySelectorAll("button")) button.disabled = saving;
+        saveButton.disabled = !saveReady || locked || saveNeedsRecheck;
+        saveButton.textContent = saving ? "Saving…" : savePhase === "complete" ? "Saved"
+            : count ? `Save ${count} fuel ${count === 1 ? "entry" : "entries"}` : "Save fuel entries";
+        root.setAttribute("aria-busy", String(busy || saving));
+    }
 
     function node(tag, className, text) {
         const element = document.createElement(tag);
@@ -75,12 +110,19 @@
 
     function setBusy(value) {
         busy = value;
-        readButton.disabled = value || !chosenFile;
         readButton.textContent = value ? "Reading…" : "Read spreadsheet";
-        root.setAttribute("aria-busy", String(value));
+        syncControls();
     }
 
     function resetPreview() {
+        saveGeneration += 1;
+        savePhase = "idle";
+        saveReady = false;
+        saveNeedsRecheck = false;
+        saveStatus.replaceChildren();
+        saveStatus.dataset.error = "false";
+        saveResult.replaceChildren();
+        saveResult.hidden = true;
         cancelChecks();
         clearCheckResults();
         checkPhase = "idle";
@@ -96,6 +138,7 @@
         checkStatus.textContent = "";
         checkStatus.dataset.state = "idle";
         retryChecks.hidden = true;
+        syncControls();
     }
 
     function cancelReading() {
@@ -148,7 +191,9 @@
     }
 
     function updateField(model, field, input, error) {
-        const message = model.included ? fieldError(model, field) : "";
+        const serverField = field === "truck" ? "truck_id" : field;
+        const message = model.included ? fieldError(model, field)
+            || model.serverErrors.find((item) => item.field === serverField)?.message || "" : "";
         input.setAttribute("aria-invalid", String(Boolean(message)));
         error.textContent = message;
         error.hidden = !message;
@@ -176,6 +221,68 @@
         byId("fuel-selected-totals").textContent = invalidAmounts
             ? "Selected totals: correct litres and cost first."
             : `Selected totals: ${displayHundredths(quantity)} L · £${displayHundredths(cost)}`;
+        updateSaveState();
+    }
+
+    function editDraft(model) {
+        if (editingLocked()) return false;
+        model.reviewConfirmed = false;
+        for (const row of rows) row.serverErrors = [];
+        if (savePhase === "failed") {
+            savePhase = "idle";
+            saveStatus.replaceChildren();
+            saveStatus.dataset.error = "false";
+        }
+        return true;
+    }
+
+    function unsupportedProduct(model) {
+        const product = model.source.product.trim().replace(/\s+/g, " ").toUpperCase();
+        return model.source.issues.includes("unsupported_product") || !dieselProducts.has(product);
+    }
+
+    function needsReview(model) {
+        return model.source.issues.length > 0
+            || checkedRows.get(model.source.source_row)?.issues.includes("fuel_price_unusual");
+    }
+
+    function updateSaveState() {
+        const selected = rows.filter((model) => model.included);
+        const invalid = selected.some((model) => ["date", "truck", "quantity", "cost"].some((field) => fieldError(model, field)));
+        const unsupported = selected.some(unsupportedProduct);
+        const blocked = selected.some((model) => {
+            const checked = checkedRows.get(model.source.source_row);
+            return !checked || checked.issues.some((issue) => issue !== "fuel_price_unusual")
+                || model.serverErrors.length;
+        });
+        const unreviewed = selected.some((model) => needsReview(model) && !model.reviewConfirmed);
+        saveReady = Boolean(selected.length && selected.length <= maxSaveRows && !invalid && !unsupported
+            && !blocked && !unreviewed && checkPhase === "complete");
+        if (savePhase === "idle") {
+            saveStatus.dataset.error = "false";
+            saveStatus.textContent = !selected.length ? "Select the entries to save."
+                : selected.length > maxSaveRows ? `Select up to ${maxSaveRows} entries to save at a time.`
+                : invalid ? "Correct the highlighted fields before saving."
+                : unsupported ? "Exclude unsupported products before saving."
+                : ["pending", "checking"].includes(checkPhase) ? "Checking the selected entries before saving…"
+                : checkPhase !== "complete" ? "Complete the entry checks before saving."
+                : blocked ? "Resolve the highlighted entries before saving."
+                : unreviewed ? "Confirm the highlighted warnings before saving."
+                : "Ready to save the selected entries.";
+        }
+        syncControls();
+    }
+
+    function setSaveMessage(message, {error = false, history = false} = {}) {
+        saveStatus.replaceChildren(node("span", "", message));
+        saveStatus.dataset.error = String(error);
+        if (history) {
+            const link = node("a", "", "View fuel history");
+            link.href = "/fuel/add_fuel/0/history";
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            saveStatus.append(link);
+        }
     }
 
     function addOriginalField(list, label, value) {
@@ -236,6 +343,7 @@
         }
         input.value = model[field];
         input.addEventListener("input", () => {
+            if (!editDraft(model)) return;
             model[field] = input.value;
             updateField(model, field, input, error);
             updateSummary();
@@ -243,7 +351,7 @@
         });
         input.addEventListener("blur", () => {
             // A canonical value on blur keeps the editable figures at 2dp.
-            if (field !== "date" && !fieldError(model, field)) {
+            if (!editingLocked() && field !== "date" && !fieldError(model, field)) {
                 const amount = parseHundredths(model[field]);
                 model[field] = canonicalHundredths(amount);
                 input.value = model[field];
@@ -271,6 +379,7 @@
         }
         select.value = model.truckId === null ? "" : String(model.truckId);
         select.addEventListener("change", () => {
+            if (!editDraft(model)) return;
             model.truckId = select.value ? Number(select.value) : null;
             updateField(model, "truck", select, error);
             updateSummary();
@@ -315,6 +424,7 @@
             for (const field of fields) updateField(model, field.field, field.input, field.error);
         };
         checkbox.addEventListener("change", () => {
+            if (!editDraft(model)) return;
             model.included = checkbox.checked;
             update();
             updateSummary();
@@ -474,14 +584,14 @@
         const cell = row.firstElementChild;
         cell.replaceChildren();
         row.hidden = true;
-        if (checkPhase !== "complete" || !model.included) return;
-        const checked = checkedRows.get(model.source.source_row);
-        if (!checked) return;
+        if (!model.included) return;
+        const checked = checkPhase === "complete" ? checkedRows.get(model.source.source_row) : null;
+        const issues = checked?.issues || [];
         const addWarning = (text) => cell.append(node("p", "fuel-import-check-warning", text));
-        if (checked.issues.includes("truck_unavailable")) addWarning("This truck is no longer available. Read the spreadsheet again to refresh truck choices.");
-        if (checked.issues.includes("fuel_amount_out_of_range")) addWarning("Check litres and cost against the fuel form's permitted amounts.");
-        if (checked.issues.includes("fuel_price_unusual")) addWarning("Unusual price per litre — check litres and cost.");
-        const group = duplicateByRow.get(model.source.source_row);
+        if (issues.includes("truck_unavailable")) addWarning("This truck is no longer available. Read the spreadsheet again to refresh truck choices.");
+        if (issues.includes("fuel_amount_out_of_range")) addWarning("Check litres and cost against the fuel form's permitted amounts.");
+        if (issues.includes("fuel_price_unusual")) addWarning("Unusual price per litre — check litres and cost.");
+        const group = checked ? duplicateByRow.get(model.source.source_row) : null;
         if (group) {
             const otherRows = [];
             for (const sourceRow of group) {
@@ -491,14 +601,54 @@
             const remaining = group.length - 1 - otherRows.length;
             addWarning(`Possible duplicate — same purchase details as ${otherRows.length === 1 ? "row" : "rows"} ${otherRows.join(", ")}${remaining ? ` and ${remaining} more` : ""}.`);
         }
-        const signature = purchaseSignature(checked.truck_id, checked.date, checked.quantity, checked.cost);
+        const signature = checked ? purchaseSignature(checked.truck_id, checked.date, checked.quantity, checked.cost) : null;
         const matches = matchesBySignature.get(signature) || [];
-        if (checked.issues.includes("possible_duplicate_fuel")) {
+        if (issues.includes("possible_duplicate_fuel")) {
             addWarning(matches.length === 1
                 ? `Possible duplicate — matches recorded fuel entry #${matches[0].id}.`
                 : `Possible duplicate — matches ${matches.length} recorded fuel entries.`);
         }
-        const entries = existingByPair.get(pairKey(checked.truck_id, checked.date)) || [];
+        if (issues.some((issue) => ["possible_duplicate_upload", "possible_duplicate_fuel"].includes(issue))) {
+            const note = node("p", "fuel-import-muted", "Exclude or correct duplicates before saving. ");
+            const manual = node("a", "", "Enter a genuine separate fill manually");
+            manual.href = "/fuel/add_fuel/0/entry";
+            manual.target = "_blank";
+            manual.rel = "noopener noreferrer";
+            note.append(manual);
+            cell.append(note);
+        }
+        if (unsupportedProduct(model)) {
+            addWarning("This product cannot be imported as diesel. Exclude this row.");
+        } else if (needsReview(model)) {
+            const label = node("label", "fuel-import-review-confirm");
+            const confirmation = node("input");
+            confirmation.type = "checkbox";
+            confirmation.id = `fuel-review-confirm-${model.source.source_row}`;
+            confirmation.checked = model.reviewConfirmed;
+            confirmation.setAttribute("aria-label", `I checked this entry against the spreadsheet, row ${model.source.source_row}`);
+            confirmation.addEventListener("change", () => {
+                if (editingLocked()) return;
+                model.reviewConfirmed = confirmation.checked;
+                model.serverErrors = model.serverErrors.filter((item) => item.field !== "review");
+                updateRowChecks(model);
+                updateSaveState();
+            });
+            label.append(confirmation, node("span", "", "I checked this entry against the spreadsheet"));
+            cell.append(label);
+        }
+        for (const error of model.serverErrors) {
+            if (["date", "truck_id", "quantity", "cost"].includes(error.field)) continue;
+            const message = node("p", "fuel-import-save-row-error", error.message);
+            if (error.action_url) {
+                const link = node("a", "", "View entry");
+                link.href = error.action_url;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                message.append(link);
+            }
+            cell.append(message);
+        }
+        const entries = checked ? existingByPair.get(pairKey(checked.truck_id, checked.date)) || [] : [];
         if (entries.length) {
             const details = node("details", "fuel-import-recorded-entries");
             details.append(node("summary", "", `Recorded entries for this truck and date (${entries.length})`));
@@ -540,7 +690,7 @@
             }
             cell.append(details);
         }
-        row.classList.toggle("fuel-import-context-only", checked.issues.length === 0);
+        row.classList.toggle("fuel-import-context-only", issues.length === 0 && !needsReview(model) && !unsupportedProduct(model) && !model.serverErrors.length);
         row.hidden = !cell.childElementCount;
     }
 
@@ -548,7 +698,7 @@
         const selected = rows.filter((model) => model.included);
         const invalid = selected.filter((model) => ["date", "truck", "quantity", "cost"].some((field) => fieldError(model, field))).length;
         const warnings = checkPhase === "complete" ? [...checkedRows.values()].filter((row) => row.issues.length).length : 0;
-        retryChecks.hidden = !["complete", "failed"].includes(checkPhase);
+        retryChecks.hidden = savePhase === "complete" || (!saveNeedsRecheck && !["complete", "failed"].includes(checkPhase));
         retryChecks.textContent = checkPhase === "failed" ? "Retry checks" : "Recheck entries";
         checkStatus.dataset.state = checkPhase === "failed" ? "failed" : warnings ? "warning" : checkPhase;
         if (!rows.length) checkStatus.textContent = "";
@@ -565,10 +715,11 @@
             checkStatus.textContent = message + (invalid ? " Correct the highlighted fields to check all selected entries." : "");
         } else checkStatus.textContent = "";
         for (const model of rows.slice(page * pageSize, (page + 1) * pageSize)) updateRowChecks(model);
+        updateSaveState();
     }
 
     async function runChecks(snapshot, serial) {
-        if (serial !== checkGeneration) return;
+        if (serial !== checkGeneration || editingLocked()) return;
         const requestController = new AbortController();
         checkController = requestController;
         checkPhase = "checking";
@@ -590,6 +741,11 @@
             duplicateByRow = checked.duplicates;
             existingByPair = checked.pairs;
             matchesBySignature = checked.matches;
+            for (const model of rows) {
+                // These errors describe the previous database snapshot. A
+                // fresh check supplies current truck/duplicate warnings.
+                model.serverErrors = model.serverErrors.filter((error) => !["duplicate", "truck_id"].includes(error.field));
+            }
             checkPhase = "complete";
         } catch (error) {
             if (serial !== checkGeneration) return;
@@ -605,6 +761,7 @@
     }
 
     function scheduleChecks(immediate = false) {
+        if (editingLocked()) return;
         cancelChecks();
         clearCheckResults();
         const snapshot = checkSnapshot();
@@ -677,6 +834,7 @@
             const model = {source: Object.freeze({...source, issues: Object.freeze([...source.issues])}),
                 date: source.transaction_date, truckId: source.truck_id,
                 quantity: source.quantity, cost: source.cost,
+                reviewConfirmed: false, serverErrors: [],
                 included: source.match_status === "matched" && source.truck_id !== null && !unsafeDefault};
             // Out-of-range source amounts remain visible and need a deliberate
             // inclusion after correction; no source rows disappear.
@@ -692,7 +850,127 @@
         scheduleChecks();
     }
 
+    function savePayload() {
+        return {rows: rows.filter((model) => model.included).map((model) => ({
+            source_row: model.source.source_row, truck_id: model.truckId, date: model.date,
+            quantity: canonicalHundredths(parseHundredths(model.quantity)),
+            cost: canonicalHundredths(parseHundredths(model.cost)),
+            product: model.source.product, source_issues: [...model.source.issues],
+            review_confirmed: model.reviewConfirmed,
+        }))};
+    }
+
+    function applySaveErrors(data, payload) {
+        if (!data || !data.error || typeof data.error.code !== "string"
+                || typeof data.error.message !== "string" || data.error.message.length > 1000
+                || (data.row_errors !== undefined && !Array.isArray(data.row_errors))) throw new Error("invalid_save_error");
+        const errors = data.row_errors || [];
+        const expected = new Set(payload.rows.map((row) => row.source_row));
+        const fields = new Set(["date", "truck_id", "quantity", "cost", "product", "source_issues", "review", "duplicate"]);
+        if (errors.length > payload.rows.length * 8) throw new Error("invalid_save_error");
+        const grouped = new Map();
+        for (const error of errors) {
+            if (!error || !expected.has(error.source_row) || !fields.has(error.field)
+                    || typeof error.code !== "string" || error.code.length > 100
+                    || typeof error.message !== "string" || error.message.length > 500
+                    || (error.action_url !== undefined && (typeof error.action_url !== "string"
+                        || !/^\/fuel\/add_fuel\/[1-9]\d*\/edit$/.test(error.action_url)))) throw new Error("invalid_save_error");
+            if (!grouped.has(error.source_row)) grouped.set(error.source_row, []);
+            grouped.get(error.source_row).push(error);
+        }
+        for (const model of rows) model.serverErrors = grouped.get(model.source.source_row) || [];
+        return data.error.message;
+    }
+
+    function confirmSaved(data, payload) {
+        if (!data || data.saved_count !== payload.rows.length || !Array.isArray(data.fuel_entries)
+                || data.fuel_entries.length !== payload.rows.length || data.history_url !== "/fuel/add_fuel/0/history") {
+            throw new Error("invalid_save_result");
+        }
+        const expected = new Map(payload.rows.map((row) => [row.source_row, row]));
+        const ids = new Set();
+        const sourceRows = new Set();
+        for (const saved of data.fuel_entries) {
+            const original = saved && expected.get(saved.source_row);
+            if (!original || sourceRows.has(saved.source_row) || saved.truck_id !== original.truck_id
+                    || saved.date !== original.date || !Number.isSafeInteger(saved.id) || saved.id <= 0
+                    || ids.has(saved.id) || saved.review_url !== `/fuel/add_fuel/${saved.id}/edit`) {
+                throw new Error("invalid_save_result");
+            }
+            sourceRows.add(saved.source_row);
+            ids.add(saved.id);
+        }
+        const count = payload.rows.length;
+        saveResult.replaceChildren(node("p", "", `${count} fuel ${count === 1 ? "entry saved" : "entries saved"}.`));
+        const history = node("a", "", "View fuel history");
+        history.href = data.history_url;
+        saveResult.append(history);
+        saveResult.hidden = false;
+    }
+
+    saveButton.addEventListener("click", async () => {
+        if (editingLocked() || saveNeedsRecheck || busy) return;
+        updateSaveState();
+        if (!saveReady) return;
+        const payload = savePayload();
+        const body = JSON.stringify(payload);
+        if (new Blob([body]).size > maxSaveBytes) {
+            savePhase = "failed";
+            setSaveMessage("This selection is too large to save. Select fewer entries.", {error: true});
+            syncControls();
+            return;
+        }
+        cancelChecks();
+        const serial = ++saveGeneration;
+        const requestController = new AbortController();
+        savePhase = "saving";
+        saveReady = false;
+        for (const model of rows) model.serverErrors = [];
+        setSaveMessage("Saving the selected fuel entries…");
+        updateChecks();
+        const timeout = window.setTimeout(() => requestController.abort(), 40000);
+        let recheck = false;
+        try {
+            const response = await fetch(root.dataset.saveUrl, {
+                method: "POST",
+                headers: {"Content-Type": "application/json", "X-CSRFToken": root.dataset.csrfToken},
+                body, credentials: "same-origin", cache: "no-store", signal: requestController.signal,
+            });
+            if (serial !== saveGeneration) return;
+            const data = await response.json();
+            if (serial !== saveGeneration) return;
+            if (response.status === 201) {
+                confirmSaved(data, payload);
+                savePhase = "complete";
+                saveNeedsRecheck = false;
+                setSaveMessage("Saved. Clear this preview or choose another file to start a new import.");
+            } else if ([400, 403, 409, 413, 422].includes(response.status)) {
+                const message = applySaveErrors(data, payload);
+                savePhase = "failed";
+                setSaveMessage(message, {error: true});
+                recheck = true;
+                renderPage();
+            } else {
+                throw new Error("unconfirmed_save");
+            }
+        } catch (error) {
+            if (serial !== saveGeneration) return;
+            savePhase = "unconfirmed";
+            saveNeedsRecheck = true;
+            clearCheckResults();
+            checkPhase = "idle";
+            setSaveMessage("The save could not be confirmed. Check fuel history, then select Recheck entries before trying again.", {error: true, history: true});
+        } finally {
+            window.clearTimeout(timeout);
+            if (serial === saveGeneration) {
+                updateChecks();
+                if (recheck) scheduleChecks(true);
+            }
+        }
+    });
+
     fileInput.addEventListener("change", () => {
+        if (savePhase === "saving") return;
         cancelReading();
         resetPreview();
         clearError();
@@ -710,6 +988,7 @@
     });
 
     clearButton.addEventListener("click", () => {
+        if (savePhase === "saving") return;
         cancelReading();
         resetPreview();
         clearError();
@@ -721,7 +1000,7 @@
     });
 
     readButton.addEventListener("click", async () => {
-        if (!chosenFile || busy) return;
+        if (!chosenFile || busy || editingLocked()) return;
         cancelReading();
         resetPreview();
         clearError();
@@ -762,19 +1041,33 @@
     });
 
     previousPage.addEventListener("click", () => {
-        if (page <= 0) return;
+        if (savePhase === "saving" || page <= 0) return;
         page -= 1;
         renderPage();
     });
     nextPage.addEventListener("click", () => {
-        if ((page + 1) * pageSize >= rows.length) return;
+        if (savePhase === "saving" || (page + 1) * pageSize >= rows.length) return;
         page += 1;
         renderPage();
     });
-    retryChecks.addEventListener("click", () => scheduleChecks(true));
+    retryChecks.addEventListener("click", () => {
+        if (editingLocked()) return;
+        saveNeedsRecheck = false;
+        if (savePhase === "failed") {
+            savePhase = "idle";
+            saveStatus.replaceChildren();
+            saveStatus.dataset.error = "false";
+        }
+        scheduleChecks(true);
+    });
     window.addEventListener("focus", () => {
         // A recorded entry may have been corrected in the separate review tab.
-        if (rows.length && !busy && !["pending", "checking"].includes(checkPhase)) scheduleChecks(true);
+        if (rows.length && !busy && !editingLocked() && !["pending", "checking"].includes(checkPhase)) scheduleChecks(true);
+    });
+    window.addEventListener("beforeunload", (event) => {
+        if (savePhase !== "saving") return;
+        event.preventDefault();
+        event.returnValue = "";
     });
     window.addEventListener("pagehide", () => {
         cancelReading();

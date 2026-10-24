@@ -60,13 +60,13 @@ class FuelImportChecksTests(OwnerTestCase):
                 for name, table in db.metadata.tables.items()
             }
 
-    def test_preview_exposes_check_endpoint_and_remains_preview_only(self):
+    def test_review_exposes_separate_check_and_save_endpoints_without_writing_on_get(self):
         response, context = self.get_page(PREVIEW)
         self.assertEqual(context["check_url"], CHECK)
         self.assertIn('data-check-url="' + CHECK + '"', response.text)
-        self.assertIn("nothing is saved", response.text.lower())
+        self.assertEqual(context["save_url"], "/fuel/import/save")
+        self.assertEqual(Fuel.query.count(), 0)
         self.assert_private(response)
-        self.assertEqual(self.client.post("/fuel/import/save", json={"rows": []}).status_code, 404)
 
     def test_no_day_entry_is_required_and_empty_receipt_context_is_explicit(self):
         self.assertEqual(Day.query.count(), 0)
