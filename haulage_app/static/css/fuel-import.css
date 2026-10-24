@@ -1,0 +1,66 @@
+/* Loaded only by the fuel spreadsheet review page. */
+main { justify-content: flex-start; }
+main > .container { width: 96%; max-width: 1660px; }
+.fuel-import { width: 100%; padding: 2px 0 32px; color: #263445; }
+.fuel-import [hidden] { display: none !important; }
+.fuel-import a { color: #315b82; }
+.fuel-import-heading, .fuel-import-review-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.fuel-import-heading { margin-bottom: 18px; }
+.fuel-import-notice { margin: 0; color: #687383; font-size: .9rem; }
+.fuel-import-upload { display: flex; align-items: center; gap: 28px; padding: 18px 22px; background: #fff; border: 1px solid #dce2e7; border-radius: 6px; }
+.fuel-import-file-control { min-width: 0; flex: 1; }
+.fuel-import label { display: block; color: #334155; font-size: .86rem; font-weight: 700; margin-bottom: 6px; }
+.fuel-import input[type="file"] { display: block; max-width: 100%; font: inherit; color: #334155; }
+.fuel-import input[type="file"]::file-selector-button { margin-right: 12px; padding: 8px 12px; color: #334155; border: 1px solid #c7d1dc; border-radius: 4px; background: #f6f8fa; font: inherit; cursor: pointer; }
+.fuel-import-upload-actions { display: flex; align-items: center; gap: 20px; }
+.fuel-import .btn { background: #333a56; border-radius: 4px; box-shadow: none; text-transform: none; font-weight: 700; white-space: nowrap; }
+.fuel-import .btn:hover { background: #45516f; }
+.fuel-import-text-button { padding: 6px 0; border: 0; background: transparent; color: #52677e; font: inherit; cursor: pointer; }
+.fuel-import-text-button:hover { text-decoration: underline; }
+.fuel-import-muted { margin: 6px 0 0; color: #6d7785; font-size: .82rem; line-height: 1.55; }
+.fuel-import-status { margin: 12px 0; min-height: 1.3em; color: #52677e; font-size: .9rem; }
+.fuel-import-error { margin: 12px 0 20px; padding: 13px 16px; color: #8d2929; background: #fff1f1; border: 1px solid #f0caca; border-radius: 4px; }
+.fuel-import-review { min-width: 0; padding: 20px; background: #fff; border: 1px solid #dce2e7; border-radius: 6px; }
+.fuel-import h2 { margin: 0; font-family: inherit; font-size: 1.25rem; font-weight: 700; line-height: 1.4; color: #263445; }
+.fuel-import-source-totals { margin: 2px 0 0; text-align: right; color: #526171; font-size: .85rem; line-height: 1.6; }
+.fuel-import-selection { margin: 18px 0 10px; color: #526171; font-size: .9rem; }
+.fuel-import-pager { display: flex; align-items: baseline; justify-content: flex-end; gap: 18px; margin: 0 0 12px; color: #6d7785; font-size: .82rem; }
+.fuel-import-pager button:disabled { color: #9aa4af; cursor: default; text-decoration: none; }
+.fuel-import-table-wrap { width: 100%; overflow-x: auto; }
+.fuel-import-table { width: 100%; min-width: 890px; border-collapse: collapse; table-layout: fixed; }
+.fuel-import-table th { padding: 11px 9px; background: #f5f7f9; font-size: .77rem; font-weight: 700; color: #5a6877; vertical-align: bottom; }
+.fuel-import-table th:nth-child(1) { width: 68px; }
+.fuel-import-table th:nth-child(2) { width: 29%; }
+.fuel-import-table th:nth-child(3) { width: 17%; }
+.fuel-import-table th:nth-child(4) { width: 21%; }
+.fuel-import-table th:nth-child(5), .fuel-import-table th:nth-child(6) { width: 14%; }
+.fuel-import-table td { padding: 13px 9px; border-bottom: 1px solid #e7ebef; vertical-align: top; font-size: .87rem; overflow-wrap: anywhere; }
+.fuel-import-number { text-align: right; }
+.fuel-import-include-column { text-align: center; }
+.fuel-import input[type="checkbox"] { position: static; opacity: 1; pointer-events: auto; appearance: auto; width: 18px; height: 18px; margin: 8px 0 0; cursor: pointer; }
+.fuel-import-source-registration { display: block; font-weight: 700; line-height: 1.5; }
+.fuel-import-source-meta { display: block; margin-top: 3px; color: #6d7785; font-size: .74rem; line-height: 1.5; }
+.fuel-import-original-button { display: block; margin-top: 4px; padding: 0; font-size: .75rem; }
+.fuel-import select.browser-default, .fuel-import input[type="date"], .fuel-import input[type="text"] { box-sizing: border-box; display: block; width: 100%; min-width: 0; height: 37px; margin: 0; padding: 5px 8px; background: #fff; border: 1px solid #cbd4dd; border-radius: 4px; font: inherit; font-size: .87rem; color: #263445; }
+.fuel-import select.browser-default { padding-right: 22px; }
+.fuel-import input[type="text"] { text-align: right; }
+.fuel-import input:focus, .fuel-import select:focus, .fuel-import button:focus-visible { outline: 2px solid #dbe8f4; outline-offset: 1px; box-shadow: none !important; }
+.fuel-import input[aria-invalid="true"], .fuel-import select[aria-invalid="true"] { border-color: #ba5555; }
+.fuel-import-field-error { display: block; margin-top: 5px; color: #a73333; font-size: .75rem; line-height: 1.4; }
+.fuel-import-source-warning { margin: 6px 0 0; color: #94621d; font-size: .75rem; line-height: 1.45; }
+.fuel-import-excluded > td { background: #fafbfc; }
+.fuel-import-excluded .fuel-import-source-registration { color: #687383; }
+.fuel-import-original-row > td { padding: 0; }
+.fuel-import-original { padding: 14px 18px; border-left: 3px solid #cbd7e2; background: #f6f8fa; }
+.fuel-import-original h3 { margin: 0 0 10px; color: #526171; font-size: .87rem; font-weight: 700; font-family: inherit; }
+.fuel-import-original dl { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 13px 24px; margin: 0; }
+.fuel-import-original dt { color: #687383; font-size: .74rem; }
+.fuel-import-original dd { margin: 3px 0 0; color: #263445; font-size: .83rem; }
+.fuel-import-footer { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin-top: 17px; }
+.fuel-import-footer > p { margin: 0; }
+#fuel-selected-totals { font-weight: 600; font-size: .9rem; }
+@media (max-width: 700px) {
+    .fuel-import-heading, .fuel-import-upload, .fuel-import-review-heading, .fuel-import-footer { align-items: stretch; flex-direction: column; gap: 14px; }
+    .fuel-import-upload, .fuel-import-review { padding: 16px; }
+    .fuel-import-source-totals { text-align: left; }
+}
