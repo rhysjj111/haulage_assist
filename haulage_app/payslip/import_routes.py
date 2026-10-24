@@ -1,11 +1,11 @@
-"""Temporary PDF-to-preview endpoints; no payslip-saving action."""
+"""Temporary PDF reading, review checks, and explicit batch payslip saving."""
 
 from collections import defaultdict
 import json
 
 from flask import current_app, jsonify, make_response, render_template, request, url_for
 from flask_wtf.csrf import generate_csrf, validate_csrf
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from haulage_app import db
@@ -78,6 +78,7 @@ def import_preview():
             csrf_token=generate_csrf(),
             read_url=url_for("payslip.read_import_pdf"),
             check_url=url_for("payslip.check_import_preview"),
+            save_url=url_for("payslip.save_import_payslips"),
         ))
     return _private_response(response)
 
@@ -116,6 +117,46 @@ def read_import_pdf():
     except SQLAlchemyError:
         return _error("preview_unavailable", "Driver choices could not be loaded. Please try again.", 503)
     return _private_response(jsonify(payload))
+
+
+@payslip_bp.route("/import/save", methods=["POST"])
+def save_import_payslips():
+    if current_app.config.get("WTF_CSRF_ENABLED", True):
+        try:
+            validate_csrf(request.headers.get("X-CSRFToken"))
+        except ValidationError:
+            return _error("csrf_failed", "Refresh this page and choose the PDF again.", 403)
+
+    from haulage_app.payslip.import_save import MAX_SAVE_BYTES, ImportSaveError, save_reviewed_payslips
+
+    if request.mimetype != "application/json":
+        return _error("unsupported_media_type", "Send the reviewed payslip entries as JSON.", 415)
+    if request.content_length is not None and request.content_length > MAX_SAVE_BYTES:
+        return _error("too_large", "The save request is too large. Choose fewer entries.", 413)
+    content = request.stream.read(MAX_SAVE_BYTES + 1)
+    if len(content) > MAX_SAVE_BYTES:
+        return _error("too_large", "The save request is too large. Choose fewer entries.", 413)
+    try:
+        payload = json.loads(content.decode("utf-8"))
+    except (ValueError, UnicodeError, RecursionError):
+        return _error("invalid_save", "Choose a valid payroll week and reviewed payslip entries.", 400)
+    try:
+        result = save_reviewed_payslips(payload)
+    except ImportSaveError as error:
+        response = jsonify(error={"code": error.code, "message": str(error)}, row_errors=error.row_errors)
+        response.status_code = error.status
+        return _private_response(response)
+    except IntegrityError:
+        return _error("save_conflict", "The batch conflicts with an existing payslip or another recent change. "
+                      "Nothing was saved. Check the payslip history before trying again.", 409)
+    except SQLAlchemyError:
+        return _error("save_unavailable", "The save could not be confirmed. Recheck entries before trying again.", 503)
+    except Exception:
+        # Never include SQL, file contents, selected amounts or exception text.
+        return _error("save_unavailable", "The save could not be confirmed. Recheck entries before trying again.", 503)
+    response = jsonify(result)
+    response.status_code = 201
+    return _private_response(response)
 
 
 @payslip_bp.route("/import/check", methods=["POST"])

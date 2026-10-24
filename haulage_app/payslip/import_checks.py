@@ -7,7 +7,7 @@ from flask import url_for
 
 from haulage_app import db
 from haulage_app.driver.choices import get_entry_drivers
-from haulage_app.models import Payslip
+from haulage_app.models import Day, Payslip
 from haulage_app.owner_analysis.dates import validate_week_start, week_end
 
 
@@ -55,6 +55,7 @@ def existing_payslips_for_preview(payload):
     """
     start, end, driver_ids = _validated_selection(payload)
     grouped = {driver_id: [] for driver_id in driver_ids}
+    day_counts = {driver_id: 0 for driver_id in driver_ids}
     with db.session.no_autoflush:
         if driver_ids:
             active_ids = {driver.id for driver in get_entry_drivers()}
@@ -78,9 +79,21 @@ def existing_payslips_for_preview(payload):
                     "total_cost_to_employer": format(Decimal(entry.total_cost_to_employer) / 100, ".2f"),
                     "review_url": url_for("payslip.add_payslip", item_id=entry.id, tab="edit"),
                 })
+            days = db.session.query(Day.driver_id).filter(
+                Day.driver_id.in_(driver_ids), Day.date == end,
+            ).all()
+            for day in days:
+                day_counts[day.driver_id] += 1
     return {
         "week_start": start.isoformat(),
         "week_end": end.isoformat(),
+        "entry_date": end.isoformat(),
+        "day_entries": [
+            {"driver_id": driver_id, "date": end.isoformat(),
+             "status": "ready" if count == 1 else "missing" if count == 0 else "multiple",
+             "add_url": url_for("day.add_day", item_id=0, tab="entry")}
+            for driver_id, count in day_counts.items()
+        ],
         "existing_payslips": [
             {"driver_id": driver_id, "payslips": entries}
             for driver_id, entries in grouped.items()

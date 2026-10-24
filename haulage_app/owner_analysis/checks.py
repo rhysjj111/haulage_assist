@@ -117,7 +117,7 @@ def build_weekly_checks(week_start, *, as_of, days, fuel_entries, payslips, empl
                 driver_id=entry.driver_id, date=entry.date, record_id=entry.id)
         elif (raw_valid and entry.total_cost_to_employer > PAYROLL_GAP_MULTIPLIER * entry.total_wage
               and entry.total_cost_to_employer - entry.total_wage >= PAYROLL_GAP_MIN_PENCE):
-            add("payroll_gap_unusual", "Employer cost is much higher than take-home pay; check both payslip amounts.",
+            add("payroll_gap_unusual", "Employer cost is much higher than the recorded wage; check both payslip amounts.",
                 driver_id=entry.driver_id, date=entry.date, record_id=entry.id)
     if as_of > end:
         expected_payroll = set(employed_dates) | {day.driver_id for day in days}

@@ -56,6 +56,14 @@ main > .container { width: 96%; max-width: 1660px; }
 .payroll-import-existing strong, .payroll-import-existing-item span, .payroll-import-existing-item a { display: block; }
 .payroll-import-existing strong { font-weight: 600; }
 .payroll-import-existing-item { margin-top: 5px; }
+.payroll-import-day-check, .payroll-import-save-row-error { display: block; margin-top: 8px; color: #a73333; font-size: .74rem; line-height: 1.5; }
+.payroll-import-day-check a, .payroll-import-save-row-error a { display: block; }
+.payroll-import-save-row-error > span { display: block; }
+.payroll-import-save-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 20px; padding-top: 18px; border-top: 1px solid #e3e8ed; }
+.payroll-import-save-actions p { flex: 1 1 200px; margin: 0; }
+.payroll-import-save-actions [data-error="true"] { color: #a73333; }
+.payroll-import-save-result { margin-top: 14px; padding: 12px 14px; border: 1px solid #cbded2; border-radius: 4px; background: #f0f8f3; color: #27543a; font-size: .9rem; }
+.payroll-import-save-result p { margin: 0 0 4px; font-weight: 600; }
 .payroll-import-empty { margin: 15px 0; color: #6d7785; font-size: .9rem; }
 .payroll-import-other { margin-top: 20px; padding-top: 14px; border-top: 1px solid #e3e8ed; }
 .payroll-import-other summary { cursor: pointer; font-weight: 600; font-size: .9rem; }

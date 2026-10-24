@@ -19,6 +19,10 @@
     const openLink = byId("payroll-open-pdf");
     const checkStatus = byId("payroll-existing-check-status");
     const retryChecks = byId("payroll-retry-checks");
+    const saveButton = byId("payroll-save-payslips");
+    const saveStatus = byId("payroll-save-status");
+    const saveResult = byId("payroll-save-result");
+    const savedHistory = byId("payroll-saved-history");
     const maxBytes = 10 * 1024 * 1024;
     const dateFormat = new Intl.DateTimeFormat("en-GB", {day: "numeric", month: "short", year: "numeric", timeZone: "UTC"});
     let chosenFile = null;
@@ -34,12 +38,38 @@
     let checkKey = null;
     let checkPhase = "idle";
     let existingByDriver = new Map();
+    let daysByDriver = new Map();
+    let savePhase = "idle";
+    let saveReady = false;
+    let saveGeneration = 0;
+
+    function editingLocked() {
+        return savePhase === "saving" || savePhase === "complete";
+    }
+
+    function updateControlLocks() {
+        const saving = savePhase === "saving";
+        fileInput.disabled = saving;
+        clearButton.disabled = saving;
+        readButton.disabled = busy || editingLocked() || !chosenFile;
+        weekInput.disabled = editingLocked();
+        retryChecks.disabled = saving || savePhase === "complete";
+        saveButton.disabled = !saveReady || editingLocked();
+        const count = rowModels.filter((model) => model.row.parentElement === driverRows).length;
+        saveButton.textContent = saving ? "Saving…" : savePhase === "complete" ? "Saved" : `Save ${count || ""}${count ? " " : ""}${count === 1 ? "payslip" : "payslips"}`;
+        for (const model of rowModels) {
+            model.select.disabled = editingLocked();
+            const included = model.row.parentElement === driverRows;
+            model.wage.input.disabled = editingLocked() || !included;
+            model.cost.input.disabled = editingLocked() || !included;
+        }
+        root.setAttribute("aria-busy", String(busy || saving));
+    }
 
     function setBusy(value) {
         busy = value;
-        readButton.disabled = value || !chosenFile;
         readButton.textContent = value ? "Reading…" : "Read PDF";
-        root.setAttribute("aria-busy", String(value));
+        updateControlLocks();
     }
 
     function showError(message) {
@@ -77,6 +107,15 @@
         checkKey = null;
         checkPhase = "idle";
         existingByDriver = new Map();
+        daysByDriver = new Map();
+        saveGeneration += 1;
+        savePhase = "idle";
+        saveReady = false;
+        saveStatus.textContent = "";
+        saveStatus.removeAttribute("data-error");
+        saveResult.hidden = true;
+        byId("payroll-saved-message").textContent = "";
+        savedHistory.removeAttribute("href");
         rowModels = [];
         checkStatus.textContent = "";
         retryChecks.hidden = true;
@@ -90,6 +129,7 @@
         byId("payroll-week-error").hidden = true;
         byId("payroll-week-range").textContent = "";
         releaseDocument();
+        updateControlLocks();
     }
 
     function stopReading() {
@@ -161,7 +201,7 @@
 
     function showFieldMessage(field, message, included) {
         field.input.required = included;
-        field.input.disabled = !included;
+        field.input.disabled = !included || editingLocked();
         field.input.setCustomValidity(message);
         field.input.setAttribute("aria-invalid", String(Boolean(message)));
         field.error.textContent = message;
@@ -182,6 +222,36 @@
         container.append(item);
     }
 
+    function safeLocalUrl(value, pattern) {
+        if (typeof value !== "string") throw new Error("invalid_response");
+        const url = new URL(value, window.location.origin);
+        if (url.origin !== window.location.origin || url.search || url.hash || !pattern.test(url.pathname)) throw new Error("invalid_response");
+        return url.pathname;
+    }
+
+    function appendAction(container, text, url) {
+        const link = document.createElement("a");
+        link.textContent = text;
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        container.append(link);
+    }
+
+    function serverMessage(model, field) {
+        return model.serverErrors.find((error) => error.field === field)?.message || "";
+    }
+
+    function editDraft(model, field) {
+        if (editingLocked()) return false;
+        if (model) model.serverErrors = field ? model.serverErrors.filter((error) => error.field !== field) : [];
+        else for (const row of rowModels) row.serverErrors = [];
+        savePhase = "idle";
+        saveStatus.textContent = "";
+        saveStatus.removeAttribute("data-error");
+        return true;
+    }
+
     function refreshRowChecks() {
         const included = rowModels.filter((model) => model.row.parentElement === driverRows);
         const driverCounts = new Map();
@@ -193,13 +263,13 @@
         for (const model of rowModels) {
             const active = model.row.parentElement === driverRows;
             const id = selectedDriverId(model);
-            const driverMessage = !active ? "" : id === null ? "Choose a driver or exclude this employee." : driverCounts.get(id) > 1 ? "Driver selected more than once." : "";
+            const driverMessage = !active ? "" : id === null ? "Choose a driver or exclude this employee." : driverCounts.get(id) > 1 ? "Driver selected more than once." : serverMessage(model, "driver_id");
             model.select.setCustomValidity(driverMessage);
             model.select.setAttribute("aria-invalid", String(Boolean(driverMessage)));
             model.driverError.textContent = driverMessage;
             model.driverError.hidden = !driverMessage;
-            const wageMessage = active ? amountMessage(model.wage.input) : "";
-            let costMessage = active ? amountMessage(model.cost.input) : "";
+            const wageMessage = active ? amountMessage(model.wage.input) || serverMessage(model, "total_wage") : "";
+            let costMessage = active ? amountMessage(model.cost.input) || serverMessage(model, "total_cost_to_employer") : "";
             if (active && !wageMessage && !costMessage && amountInPence(model.cost.input.value) < amountInPence(model.wage.input.value)) {
                 costMessage = "Employer cost is below total wage.";
             }
@@ -214,24 +284,48 @@
                 model.existing.append(heading);
                 for (const entry of entries) appendExistingPayslip(model.existing, entry, entries.length > 1);
             }
-            const needsAttention = Boolean(driverMessage || wageMessage || costMessage || entries.length);
+            const day = active && checkPhase === "complete" ? daysByDriver.get(id) : null;
+            model.dayCheck.replaceChildren();
+            model.dayCheck.hidden = !day || day.status === "ready";
+            if (day && day.status !== "ready") {
+                const date = dateFormat.format(calendarDate(day.date));
+                const message = document.createElement("span");
+                message.textContent = day.status === "missing" ? `No day entry for ${date}.` : `Multiple day entries for ${date}.`;
+                model.dayCheck.append(message);
+                appendAction(model.dayCheck, day.status === "missing" ? "Add day entry" : "Review day entries", day.status === "missing" ? day.add_url : day.add_url.replace(/\/entry$/, "/history"));
+            }
+            const otherErrors = active ? model.serverErrors.filter((error) => !["driver_id", "total_wage", "total_cost_to_employer"].includes(error.field)) : [];
+            model.saveError.replaceChildren();
+            model.saveError.hidden = !otherErrors.length;
+            for (const error of otherErrors) {
+                const message = document.createElement("span");
+                message.textContent = error.message;
+                model.saveError.append(message);
+                if (error.action_url) appendAction(model.saveError, error.field === "existing_payslip" ? "View payslip" : "Review day entries", error.action_url);
+            }
+            const needsAttention = Boolean(driverMessage || wageMessage || costMessage || entries.length || day && day.status !== "ready" || otherErrors.length);
             model.row.classList.toggle("payroll-import-row-warning", needsAttention);
             if (active && needsAttention) attentionCount += 1;
         }
         const count = included.length;
         byId("payroll-driver-count").textContent = `${count} ${count === 1 ? "entry" : "entries"}${attentionCount ? ` · ${attentionCount} need${attentionCount === 1 ? "s" : ""} attention` : ""}`;
-        retryChecks.hidden = checkPhase !== "failed";
-        if (checkPhase === "pending" || checkPhase === "checking") {
-            checkStatus.textContent = "Checking existing payslips…";
+        retryChecks.hidden = review.hidden || savePhase === "complete";
+        retryChecks.textContent = checkPhase === "failed" ? "Retry check" : "Recheck entries";
+        if (editingLocked()) {
+            checkStatus.textContent = "";
+        } else if (checkPhase === "pending" || checkPhase === "checking") {
+            checkStatus.textContent = "Checking existing payslips and day entries…";
         } else if (checkPhase === "failed") {
-            checkStatus.textContent = "Existing payslips could not be checked.";
+            checkStatus.textContent = "Existing payslips and day entries could not be checked.";
         } else if (checkPhase === "invalid") {
             checkStatus.textContent = "Choose a valid payroll week to check existing payslips.";
         } else if (checkPhase === "complete" && count && !attentionCount && validWeekStart()) {
-            checkStatus.textContent = "No issues found in these checks.";
+            checkStatus.textContent = "Ready to save the selected payslips.";
         } else {
             checkStatus.textContent = "";
         }
+        saveReady = Boolean(count && !attentionCount && validWeekStart() && checkPhase === "complete" && included.every((model) => daysByDriver.get(selectedDriverId(model))?.status === "ready"));
+        updateControlLocks();
     }
 
     function cancelCheckWork() {
@@ -252,20 +346,26 @@
     }
 
     function checkedEntries(data, snapshot) {
-        if (!data || data.week_start !== snapshot.week_start || data.week_end !== snapshot.week_end || !Array.isArray(data.existing_payslips)) throw new Error("invalid_check_response");
+        if (!data || data.week_start !== snapshot.week_start || data.week_end !== snapshot.week_end || data.entry_date !== snapshot.week_end || !Array.isArray(data.existing_payslips) || !Array.isArray(data.day_entries)) throw new Error("invalid_check_response");
         const expected = new Set(snapshot.driver_ids);
         const result = new Map();
         for (const group of data.existing_payslips) {
             if (!group || !expected.has(group.driver_id) || result.has(group.driver_id) || !Array.isArray(group.payslips)) throw new Error("invalid_check_response");
             for (const entry of group.payslips) {
                 if (!entry || !Number.isSafeInteger(entry.id) || entry.id <= 0 || typeof entry.total_wage !== "string" || typeof entry.total_cost_to_employer !== "string" || typeof entry.review_url !== "string") throw new Error("invalid_check_response");
-                const url = new URL(entry.review_url, window.location.origin);
-                if (url.origin !== window.location.origin || !/^\/payslip\/add_payslip\/\d+\/edit$/.test(url.pathname)) throw new Error("invalid_check_response");
+                entry.review_url = safeLocalUrl(entry.review_url, /^\/payslip\/add_payslip\/\d+\/edit$/);
             }
             result.set(group.driver_id, group.payslips);
         }
         if (result.size !== expected.size) throw new Error("invalid_check_response");
-        return result;
+        const days = new Map();
+        for (const day of data.day_entries) {
+            if (!day || !expected.has(day.driver_id) || days.has(day.driver_id) || day.date !== snapshot.week_end || !["ready", "missing", "multiple"].includes(day.status)) throw new Error("invalid_check_response");
+            day.add_url = safeLocalUrl(day.add_url, /^\/day\/add_day\/0\/(?:entry|history)$/);
+            days.set(day.driver_id, day);
+        }
+        if (days.size !== expected.size) throw new Error("invalid_check_response");
+        return {existing: result, days};
     }
 
     async function runChecks(snapshot, serial) {
@@ -287,11 +387,16 @@
             const data = await response.json();
             if (serial !== checkGeneration) return;
             if (!response.ok) throw new Error("check_unavailable");
-            existingByDriver = checkedEntries(data, snapshot);
+            const checked = checkedEntries(data, snapshot);
+            existingByDriver = checked.existing;
+            daysByDriver = checked.days;
+            // Fresh database evidence replaces only database-related save errors.
+            for (const model of rowModels) model.serverErrors = model.serverErrors.filter((error) => !["driver_id", "day", "existing_payslip"].includes(error.field));
             checkPhase = "complete";
         } catch (error) {
             if (serial !== checkGeneration) return;
             existingByDriver = new Map();
+            daysByDriver = new Map();
             checkPhase = "failed";
         } finally {
             window.clearTimeout(timeout);
@@ -303,7 +408,7 @@
     }
 
     function scheduleChecks({immediate = false, force = false} = {}) {
-        if (review.hidden) return;
+        if (review.hidden || editingLocked()) return;
         const snapshot = checkSnapshot();
         const key = snapshot ? JSON.stringify([snapshot.week_start, snapshot.driver_ids]) : null;
         if (!force && key !== null && key === checkKey && ["pending", "checking", "complete"].includes(checkPhase)) {
@@ -313,6 +418,7 @@
         cancelCheckWork();
         checkKey = key;
         existingByDriver = new Map();
+        daysByDriver = new Map();
         checkPhase = snapshot ? snapshot.driver_ids.length ? "pending" : "complete" : "invalid";
         refreshRowChecks();
         if (!snapshot || !snapshot.driver_ids.length) return;
@@ -376,7 +482,14 @@
         const existing = document.createElement("div");
         existing.className = "payroll-import-existing";
         existing.hidden = true;
+        const dayCheck = document.createElement("div");
+        dayCheck.className = "payroll-import-day-check";
+        dayCheck.hidden = true;
+        const saveError = document.createElement("div");
+        saveError.className = "payroll-import-save-row-error";
+        saveError.hidden = true;
         select.addEventListener("change", () => {
+            if (!editDraft(model)) return;
             const target = select.value ? driverRows : otherRows;
             if (row.parentElement !== target) {
                 if (target === otherRows) others.open = true;
@@ -386,10 +499,10 @@
             }
             scheduleChecks();
         });
-        driverCell.append(select, note, existing);
+        driverCell.append(select, note, existing, dayCheck, saveError);
         row.append(driverCell);
 
-        const model = {row, select, driverError: note, existing};
+        const model = {row, select, driverError: note, existing, dayCheck, saveError, serverErrors: []};
         for (const [field, label] of [["total_wage", "Total wage"], ["total_cost_to_employer", "Employer cost"]]) {
             const cell = document.createElement("td");
             const input = document.createElement("input");
@@ -400,8 +513,9 @@
             input.value = source[field];
             input.setAttribute("aria-label", `${label} for ${source.employee_name}`);
             input.addEventListener("wheel", (event) => event.preventDefault(), {passive: false});
-            input.addEventListener("input", refreshRowChecks);
-            input.addEventListener("change", refreshRowChecks);
+            const changed = () => { if (editDraft(model, field)) refreshRowChecks(); };
+            input.addEventListener("input", changed);
+            input.addEventListener("change", changed);
             const error = document.createElement("span");
             error.className = "payroll-import-field-error";
             error.id = `payroll-${source.source_index}-${field}-error`;
@@ -444,6 +558,7 @@
     }
 
     fileInput.addEventListener("change", () => {
+        if (savePhase === "saving") return;
         const file = fileInput.files && fileInput.files[0];
         // Cancelling a chooser must not erase the existing editable preview.
         if (!file) return;
@@ -466,6 +581,7 @@
     });
 
     clearButton.addEventListener("click", () => {
+        if (savePhase === "saving") return;
         stopReading();
         resetPreview();
         clearError();
@@ -477,7 +593,7 @@
     });
 
     readButton.addEventListener("click", async () => {
-        if (busy || !chosenFile) return;
+        if (busy || editingLocked() || !chosenFile) return;
         const file = chosenFile;
         const current = ++generation;
         const requestController = new AbortController();
@@ -519,7 +635,105 @@
         }
     });
 
+    function saveRows() {
+        return rowModels.filter((model) => model.row.parentElement === driverRows).map((model) => ({
+            source_index: Number(model.row.dataset.sourceIndex),
+            driver_id: selectedDriverId(model),
+            total_wage: model.wage.input.value,
+            total_cost_to_employer: model.cost.input.value,
+        }));
+    }
+
+    function applySaveErrors(data) {
+        if (!data || !Array.isArray(data.row_errors)) return;
+        const fields = new Set(["driver_id", "total_wage", "total_cost_to_employer", "day", "existing_payslip"]);
+        for (const error of data.row_errors) {
+            if (!error || !fields.has(error.field) || typeof error.message !== "string") continue;
+            const model = rowModels.find((row) => Number(row.row.dataset.sourceIndex) === error.source_index && selectedDriverId(row) === error.driver_id);
+            if (!model) continue;
+            const message = {field: error.field, message: error.message};
+            if (error.action_url) {
+                try {
+                    const pattern = error.field === "existing_payslip" ? /^\/payslip\/add_payslip\/\d+\/edit$/ : /^\/day\/add_day\/0\/(?:entry|history)$/;
+                    message.action_url = safeLocalUrl(error.action_url, pattern);
+                }
+                catch (invalidUrl) { /* The fixed row message remains useful. */ }
+            }
+            model.serverErrors.push(message);
+        }
+    }
+
+    function confirmSaved(data, payload, snapshot) {
+        if (!data || data.saved_count !== payload.rows.length || data.week_start !== snapshot.week_start || data.week_end !== snapshot.week_end || data.entry_date !== snapshot.week_end || !Array.isArray(data.payslips) || data.payslips.length !== payload.rows.length) throw new Error("unconfirmed_save");
+        const seen = new Set();
+        const savedIds = new Set();
+        for (const entry of data.payslips) {
+            if (!entry || !Number.isSafeInteger(entry.id) || entry.id <= 0 || seen.has(entry.source_index) || savedIds.has(entry.id) || !payload.rows.some((row) => row.source_index === entry.source_index && row.driver_id === entry.driver_id)) throw new Error("unconfirmed_save");
+            safeLocalUrl(entry.review_url, /^\/payslip\/add_payslip\/\d+\/edit$/);
+            seen.add(entry.source_index);
+            savedIds.add(entry.id);
+        }
+        return safeLocalUrl(data.history_url, /^\/payslip\/add_payslip\/0\/history$/);
+    }
+
+    saveButton.addEventListener("click", async () => {
+        if (editingLocked()) return;
+        refreshRowChecks();
+        if (!saveReady) return;
+        const snapshot = checkSnapshot();
+        const payload = {week_start: snapshot.week_start, rows: saveRows()};
+        const serial = ++saveGeneration;
+        const requestController = new AbortController();
+        cancelCheckWork();
+        for (const model of rowModels) model.serverErrors = [];
+        savePhase = "saving";
+        saveStatus.textContent = "Saving the selected payslips…";
+        saveStatus.removeAttribute("data-error");
+        refreshRowChecks();
+        // A lost response does not prove whether the transaction committed.
+        // Never retry a mutation automatically; recheck recorded entries first.
+        const timeout = window.setTimeout(() => requestController.abort(), 30_000);
+        try {
+            const response = await fetch(root.dataset.saveUrl, {
+                method: "POST",
+                headers: {"Content-Type": "application/json", "X-CSRFToken": root.dataset.csrfToken},
+                credentials: "same-origin",
+                body: JSON.stringify(payload),
+                signal: requestController.signal,
+                cache: "no-store",
+            });
+            const data = await response.json();
+            if (serial !== saveGeneration) return;
+            if (!response.ok) {
+                savePhase = "failed";
+                applySaveErrors(data);
+                saveStatus.textContent = data && data.error && typeof data.error.message === "string" ? data.error.message : "The save could not be confirmed. Check recorded payslips before trying again.";
+                saveStatus.setAttribute("data-error", "true");
+            } else {
+                const historyUrl = confirmSaved(data, payload, snapshot);
+                savePhase = "complete";
+                saveStatus.textContent = "";
+                saveStatus.removeAttribute("data-error");
+                byId("payroll-saved-message").textContent = `${data.saved_count} ${data.saved_count === 1 ? "payslip" : "payslips"} saved for the week ending ${dateFormat.format(calendarDate(data.entry_date))}.`;
+                savedHistory.href = historyUrl;
+                saveResult.hidden = false;
+            }
+        } catch (error) {
+            if (serial !== saveGeneration) return;
+            savePhase = "failed";
+            saveStatus.textContent = "The save could not be confirmed. Check recorded payslips before trying again.";
+            saveStatus.setAttribute("data-error", "true");
+        } finally {
+            window.clearTimeout(timeout);
+            if (serial === saveGeneration) {
+                refreshRowChecks();
+                if (savePhase !== "complete") scheduleChecks({immediate: true, force: true});
+            }
+        }
+    });
+
     function weekChanged() {
+        if (!editDraft()) return;
         updateWeek();
         scheduleChecks();
     }
@@ -530,6 +744,7 @@
         stopReading();
         cancelCheckWork();
         existingByDriver = new Map();
+        daysByDriver = new Map();
         checkPhase = "idle";
         releaseDocument();
     });
@@ -540,7 +755,7 @@
             if (chosenFile && !review.hidden) {
                 documentUrl = createDocumentUrl(chosenFile);
                 showPage(visiblePage);
-                scheduleChecks({immediate: true, force: true});
+                if (!editingLocked()) scheduleChecks({immediate: true, force: true});
             }
         }
     });

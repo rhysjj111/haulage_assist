@@ -137,6 +137,7 @@ class PayslipPDFChecksTests(OwnerTestCase):
                 self.assertEqual(response.status_code, 200, response.text)
                 self.assertEqual(response.get_json(), {
                     "week_start": start, "week_end": end, "existing_payslips": [],
+                    "entry_date": end, "day_entries": [],
                 })
 
     def test_driver_selection_requires_a_bounded_list_of_positive_integer_ids(self):

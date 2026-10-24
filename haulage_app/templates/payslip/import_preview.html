@@ -6,10 +6,11 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/payslip-import.css') }}">
 <section class="payroll-import" id="payroll-import"
          data-read-url="{{ read_url }}" data-check-url="{{ check_url }}"
+         data-save-url="{{ save_url }}"
          data-csrf-token="{{ csrf_token }}">
     <div class="payroll-import-heading">
         <a class="payroll-import-back" href="{{ url_for('payslip.add_payslip', item_id=0, tab='entry') }}">← Back to payslips</a>
-        <p class="payroll-import-notice">Preview only — nothing is saved.</p>
+        <p class="payroll-import-notice">Review the entries before saving.</p>
     </div>
 
     <div class="payroll-import-upload">
@@ -48,7 +49,7 @@
             <p id="payroll-driver-count" class="payroll-import-count" aria-live="polite"></p>
             <div class="payroll-import-check-state">
                 <p id="payroll-existing-check-status" class="payroll-import-muted" role="status" aria-live="polite"></p>
-                <button id="payroll-retry-checks" class="payroll-import-text-button" type="button" hidden>Retry check</button>
+                <button id="payroll-retry-checks" class="payroll-import-text-button" type="button" hidden>Recheck entries</button>
             </div>
             <div id="payroll-driver-table-wrap" class="payroll-import-table-wrap">
                 <table class="payroll-import-table">
@@ -77,6 +78,14 @@
                 </div>
             </details>
             <p class="payroll-import-basis payroll-import-muted">Total wage uses Total Payments before employee deductions. Employer cost uses Total Cost Per Employee.</p>
+            <div class="payroll-import-save-actions">
+                <button id="payroll-save-payslips" class="btn" type="button" disabled>Save payslips</button>
+                <p id="payroll-save-status" class="payroll-import-muted" role="status" aria-live="polite"></p>
+            </div>
+            <div id="payroll-save-result" class="payroll-import-save-result" role="status" hidden>
+                <p id="payroll-saved-message"></p>
+                <a id="payroll-saved-history">View payslips</a>
+            </div>
         </section>
 
         <section class="payroll-import-document" aria-labelledby="payroll-document-title">

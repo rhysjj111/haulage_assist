@@ -43,6 +43,11 @@ python3 -m pip install -r requirements.txt
 python3 run.py
 ```
 
+Keep the package-install command when updating an older Codespace: pulling
+Python code does not install the new `pypdf` dependency. If the PDF reports that
+it could not be processed safely, install requirements in the active `.venv`
+and restart the app before retrying the original digital PDF.
+
 Open **Add Payslip → Import payroll PDF**, or visit `/payslip/import`. Upload a
 digital weekly management report, click **Read PDF**, then check/edit the week,
 driver and two amounts beside the original PDF. Other employees are excluded
@@ -58,12 +63,22 @@ demo driver/week with an existing sample payslip to try this comparison. Choose
 The pending/unavailable state stays visible if existing records cannot be
 checked, and **Retry check** keeps the draft edits intact.
 
-This is a preview: it has no Save action and does not change payslips, day
-entries or reports. The draft clears when the page is refreshed or the document
-is replaced. No AI account, permanent document storage, container rebuild or
-database migration is needed for this addition. Scans/photos and other report
-layouts are not supported yet. The [reader notes](payslip-pdf-reader.md) describe
-the field mapping, limits and read-only checks.
+The importer now includes **Save N payslips**, which writes to this Codespace's
+sample database when clicked. Each selected driver needs a day entry on the
+Friday ending the chosen week. If one is missing, follow **Add day entry** in a
+new tab, select the shown Friday and driver, then return and click **Recheck
+entries** without rereading the PDF. Save a valid batch and check its count,
+history link and exact amounts. Trying the same week/driver again should flag
+the existing payslip. Excluded employees are never saved and an invalid batch
+does not save any of its rows.
+
+The draft clears when refreshed or replaced, while saved payslips remain in
+the sample database. A failed or interrupted save keeps the draft available;
+check recorded entries before retrying an uncertain result. No AI account,
+permanent document storage, container rebuild or database migration is needed
+for this addition. Scans/photos and other report layouts are not supported yet.
+The [reader notes](payslip-pdf-reader.md) describe the field mapping, checks,
+transaction behavior and the retained legacy database constraint.
 
 ### Existing owner-reporting examples
 
@@ -101,7 +116,7 @@ reopen if their source records change.
 Fuel typo checks compare cost per purchased litre, with broad £0.50–£3.00 limits.
 Matching truck/date/provider/litres/cost raises one possible-duplicate comparison;
 remove a receipt only after checking the actual invoice lines. Payroll compares
-take-home pay with full employer cost on the same payslip; variable bonuses are
+wages before employee deductions with full employer cost on the same payslip; variable bonuses are
 allowed. Mileage and truck-assignment hints sit under collapsed **Other checks**
 and do not affect the main count or final weekly review.
 

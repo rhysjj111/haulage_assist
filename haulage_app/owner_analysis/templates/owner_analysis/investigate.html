@@ -14,7 +14,7 @@
         {% if review_error|default(none) %}<p class="owner-correction-error" role="alert">{{ review_error }}</p>{% endif %}
         <p>{{ issue.message }}</p>
         {% if fuel_price_evidence|default(none) %}<p><strong>£{{ '%.2f'|format(fuel_price_evidence.fuel_cost / 100) }} ÷ {{ '%.2f'|format(fuel_price_evidence.fuel_volume / 100) }} L = £{{ '%.3f'|format(fuel_price_evidence.price_per_litre) }} per litre.</strong></p>{% endif %}
-        {% if issue.code == 'payroll_gap_unusual' %}<p class="owner-muted owner-small">Compare the take-home pay and full employer cost on this payslip. Bonus pay can vary; this check does not assume a fixed weekly wage.</p>{% endif %}
+        {% if issue.code == 'payroll_gap_unusual' %}<p class="owner-muted owner-small">Compare wages before employee deductions and full employer cost on this payslip. Bonus pay can vary; this check does not assume a fixed weekly wage.</p>{% endif %}
         {% if issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.record_label }}</p>{% endif %}
         {% if issue.context_label|default('') and issue.context_label != issue.record_label|default('') %}<p class="owner-muted owner-small">{{ issue.context_label }}</p>{% endif %}
         <p class="owner-muted owner-small">Payroll week: {{ week_context.week_start.strftime('%d %b') }} – {{ week_context.week_end.strftime('%d %b %Y') }}.</p>

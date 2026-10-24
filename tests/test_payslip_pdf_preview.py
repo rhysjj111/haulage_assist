@@ -1,4 +1,4 @@
-"""Temporary payroll uploads propose editable entries without saving records."""
+"""Reading payroll uploads proposes editable entries without saving records."""
 
 import base64
 from datetime import date, timedelta
@@ -69,13 +69,13 @@ class PayslipPDFPreviewTests(OwnerTestCase):
                 for name, table in db.metadata.tables.items()
             }
 
-    def test_upload_page_has_a_pdf_picker_and_csrf_without_a_payslip_save_form(self):
+    def test_upload_page_has_a_pdf_picker_and_csrf_without_a_manual_payslip_save_form(self):
         response, context = self.get_page(PREVIEW)
         parsed = _PreviewHTML(response.text)
         self.assertTrue(any(field.get("type") == "file" for field in parsed.inputs))
         self.assertIsInstance(context["csrf_token"], str)
         self.assertEqual(context["read_url"], READ)
-        self.assertIn("Preview", response.text)
+        self.assertIn("Import payroll PDF", response.text)
         self.assertFalse(any("add_payslip" in form.get("action", "")
                              or "edit_payslip" in form.get("action", "")
                              for form in parsed.forms))
@@ -232,7 +232,7 @@ class PayslipPDFPreviewTests(OwnerTestCase):
         for value in ("Alice Example", "Ben Sample", "615.37", "706.38", "%PDF", "2026-09-25"):
             self.assertNotIn(value, saved_session)
 
-    def test_review_edits_cannot_be_posted_to_a_payslip_saving_action(self):
+    def test_review_edits_cannot_be_saved_through_the_page_or_pdf_reader(self):
         token = self.csrf_token()
         before = self.source_snapshot()
         response = self.client.post(PREVIEW, json={"driver_id": 1, "total_wage": "615.37"},
