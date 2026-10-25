@@ -85,7 +85,7 @@
   {{ numeric_field('fuel_volume', 'Fuel volume (litres)', values.get('fuel_volume', ''), required=true) }}
   {{ numeric_field('fuel_cost', 'Receipt cost (£)', values.get('fuel_cost', ''), required=true) }}
 {% elif kind == 'payslip' %}
-  {{ numeric_field('total_wage', 'Total wage (£)', values.get('total_wage', ''), required=true, help_text='Take-home pay after tax and deductions, as recorded on the payslip.') }}
+  {{ numeric_field('total_wage', 'Total wage (£)', values.get('total_wage', ''), required=true, help_text='Wages before employee deductions (Total Payments on the management report).') }}
   {{ numeric_field('total_cost_to_employer', 'Total employer cost (£)', values.get('total_cost_to_employer', ''), required=true, help_text='Enter the full employer cost from this payslip, including the wage.') }}
 {% elif kind == 'fuel_flag' %}
   <div class="owner-correction-notice">

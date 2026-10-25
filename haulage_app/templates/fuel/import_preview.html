@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block header %}<h1>Import fuel</h1>{% endblock %}
+
+{% block main %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fuel-import.css') }}">
+<section class="fuel-import" id="fuel-import"
+         data-read-url="{{ read_url }}" data-check-url="{{ check_url }}"
+         data-save-url="{{ save_url }}"
+         data-default-supplier-id="{{ default_supplier_id }}"
+         data-csrf-token="{{ csrf_token }}">
+    <script id="fuel-supplier-profiles" type="application/json">{{ supplier_profiles|tojson }}</script>
+    <div class="fuel-import-heading">
+        <a href="{{ url_for('fuel.add_fuel', item_id=0, tab='entry') }}">← Back to fuel</a>
+        <p class="fuel-import-notice">Review the entries before saving.</p>
+    </div>
+
+    <div class="fuel-import-upload">
+        <div class="fuel-import-file-control">
+            <label for="fuel-xlsx-file">Fuel document</label>
+            <input id="fuel-xlsx-file" type="file"
+                   accept=".xlsx,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf"
+                   aria-describedby="fuel-file-help">
+            <p id="fuel-file-help" class="fuel-import-muted"></p>
+        </div>
+        <div class="fuel-import-upload-actions">
+            <button id="fuel-read-xlsx" class="btn" type="button" disabled>Read document</button>
+            <button id="fuel-clear-xlsx" class="fuel-import-text-button" type="button" hidden>Clear</button>
+        </div>
+    </div>
+
+    <p id="fuel-import-status" class="fuel-import-status" role="status" aria-live="polite"></p>
+    <div id="fuel-import-error" class="fuel-import-error" role="alert" hidden></div>
+
+    <section id="fuel-import-review" class="fuel-import-review" aria-labelledby="fuel-review-title" hidden>
+        <div id="fuel-supplier-detection" class="fuel-import-detection" role="status" aria-live="polite" hidden>
+            <p id="fuel-detected-supplier"></p>
+            <div id="fuel-supplier-choice" class="fuel-import-supplier-control" hidden>
+                <label for="fuel-import-supplier">Supplier</label>
+                <select id="fuel-import-supplier" class="browser-default" aria-describedby="fuel-detected-supplier">
+                    <option value="">Choose supplier</option>
+                </select>
+            </div>
+        </div>
+        <div class="fuel-import-review-heading">
+            <div>
+                <h2 id="fuel-review-title">Review fuel entries</h2>
+                <p id="fuel-report-description" class="fuel-import-muted"></p>
+            </div>
+            <p id="fuel-source-totals" class="fuel-import-source-totals"></p>
+        </div>
+        <p class="fuel-import-muted">Choose a truck to include an entry, or Exclude to leave it out. Open the original details to compare.</p>
+        <p id="fuel-selection-summary" class="fuel-import-selection" aria-live="polite"></p>
+        <div class="fuel-import-check-state">
+            <p id="fuel-check-status" role="status" aria-live="polite"></p>
+            <button id="fuel-retry-checks" class="fuel-import-text-button" type="button" hidden>Recheck entries</button>
+        </div>
+        <div id="fuel-review-pager" class="fuel-import-pager" hidden>
+            <button id="fuel-previous-page" class="fuel-import-text-button" type="button">← Previous</button>
+            <span id="fuel-page-description" aria-live="polite"></span>
+            <button id="fuel-next-page" class="fuel-import-text-button" type="button">Next →</button>
+        </div>
+
+        <div class="fuel-import-table-wrap">
+            <table class="fuel-import-table">
+                <thead><tr>
+                    <th scope="col">Source</th>
+                    <th scope="col">Purchase date</th>
+                    <th scope="col">Truck</th>
+                    <th scope="col" class="fuel-import-number">Litres</th>
+                    <th scope="col" class="fuel-import-number">Cost (£)</th>
+                </tr></thead>
+                <tbody id="fuel-transaction-rows"></tbody>
+            </table>
+        </div>
+        <div class="fuel-import-footer">
+            <p id="fuel-selected-totals" role="status" aria-live="polite"></p>
+            <p class="fuel-import-muted">Only selected entries will be saved.</p>
+        </div>
+        <div class="fuel-import-save-actions">
+            <button id="fuel-save-entries" class="btn" type="button" disabled>Save fuel entries</button>
+            <p id="fuel-save-status" class="fuel-import-muted" role="status" aria-live="polite"></p>
+        </div>
+        <div id="fuel-save-result" class="fuel-import-save-result" role="status" hidden></div>
+        <details id="fuel-original-document" class="fuel-import-document" hidden>
+            <summary>Original invoice</summary>
+            <div class="fuel-import-document-heading">
+                <p class="fuel-import-muted">Use the page links beside a transaction to compare it with the invoice.</p>
+                <a id="fuel-open-original" target="_blank" rel="noopener noreferrer">Open original</a>
+            </div>
+            <iframe id="fuel-pdf-preview" title="Original fuel invoice" referrerpolicy="no-referrer"></iframe>
+        </details>
+    </section>
+    <noscript><p class="fuel-import-error">Enable JavaScript to upload and review a fuel document.</p></noscript>
+</section>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/fuel-import.js') }}"></script>
+{% endblock %}
