@@ -91,7 +91,8 @@ rather than running ZIP/XML processing directly in the Flask process.
 ## Upload and editable review
 
 Open **Add Fuel → Import fuel**, or `/fuel/import`. Select the
-Transactions export and click **Read document**. The preview contains every
+supplier, choose their document and click **Read document**. The Fuel Store is
+the currently enabled supplier and uses its Transactions export. The preview contains every
 source row, its purchase date, proposed truck, litres and cost. Each row has an
 original-row expansion with the extracted values, both registrations, source
 time, network, product and unit price. This is an extracted comparison, not an
@@ -128,10 +129,40 @@ neither reading nor editing creates fuel entries. Source documents and review
 drafts are not stored in browser storage, session cookies or an upload archive.
 Cancelling the file chooser preserves the current draft on both import pages.
 The common **Read document**, **Clear**, **Recheck entries** and saved-history
-actions do not change which file layouts each reader supports: fuel still
-accepts only the recognised Fuel Store Transactions spreadsheet at this stage.
+actions do not change which file layouts each reader supports: only the
+recognised Fuel Store Transactions spreadsheet is currently enabled.
 
-`POST /fuel/import/read` accepts only the raw XLSX body with a CSRF header, with
+## One upload for supplier documents
+
+There is one supplier selector, file chooser and **Read document** action, with
+no manual spreadsheet/PDF mode. Supplier guidance comes from a small registry of
+enabled profiles; unsupported suppliers are not offered as working importers.
+The chooser accepts common spreadsheet/PDF files so the app can explain an
+unsupported document rather than requiring the user to identify its format.
+It makes no promise that every PDF or supplier layout is supported.
+
+The browser sends a bounded raw body as `application/octet-stream` with the
+selected `X-Fuel-Supplier` ID. The server validates that ID and identifies XLSX
+or PDF from the bytes, not the filename, extension or browser-supplied MIME type.
+The route retains the existing XLSX/PDF MIME labels as accepted transports.
+Missing supplier headers default to The Fuel Store for existing clients;
+explicit unknown or empty IDs fail before parsing, querying or saving.
+
+XLSX goes through the existing isolated reader. A recognised PDF currently
+receives a fixed message explaining that its layout is not set up yet; it is
+not sent through an untested parser or AI service. Read results identify the
+supplier, and the page validates that identity, label and source format before
+showing rows. Check and Save also send and validate the supplier ID. Current
+financial services explicitly accept only The Fuel Store, so adding a future
+reader cannot silently save another supplier's records under that label.
+
+Changing supplier clears the chosen document, review and confirmations, and
+cancels pending reads/checks. Late replies cannot restore a previous supplier's
+rows. The supplier selector locks during Save. File chooser cancellation still
+preserves the current draft; no document or supplier draft is persisted in
+browser storage or session cookies.
+
+`POST /fuel/import/read` accepts a raw document body with a CSRF header, with
 a 10 MiB request cap before processing. It avoids multipart temporary-file
 spooling. Responses use `no-store` and `nosniff`, and errors contain fixed safe
 messages rather than parser exceptions or cell contents.
@@ -254,3 +285,15 @@ The opt-in `test_fuel_import_save_postgres.py` starts its own disposable cluster
 on a private Unix socket. Set `FUEL_TEST_POSTGRES_BIN` to the PostgreSQL binary
 directory to test real locking, exact inserts and full transaction rollback.
 It refuses configured application database targets and never contacts Heroku.
+
+## Next supplier mapping: Silvey
+
+The supplied Silvey sample is a digital PDF with transaction-level DATE, REG.,
+LITRES and PRICE fields. The user confirmed PRICE directly as fuel cost before
+the separately listed VAT, with AdBlue excluded from diesel saving. PRICE is an
+extended transaction cost, not a unit price. Diesel purchase amounts and litres
+reconcile to the invoice/card/product summaries in the private sample review.
+
+This mapping is recorded for the next reader; Silvey PDF import is not enabled
+in this upload-only stage. The source PDF, extracted text, registrations, card
+numbers and invoice/customer details remain outside the repository.

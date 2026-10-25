@@ -7,19 +7,29 @@
 <section class="fuel-import" id="fuel-import"
          data-read-url="{{ read_url }}" data-check-url="{{ check_url }}"
          data-save-url="{{ save_url }}"
+         data-default-supplier-id="{{ default_supplier_id }}"
          data-csrf-token="{{ csrf_token }}">
+    <script id="fuel-supplier-profiles" type="application/json">{{ supplier_profiles|tojson }}</script>
     <div class="fuel-import-heading">
         <a href="{{ url_for('fuel.add_fuel', item_id=0, tab='entry') }}">← Back to fuel</a>
         <p class="fuel-import-notice">Review the entries before saving.</p>
     </div>
 
     <div class="fuel-import-upload">
+        <div class="fuel-import-supplier-control">
+            <label for="fuel-import-supplier">Supplier</label>
+            <select id="fuel-import-supplier" class="browser-default" aria-describedby="fuel-file-help">
+                {% for supplier in supplier_profiles %}
+                <option value="{{ supplier.id }}"{% if supplier.id == default_supplier_id %} selected{% endif %}>{{ supplier.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <div class="fuel-import-file-control">
-            <label for="fuel-xlsx-file">The Fuel Store · Transactions export</label>
+            <label for="fuel-xlsx-file">Fuel document</label>
             <input id="fuel-xlsx-file" type="file"
-                   accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                   accept=".xlsx,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf"
                    aria-describedby="fuel-file-help">
-            <p id="fuel-file-help" class="fuel-import-muted">Excel (.xlsx) · up to 10 MB</p>
+            <p id="fuel-file-help" class="fuel-import-muted"></p>
         </div>
         <div class="fuel-import-upload-actions">
             <button id="fuel-read-xlsx" class="btn" type="button" disabled>Read document</button>
@@ -72,7 +82,7 @@
         </div>
         <div id="fuel-save-result" class="fuel-import-save-result" role="status" hidden></div>
     </section>
-    <noscript><p class="fuel-import-error">Enable JavaScript to upload and review a fuel spreadsheet.</p></noscript>
+    <noscript><p class="fuel-import-error">Enable JavaScript to upload and review a fuel document.</p></noscript>
 </section>
 {% endblock %}
 

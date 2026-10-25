@@ -82,12 +82,13 @@ class FuelImportPreviewTests(OwnerTestCase):
                 for name, table in db.metadata.tables.items()
             }
 
-    def test_upload_page_has_xlsx_picker_and_csrf_without_a_fuel_save_form(self):
+    def test_upload_page_has_one_document_picker_and_csrf_without_a_fuel_save_form(self):
         response, context = self.get_page(PREVIEW)
         parsed = _PreviewHTML(response.text)
         file_inputs = [field for field in parsed.inputs if field.get("type") == "file"]
         self.assertEqual(len(file_inputs), 1)
         self.assertIn(".xlsx", file_inputs[0].get("accept", ""))
+        self.assertIn(".pdf", file_inputs[0].get("accept", ""))
         self.assertIsInstance(context["csrf_token"], str)
         self.assertEqual(context["read_url"], READ)
         self.assertIn("Import fuel", response.text)
@@ -107,6 +108,7 @@ class FuelImportPreviewTests(OwnerTestCase):
         self.assertEqual(response.status_code, 200, response.text)
         payload = response.get_json()
         self.assertEqual(payload["report"], {
+            "supplier_id": "the-fuel-store",
             "source_format": "fuel-store-transactions-xlsx-v1",
             "fuel_card_name": "The Fuel Store",
             "sheet_name": "Transactions", "header_row": 7, "transaction_count": 2,
@@ -223,7 +225,7 @@ class FuelImportPreviewTests(OwnerTestCase):
         token = self.csrf_token()
         with patch(WORKER) as worker:
             for content_type in ("application/json", "text/plain", "multipart/form-data",
-                                 "application/octet-stream", "application/vnd.ms-excel"):
+                                 "image/png", "application/vnd.ms-excel"):
                 with self.subTest(content_type=content_type):
                     response = self.post_xlsx(b"private-body", token=token,
                                                content_type=content_type)

@@ -1,4 +1,4 @@
-/* Loaded only by the fuel spreadsheet review page. */
+/* Loaded only by the fuel document review page. */
 main { justify-content: flex-start; }
 main > .container { width: 96%; max-width: 1660px; }
 .fuel-import { width: 100%; padding: 2px 0 32px; color: #263445; }
@@ -8,6 +8,7 @@ main > .container { width: 96%; max-width: 1660px; }
 .fuel-import-heading { margin-bottom: 18px; }
 .fuel-import-notice { margin: 0; color: #687383; font-size: .9rem; }
 .fuel-import-upload { display: flex; align-items: center; gap: 28px; padding: 18px 22px; background: #fff; border: 1px solid #dce2e7; border-radius: 6px; }
+.fuel-import-supplier-control { flex: 0 0 230px; min-width: 0; }
 .fuel-import-file-control { min-width: 0; flex: 1; }
 .fuel-import label { display: block; color: #334155; font-size: .86rem; font-weight: 700; margin-bottom: 6px; }
 .fuel-import input[type="file"] { display: block; max-width: 100%; font: inherit; color: #334155; }
@@ -87,5 +88,6 @@ main > .container { width: 96%; max-width: 1660px; }
 @media (max-width: 700px) {
     .fuel-import-heading, .fuel-import-upload, .fuel-import-review-heading, .fuel-import-footer, .fuel-import-save-actions { align-items: stretch; flex-direction: column; gap: 14px; }
     .fuel-import-upload, .fuel-import-review { padding: 16px; }
+    .fuel-import-supplier-control { flex-basis: auto; }
     .fuel-import-source-totals { text-align: left; }
 }

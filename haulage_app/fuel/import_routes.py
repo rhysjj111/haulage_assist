@@ -10,10 +10,15 @@ from wtforms.validators import ValidationError
 
 from haulage_app import db
 from haulage_app.fuel import fuel_bp
+from haulage_app.fuel.import_profiles import (
+    DEFAULT_SUPPLIER_ID, MAX_DOCUMENT_BYTES, FuelDocumentError,
+    get_supplier, read_fuel_document, supplier_choices,
+)
 from haulage_app.models import Truck
 
 
 XLSX_MIMETYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+DOCUMENT_MIMETYPES = frozenset({XLSX_MIMETYPE, "application/octet-stream", "application/pdf"})
 
 
 def _private_response(response):
@@ -33,7 +38,16 @@ def _normalise_registration(value):
     return "".join((value or "").split()).upper()
 
 
-def _preview_payload(report):
+def _request_supplier(*, review=False):
+    supplier = get_supplier(request.headers.get("X-Fuel-Supplier"))
+    # The current financial services save The Fuel Store entries. Registering
+    # a future reader must not silently reuse that supplier's checks or saver.
+    if review and supplier.id != DEFAULT_SUPPLIER_ID:
+        raise FuelDocumentError("supplier_unavailable")
+    return supplier
+
+
+def _preview_payload(report, supplier):
     # Read only the fields needed for choosing a truck. A source registration
     # never creates a new truck or chooses a driver/day on the user's behalf.
     with db.session.no_autoflush:
@@ -79,6 +93,7 @@ def _preview_payload(report):
         })
     return {
         "report": {
+            "supplier_id": supplier.id,
             "source_format": report.source_format,
             "fuel_card_name": report.fuel_card_name,
             "sheet_name": report.sheet_name,
@@ -100,39 +115,49 @@ def import_preview():
         response = make_response(render_template(
             "fuel/import_preview.html",
             csrf_token=generate_csrf(),
-            read_url=url_for("fuel.read_import_xlsx"),
+            read_url=url_for("fuel.read_import_document"),
             check_url=url_for("fuel.check_import_preview"),
             save_url=url_for("fuel.save_import_fuel"),
+            supplier_profiles=supplier_choices(),
+            default_supplier_id=DEFAULT_SUPPLIER_ID,
         ))
     return _private_response(response)
 
 
 @fuel_bp.route("/import/read", methods=["POST"])
-def read_import_xlsx():
+def read_import_document():
     if current_app.config.get("WTF_CSRF_ENABLED", True):
         try:
             validate_csrf(request.headers.get("X-CSRFToken"))
         except ValidationError:
-            return _error("csrf_failed", "Refresh this page and choose the spreadsheet again.", 403)
+            return _error("csrf_failed", "Refresh this page and choose the document again.", 403)
 
-    from haulage_app.fuel.xlsx_processing import (
-        FuelXLSXProcessingError, read_fuel_store_xlsx_isolated,
-    )
-    from haulage_app.fuel.xlsx_reader import FuelXLSXError, MAX_XLSX_BYTES
-
-    if request.mimetype != XLSX_MIMETYPE:
-        return _error("unsupported_media_type", "Choose The Fuel Store's Transactions .xlsx export.", 415)
-    if request.content_length is not None and request.content_length > MAX_XLSX_BYTES:
-        return _error("too_large", "The spreadsheet is too large. Use an export under 10 MB.", 413)
-
-    # Read a raw bounded body, not multipart data that could spool a document to
-    # disk. The isolated reader returns the full report or a fixed safe error.
-    content = request.stream.read(MAX_XLSX_BYTES + 1)
-    if len(content) > MAX_XLSX_BYTES:
-        return _error("too_large", "The spreadsheet is too large. Use an export under 10 MB.", 413)
     try:
-        report = read_fuel_store_xlsx_isolated(content)
-        payload = _preview_payload(report)
+        supplier = _request_supplier()
+    except FuelDocumentError as error:
+        return _error(error.code, str(error), error.status)
+
+    from haulage_app.fuel.xlsx_processing import FuelXLSXProcessingError
+    from haulage_app.fuel.xlsx_reader import FuelXLSXError
+
+    if request.mimetype not in DOCUMENT_MIMETYPES:
+        return _error("unsupported_media_type", "Choose a document from the selected supplier.", 415)
+    if request.content_length is not None and request.content_length > MAX_DOCUMENT_BYTES:
+        return _error("too_large", "The document is too large. Choose a file under 10 MB.", 413)
+
+    # One bounded raw body for all supported document types, without multipart
+    # spooling. Only byte-signature detection runs here; parsing stays isolated.
+    content = request.stream.read(MAX_DOCUMENT_BYTES + 1)
+    if len(content) > MAX_DOCUMENT_BYTES:
+        return _error("too_large", "The document is too large. Choose a file under 10 MB.", 413)
+    try:
+        report = read_fuel_document(content, supplier.id)
+        if (report.fuel_card_name != supplier.label
+                or report.source_format not in supplier.source_formats):
+            raise FuelDocumentError("invalid_document")
+        payload = _preview_payload(report, supplier)
+    except FuelDocumentError as error:
+        return _error(error.code, str(error), error.status)
     except FuelXLSXError as error:
         status = 413 if error.code == "too_large" else 503 if error.code == "reader_unavailable" else 422
         return _error(error.code, str(error), status)
@@ -143,7 +168,7 @@ def read_import_xlsx():
     except Exception:
         # Do not send parser/SQL exception messages or private cell contents to
         # the browser or application logs, even for an unexpected worker fault.
-        return _error("processing_failed", "The spreadsheet could not be processed. Please try again.", 503)
+        return _error("processing_failed", "The document could not be processed. Please try again.", 503)
     return _private_response(jsonify(payload))
 
 
@@ -153,7 +178,12 @@ def check_import_preview():
         try:
             validate_csrf(request.headers.get("X-CSRFToken"))
         except ValidationError:
-            return _error("csrf_failed", "Refresh this page and choose the spreadsheet again.", 403)
+            return _error("csrf_failed", "Refresh this page and choose the document again.", 403)
+
+    try:
+        _request_supplier(review=True)
+    except FuelDocumentError as error:
+        return _error(error.code, str(error), error.status)
 
     from haulage_app.fuel.import_checks import (
         MAX_CHECK_BYTES, ImportCheckInputError, check_fuel_for_preview,
@@ -187,7 +217,12 @@ def save_import_fuel():
         try:
             validate_csrf(request.headers.get("X-CSRFToken"))
         except ValidationError:
-            return _error("csrf_failed", "Refresh this page and choose the spreadsheet again.", 403)
+            return _error("csrf_failed", "Refresh this page and choose the document again.", 403)
+
+    try:
+        _request_supplier(review=True)
+    except FuelDocumentError as error:
+        return _error(error.code, str(error), error.status)
 
     from haulage_app.fuel.import_save import MAX_SAVE_BYTES, ImportSaveError, save_reviewed_fuel
 
