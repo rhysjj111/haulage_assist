@@ -12,6 +12,8 @@ import subprocess
 import sys
 import time as clock
 
+from haulage_app.document_processing import worker_environment
+
 from . import xlsx_reader
 
 
@@ -50,7 +52,7 @@ def _run_worker(content):
         [sys.executable, "-B", str(_WORKER)],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
         close_fds=True,
-        env={"PATH": os.defpath, "PYTHONIOENCODING": "utf-8", "PYTHONDONTWRITEBYTECODE": "1"},
+        env=worker_environment(),
     )
     deadline = clock.monotonic() + PROCESS_TIMEOUT_SECONDS
     output = bytearray()

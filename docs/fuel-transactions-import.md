@@ -226,6 +226,12 @@ standalone worker. Both PDF text extraction and semantic invoice parsing happen
 inside that child. The parent validates the returned complete report, PDF page
 references, exact amounts, supplier identity and reconciled totals.
 
+All document readers use `document_processing.worker_environment()` for the
+child's minimal environment. It preserves nonempty `PYTHONHOME` and
+`LD_LIBRARY_PATH` so Heroku's relocated shared Python runtime can start, while
+excluding `PYTHONPATH`, database URLs and other app configuration or credentials.
+Runtime paths are never logged.
+
 For Silvey, original transaction details include the actual PDF page. The local
 **Original invoice** viewer opens a PDF-typed Blob made from the chosen file;
 page links select the matching source page. Nothing is fetched from an external

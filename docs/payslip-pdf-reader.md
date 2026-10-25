@@ -149,6 +149,12 @@ entries. This bounded worker requires Linux/Unix resource controls and fails
 closed if they are unavailable; Heroku and the supplied Codespaces setup use
 Linux.
 
+Worker launches share `document_processing.worker_environment()`. Alongside the
+minimal interpreter settings, it retains nonempty `PYTHONHOME` and
+`LD_LIBRARY_PATH`, which Heroku's relocated shared Python runtime needs to start.
+It still excludes `PYTHONPATH`, database URLs and other app configuration or
+credentials. Runtime paths are never logged.
+
 The reader and worker make no network calls and write no document files or
 business records. Callers must not log private report data or commit it as a
 test fixture. The original direct-reader function is not a resource sandbox for

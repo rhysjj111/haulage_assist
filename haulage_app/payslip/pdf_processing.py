@@ -1,11 +1,12 @@
 """Bounded, short-lived PDF processing for the upload-and-review endpoint."""
 
 import json
-import os
 from pathlib import Path
 import signal
 import subprocess
 import sys
+
+from haulage_app.document_processing import worker_environment
 
 from . import pdf_reader
 from .pdf_text import ERROR_MESSAGES, PDFTextError, validate_pdf_bytes
@@ -41,7 +42,7 @@ def read_payroll_pdf_isolated(content: bytes) -> pdf_reader.PayrollReport:
             [sys.executable, "-B", str(_WORKER), str(max_bytes), str(max_pages), str(max_text)],
             input=content, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
             timeout=PROCESS_TIMEOUT_SECONDS, check=False, close_fds=True,
-            env={"PATH": os.defpath, "PYTHONIOENCODING": "utf-8", "PYTHONDONTWRITEBYTECODE": "1"},
+            env=worker_environment(),
         )
     except subprocess.TimeoutExpired:
         raise pdf_reader.PayrollPDFError("processing_timeout", _TIMEOUT_MESSAGE) from None
