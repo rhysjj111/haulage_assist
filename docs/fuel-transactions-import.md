@@ -37,7 +37,7 @@ Silvey digital invoice:
 | PRICE | Exact transaction cost before VAT; this is not a unit price |
 | PRODUCT | DERV is diesel; AdBlue and other unsupported products stay excluded |
 
-All rows use the supplier label **The Fuel Store**, including transactions whose
+All Fuel Store spreadsheet rows use the supplier label **The Fuel Store**, including transactions whose
 Card Type says Esso, Shell or UK Fuels. The reader itself does not match
 registrations to database trucks. It returns both registration columns and flags
 a missing transaction registration or a disagreement, without silently
@@ -106,8 +106,13 @@ rather than running ZIP/XML processing directly in the Flask process.
 
 ## Upload and editable review
 
-Open **Add Fuel → Import fuel**, or `/fuel/import`. Select the
-supplier, choose their document and click **Read document**. The Fuel Store uses
+Open **Add Fuel → Import fuel**, or `/fuel/import`. Leave the supplier on
+**Detect automatically**, choose the document and click **Read document**.
+The recognised supplier is shown above the review. A Silvey invoice is identified
+by its branding and validated invoice layout. A Fuel Store-shaped spreadsheet
+requires **Confirm The Fuel Store** before checks and Save become available:
+the layout alone does not prove which company supplied the export.
+The supplier can also be selected manually before reading. The Fuel Store uses
 its Transactions export; Silvey uses the recognised digital invoice layout.
 The preview contains every
 source row, its purchase date, proposed truck, litres and cost. Each row has an
@@ -159,11 +164,27 @@ unsupported document rather than requiring the user to identify its format.
 It makes no promise that every PDF or supplier layout is supported.
 
 The browser sends a bounded raw body as `application/octet-stream` with the
-selected `X-Fuel-Supplier` ID. The server validates that ID and identifies XLSX
+selected `X-Fuel-Supplier` ID, or `auto` for automatic detection. The server validates that ID and identifies XLSX
 or PDF from the bytes, not the filename, extension or browser-supplied MIME type.
 The route retains the existing XLSX/PDF MIME labels as accepted transports.
-Missing supplier headers default to The Fuel Store for existing clients;
+Automatic detection is available only when reading a document. Check and Save
+require a concrete registered supplier ID. Missing supplier headers default to The Fuel Store for existing clients;
 explicit unknown or empty IDs fail before parsing, querying or saving.
+
+Automatic detection runs the matching supported isolated reader and requires
+its complete validation before returning any rows. A validated Silvey PDF supplies
+document identity; the recognised Fuel Store spreadsheet supplies only a layout
+suggestion. The read response distinguishes these cases with
+`detection.method` (`document_identity`, `layout_only` or `manual`) and
+`detection.requires_confirmation`. The browser keeps an unconfirmed layout out
+of financial checks and saving until the user confirms the supplier. Filenames,
+extensions and card-network names never establish supplier identity.
+
+Unrecognised documents return a clear error without saving anything. The user
+can choose a supported supplier and try again, or enter the purchases manually.
+A manual choice still runs that supplier's strict reader; it does not bypass
+layout validation or make an unknown supplier supported. New invoice layouts
+need a separately tested reader before they can be imported.
 
 XLSX and PDF go through their selected supplier's isolated reader. Unsupported
 supplier/format combinations receive a fixed message. Read results identify the
@@ -253,7 +274,8 @@ Checks do not persist edited entries, results, dismissals or verifications.
 ## Saving a reviewed batch
 
 **Save fuel entries** saves the selected rows across all pages, up to 500 entries
-per batch. It stays unavailable while checks are pending/failed, fields are
+per batch. It stays unavailable while a suggested supplier is unconfirmed,
+checks are pending/failed, fields are
 invalid, a selected product is unsupported, or duplicate candidates remain.
 Correct or exclude those rows. An identical genuine purchase can be entered
 through the manual fuel form after review; confirmation cannot bypass the
@@ -266,8 +288,8 @@ unsupported products such as AdBlue to be imported as diesel. A confirmation is
 an instruction for the current save, not a separate persisted audit record.
 
 `POST /fuel/import/save` accepts only bounded JSON with the CSRF header, up to
-512 KiB and 500 rows. It validates every row again, fixes the supplier to The
-Fuel Store, and converts decimal strings directly to integer hundredths. The
+512 KiB and 500 rows. It validates every row again, uses the confirmed registered
+supplier's canonical label, and converts decimal strings directly to integer hundredths. The
 model's float-based entry validators are not reapplied to those integers.
 It does not accept or store a source document, filename, card number or driver.
 

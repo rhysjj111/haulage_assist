@@ -82,7 +82,7 @@ class FuelSupplierUploadTests(OwnerTestCase):
         self.assertIn(".pdf", files[0].get("accept", ""))
         self.assertEqual([field.get("id") for field in controls.selects],
                          ["fuel-import-supplier"])
-        self.assertEqual(context["default_supplier_id"], SUPPLIER)
+        self.assertEqual(context["default_supplier_id"], "auto")
         profiles = context["supplier_profiles"]
         self.assertEqual({profile["id"] for profile in profiles}, {"the-fuel-store", "silvey"})
         self.assertEqual(profiles[0]["id"], SUPPLIER)

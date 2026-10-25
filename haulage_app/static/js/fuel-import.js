@@ -20,6 +20,9 @@
     const saveButton = byId("fuel-save-entries");
     const saveStatus = byId("fuel-save-status");
     const saveResult = byId("fuel-save-result");
+    const detectionNotice = byId("fuel-supplier-detection");
+    const detectedSupplier = byId("fuel-detected-supplier");
+    const confirmSupplierButton = byId("fuel-confirm-supplier");
     const originalDocument = byId("fuel-original-document");
     let originalFrame = byId("fuel-pdf-preview");
     const openOriginal = byId("fuel-open-original");
@@ -29,6 +32,10 @@
     const maxSaveRows = 500;
     const pageSize = 100;
     const documentType = "application/octet-stream";
+    const automaticEvidence = new Map([
+        ["silvey|silvey-fuel-invoice-pdf-v1", "document_identity"],
+        ["the-fuel-store|fuel-store-transactions-xlsx-v1", "layout_only"],
+    ]);
     const knownIssues = new Set([
         "missing_transaction_registration", "registration_mismatch", "unsupported_product",
         "non_positive_quantity", "non_positive_cost", "cost_price_mismatch",
@@ -70,6 +77,9 @@
     let saveGeneration = 0;
     let supplierProfiles = new Map();
     let reviewSupplierId = null;
+    let reviewRequestId = null;
+    let reviewGeneration = null;
+    let supplierConfirmed = false;
     let documentKind = "xlsx";
     let documentPageCount = 0;
     let documentUrl = null;
@@ -79,9 +89,17 @@
         return supplierProfiles.get(supplierInput.value) || null;
     }
 
+    function requestedSupplierId() {
+        return supplierProfiles.size && supplierInput.value === "auto" ? "auto" : selectedSupplier()?.id || null;
+    }
+
+    function reviewProfile() {
+        const supplier = supplierProfiles.get(reviewSupplierId);
+        return supplier && reviewRequestId === requestedSupplierId() && reviewGeneration === generation ? supplier : null;
+    }
+
     function reviewSupplier() {
-        const supplier = selectedSupplier();
-        return supplier && supplier.id === reviewSupplierId ? supplier : null;
+        return supplierConfirmed ? reviewProfile() : null;
     }
 
     function initialiseSuppliers() {
@@ -90,7 +108,7 @@
             if (!Array.isArray(profiles) || !profiles.length || profiles.length > 100) throw new Error("invalid_suppliers");
             const choices = new Map();
             for (const profile of profiles) {
-                if (!profile || typeof profile.id !== "string" || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(profile.id)
+                if (!profile || profile.id === "auto" || typeof profile.id !== "string" || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(profile.id)
                         || choices.has(profile.id) || typeof profile.label !== "string" || !profile.label.trim()
                         || profile.label.length > 200 || typeof profile.help_text !== "string" || profile.help_text.length > 1000
                         || !Array.isArray(profile.formats) || !profile.formats.length || profile.formats.length > 2
@@ -109,9 +127,9 @@
                     formats: Object.freeze([...profile.formats]), source_formats: Object.freeze([...profile.source_formats]),
                     diesel_products: Object.freeze(products)}));
             }
-            if (!choices.has(root.dataset.defaultSupplierId)) throw new Error("invalid_suppliers");
             supplierProfiles = choices;
-            supplierInput.value = root.dataset.defaultSupplierId;
+            supplierInput.value = "auto";
+            if (supplierInput.value !== "auto") throw new Error("invalid_suppliers");
             updateSupplierHelp();
         } catch (error) {
             supplierProfiles = new Map();
@@ -122,7 +140,9 @@
 
     function updateSupplierHelp() {
         const supplier = selectedSupplier();
-        byId("fuel-file-help").textContent = supplier ? supplier.help_text : "Choose an available supplier.";
+        byId("fuel-file-help").textContent = requestedSupplierId() === "auto"
+            ? "Choose your fuel document. We’ll detect the supplier where possible. Up to 10 MB."
+            : supplier ? supplier.help_text : "Choose an available supplier.";
     }
 
     function editingLocked() {
@@ -134,9 +154,10 @@
         const locked = editingLocked();
         const count = rows.filter((model) => model.included).length;
         supplierInput.disabled = saving || !supplierProfiles.size;
-        fileInput.disabled = saving || !selectedSupplier();
+        fileInput.disabled = saving || !requestedSupplierId();
         clearButton.disabled = saving;
-        readButton.disabled = busy || locked || !chosenFile || !selectedSupplier();
+        readButton.disabled = busy || locked || !chosenFile || !requestedSupplierId();
+        confirmSupplierButton.disabled = saving || supplierConfirmed || !reviewProfile();
         previousPage.disabled = saving || page === 0;
         nextPage.disabled = saving || (page + 1) * pageSize >= rows.length;
         retryChecks.disabled = saving || savePhase === "complete";
@@ -159,8 +180,17 @@
         return element;
     }
 
-    function showError(message) {
+    function showError(message, {manualHelp = false} = {}) {
         errorBox.textContent = message;
+        if (manualHelp) {
+            const help = node("p", "fuel-import-error-help", "Choose a supplier manually above, or ");
+            const manual = node("a", "", "enter fuel manually");
+            manual.href = "/fuel/add_fuel/0/entry";
+            manual.target = "_blank";
+            manual.rel = "noopener noreferrer";
+            help.append(manual);
+            errorBox.append(help);
+        }
         errorBox.hidden = false;
     }
 
@@ -180,6 +210,13 @@
         documentKind = "xlsx";
         documentPageCount = 0;
         reviewSupplierId = null;
+        reviewRequestId = null;
+        reviewGeneration = null;
+        supplierConfirmed = false;
+        detectionNotice.hidden = true;
+        detectedSupplier.textContent = "";
+        confirmSupplierButton.hidden = true;
+        confirmSupplierButton.onclick = null;
         saveGeneration += 1;
         savePhase = "idle";
         saveReady = false;
@@ -338,7 +375,7 @@
 
     function unsupportedProduct(model) {
         const product = model.source.product.trim().replace(/\s+/g, " ").toUpperCase();
-        const supplier = reviewSupplier();
+        const supplier = reviewProfile();
         return model.source.issues.includes("unsupported_product") || !supplier
             || !supplier.diesel_products.includes(product);
     }
@@ -363,6 +400,7 @@
         if (savePhase === "idle") {
             saveStatus.dataset.error = "false";
             saveStatus.textContent = !selected.length ? "Select the entries to save."
+                : reviewProfile() && !supplierConfirmed ? "Confirm the detected supplier before checking or saving."
                 : selected.length > maxSaveRows ? `Select up to ${maxSaveRows} entries to save at a time.`
                 : invalid ? "Correct the highlighted fields before saving."
                 : unsupported ? "Exclude unsupported products before saving."
@@ -807,6 +845,7 @@
         retryChecks.textContent = checkPhase === "failed" ? "Retry checks" : "Recheck entries";
         checkStatus.dataset.state = checkPhase === "failed" ? "failed" : warnings ? "warning" : checkPhase;
         if (!rows.length) checkStatus.textContent = "";
+        else if (reviewProfile() && !supplierConfirmed) checkStatus.textContent = "Confirm the detected supplier before checking or saving.";
         else if (!selected.length) checkStatus.textContent = "Select entries to check for duplicates and unusual amounts.";
         else if (["pending", "checking"].includes(checkPhase)) checkStatus.textContent = "Checking selected entries…";
         else if (checkPhase === "failed") checkStatus.textContent = "Checks unavailable. Retry before relying on these results.";
@@ -877,6 +916,11 @@
         if (editingLocked()) return;
         cancelChecks();
         clearCheckResults();
+        if (!reviewSupplier()) {
+            checkPhase = reviewProfile() ? "awaiting_supplier" : "idle";
+            updateChecks();
+            return;
+        }
         const snapshot = checkSnapshot();
         checkPhase = snapshot.rows.length ? "pending" : rows.some((model) => model.included) ? "invalid" : "idle";
         updateChecks();
@@ -891,6 +935,20 @@
 
     function validString(value, nullable = false) {
         return (nullable && value === null) || (typeof value === "string" && value.length <= 1000);
+    }
+
+    function validatedDetection(data, requestId) {
+        const supplier = supplierProfiles.get(data?.report?.supplier_id);
+        const detection = data?.detection;
+        if (!supplier || !detection || typeof detection !== "object" || Array.isArray(detection)
+                || typeof detection.requires_confirmation !== "boolean"
+                || !["document_identity", "layout_only", "manual"].includes(detection.method)
+                || detection.requires_confirmation !== (detection.method === "layout_only")) {
+            throw new Error("invalid_detection");
+        }
+        if (requestId === "auto" ? detection.method !== automaticEvidence.get(`${supplier.id}|${data.report.source_format}`)
+            : requestId !== supplier.id || detection.method !== "manual") throw new Error("invalid_detection");
+        return {supplier, detection};
     }
 
     function validPayload(data, supplier) {
@@ -945,9 +1003,33 @@
             && cost === parseHundredths(report.totals.cost, true);
     }
 
-    function showPreview(data, supplier, file) {
-        if (selectedSupplier()?.id !== supplier.id || !validPayload(data, supplier)) throw new Error("invalid_preview");
+    function showPreview(data, requestId, file) {
+        const {supplier, detection} = validatedDetection(data, requestId);
+        if (requestedSupplierId() !== requestId || !validPayload(data, supplier)) throw new Error("invalid_preview");
         reviewSupplierId = supplier.id;
+        reviewRequestId = requestId;
+        reviewGeneration = generation;
+        supplierConfirmed = !detection.requires_confirmation;
+        detectionNotice.hidden = false;
+        confirmSupplierButton.hidden = supplierConfirmed;
+        if (detection.requires_confirmation) {
+            detectedSupplier.textContent = `Possible supplier: ${supplier.label}. Confirm before checking or saving.`;
+            confirmSupplierButton.textContent = `Confirm ${supplier.label}`;
+            const confirmationGeneration = generation;
+            confirmSupplierButton.onclick = () => {
+                if (editingLocked() || generation !== confirmationGeneration
+                        || reviewProfile()?.id !== supplier.id || supplierConfirmed) return;
+                supplierConfirmed = true;
+                detectedSupplier.textContent = `Supplier confirmed: ${supplier.label}.`;
+                confirmSupplierButton.hidden = true;
+                confirmSupplierButton.onclick = null;
+                clearError();
+                scheduleChecks(true);
+            };
+        } else {
+            detectedSupplier.textContent = detection.method === "document_identity"
+                ? `Detected supplier: ${supplier.label}.` : `Supplier: ${supplier.label}.`;
+        }
         documentKind = data.report.document_kind || "xlsx";
         documentPageCount = documentKind === "pdf" ? data.report.page_count : 0;
         prepareDocument(file);
@@ -1041,7 +1123,9 @@
         if (editingLocked() || saveNeedsRecheck || busy) return;
         const supplier = reviewSupplier();
         if (!supplier) {
-            showError("Choose an available supplier and read its document before saving.");
+            showError(reviewProfile() && !supplierConfirmed
+                ? "Confirm the detected supplier before saving."
+                : "Choose an available supplier and read its document before saving.");
             return;
         }
         updateSaveState();
@@ -1106,7 +1190,7 @@
 
     supplierInput.addEventListener("change", () => {
         if (savePhase === "saving") {
-            supplierInput.value = reviewSupplierId || root.dataset.defaultSupplierId;
+            supplierInput.value = reviewRequestId || "auto";
             return;
         }
         cancelReading();
@@ -1117,7 +1201,7 @@
         clearButton.hidden = true;
         status.textContent = "";
         updateSupplierHelp();
-        if (!selectedSupplier()) showError("Choose an available supplier before reading a document.");
+        if (!requestedSupplierId()) showError("Choose an available supplier before reading a document.");
         setBusy(false);
     });
 
@@ -1133,7 +1217,7 @@
         status.textContent = "";
         chosenFile = file;
         clearButton.hidden = !chosenFile;
-        if (!selectedSupplier()) {
+        if (!requestedSupplierId()) {
             showError("Choose an available supplier before reading a document.");
             chosenFile = null;
         } else if (chosenFile && chosenFile.size === 0) {
@@ -1160,8 +1244,8 @@
 
     readButton.addEventListener("click", async () => {
         if (!chosenFile || busy || editingLocked()) return;
-        const supplier = selectedSupplier();
-        if (!supplier) {
+        const requestId = requestedSupplierId();
+        if (!requestId) {
             showError("Choose an available supplier before reading a document.");
             return;
         }
@@ -1177,26 +1261,26 @@
             const response = await fetch(root.dataset.readUrl, {
                 method: "POST",
                 headers: {"Content-Type": documentType, "X-CSRFToken": root.dataset.csrfToken,
-                    "X-Fuel-Supplier": supplier.id},
+                    "X-Fuel-Supplier": requestId},
                 body: upload, credentials: "same-origin", cache: "no-store", signal: controller.signal,
             });
-            if (generation !== currentGeneration || selectedSupplier()?.id !== supplier.id) return;
+            if (generation !== currentGeneration || requestedSupplierId() !== requestId) return;
             const data = await response.json();
-            if (generation !== currentGeneration || selectedSupplier()?.id !== supplier.id) return;
+            if (generation !== currentGeneration || requestedSupplierId() !== requestId) return;
             if (!response.ok) {
                 const message = data && data.error && data.error.message;
                 showError(typeof message === "string" && message.length <= 500
-                    ? message : "The document could not be read. Try the original supplier document.");
+                    ? message : "The document could not be read. Try the original supplier document.", {manualHelp: true});
                 status.textContent = "";
                 return;
             }
-            showPreview(data, supplier, upload);
+            showPreview(data, requestId, upload);
             status.textContent = "Document read. Review the entries below.";
         } catch (error) {
             if (generation !== currentGeneration || error.name === "AbortError") return;
             resetPreview();
             status.textContent = "";
-            showError("The document could not be read. Check your connection and try again.");
+            showError("The document could not be read. Check your connection and try again.", {manualHelp: true});
         } finally {
             if (generation === currentGeneration) {
                 controller = null;

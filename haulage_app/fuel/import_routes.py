@@ -11,8 +11,8 @@ from wtforms.validators import ValidationError
 from haulage_app import db
 from haulage_app.fuel import fuel_bp
 from haulage_app.fuel.import_profiles import (
-    DEFAULT_SUPPLIER_ID, MAX_DOCUMENT_BYTES, FuelDocumentError,
-    get_supplier, read_fuel_document, supplier_choices,
+    AUTO_SUPPLIER_ID, MAX_DOCUMENT_BYTES, FuelDocumentError,
+    detect_fuel_document, get_supplier, read_fuel_document, supplier_choices,
 )
 from haulage_app.models import Truck
 
@@ -126,7 +126,7 @@ def import_preview():
             check_url=url_for("fuel.check_import_preview"),
             save_url=url_for("fuel.save_import_fuel"),
             supplier_profiles=supplier_choices(),
-            default_supplier_id=DEFAULT_SUPPLIER_ID,
+            default_supplier_id=AUTO_SUPPLIER_ID,
         ))
     return _private_response(response)
 
@@ -139,8 +139,9 @@ def read_import_document():
         except ValidationError:
             return _error("csrf_failed", "Refresh this page and choose the document again.", 403)
 
+    automatic = request.headers.get("X-Fuel-Supplier") == AUTO_SUPPLIER_ID
     try:
-        supplier = _request_supplier()
+        supplier = None if automatic else _request_supplier()
     except FuelDocumentError as error:
         return _error(error.code, str(error), error.status)
 
@@ -160,11 +161,16 @@ def read_import_document():
     if len(content) > MAX_DOCUMENT_BYTES:
         return _error("too_large", "The document is too large. Choose a file under 10 MB.", 413)
     try:
-        report = read_fuel_document(content, supplier.id)
+        if automatic:
+            supplier, report, detection = detect_fuel_document(content)
+        else:
+            report = read_fuel_document(content, supplier.id)
+            detection = {"method": "manual", "requires_confirmation": False}
         if (report.fuel_card_name != supplier.label
                 or report.source_format not in supplier.source_formats):
             raise FuelDocumentError("invalid_document")
         payload = _preview_payload(report, supplier)
+        payload["detection"] = detection
     except FuelDocumentError as error:
         return _error(error.code, str(error), error.status)
     except FuelXLSXError as error:

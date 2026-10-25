@@ -19,8 +19,9 @@
         <div class="fuel-import-supplier-control">
             <label for="fuel-import-supplier">Supplier</label>
             <select id="fuel-import-supplier" class="browser-default" aria-describedby="fuel-file-help">
+                <option value="auto" selected>Detect automatically</option>
                 {% for supplier in supplier_profiles %}
-                <option value="{{ supplier.id }}"{% if supplier.id == default_supplier_id %} selected{% endif %}>{{ supplier.label }}</option>
+                <option value="{{ supplier.id }}">{{ supplier.label }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -41,6 +42,10 @@
     <div id="fuel-import-error" class="fuel-import-error" role="alert" hidden></div>
 
     <section id="fuel-import-review" class="fuel-import-review" aria-labelledby="fuel-review-title" hidden>
+        <div id="fuel-supplier-detection" class="fuel-import-detection" role="status" aria-live="polite" hidden>
+            <p id="fuel-detected-supplier"></p>
+            <button id="fuel-confirm-supplier" class="btn" type="button" hidden>Confirm supplier</button>
+        </div>
         <div class="fuel-import-review-heading">
             <div>
                 <h2 id="fuel-review-title">Review fuel entries</h2>

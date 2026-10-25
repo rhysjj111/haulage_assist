@@ -5,12 +5,14 @@ from types import MappingProxyType
 
 
 DEFAULT_SUPPLIER_ID = "the-fuel-store"
+AUTO_SUPPLIER_ID = "auto"
 MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
 _ERRORS = {
     "supplier_unavailable": (400, "Choose a supplier available in the fuel import list."),
     "invalid_document": (422, "This document could not be recognised. Choose the original document for the selected supplier."),
     "too_large": (413, "The document is too large. Choose a file under 10 MB."),
     "format_unavailable": (422, "This document format is not supported for the selected supplier. Check the supplier and choose its original document."),
+    "supplier_not_recognised": (422, "The supplier could not be identified from this document. Choose a supported supplier and try its original invoice or export, or enter the fuel manually."),
 }
 
 
@@ -95,24 +97,63 @@ _READERS = MappingProxyType({
 })
 
 
-def read_fuel_document(content, supplier_id=None):
-    """Choose an approved supplier reader from bytes, never a file extension.
-
-    Sniffing only checks a bounded prefix; ZIP/XML processing is delegated to
-    the existing worker. Recognising a PDF does not imply a supported layout.
-    """
-    supplier = get_supplier(supplier_id)
+def _document_kind(content):
     if not isinstance(content, bytes):
         raise FuelDocumentError("invalid_document")
     if len(content) > MAX_DOCUMENT_BYTES:
         raise FuelDocumentError("too_large")
     if content.startswith(b"PK\x03\x04"):
-        kind = "xlsx"
+        return "xlsx"
     elif content.lstrip().startswith(b"%PDF-"):
-        kind = "pdf"
-    else:
-        raise FuelDocumentError("invalid_document")
+        return "pdf"
+    raise FuelDocumentError("invalid_document")
+
+
+def read_fuel_document(content, supplier_id=None):
+    """Choose an approved supplier reader from bytes, never a file extension.
+
+    Sniffing only narrows the document kind. The selected isolated reader must
+    still validate its complete supported layout and transaction totals.
+    """
+    supplier = get_supplier(supplier_id)
+    kind = _document_kind(content)
     reader = _READERS.get((supplier.id, kind))
     if kind not in supplier.formats or reader is None:
         raise FuelDocumentError("format_unavailable")
     return reader(content)
+
+
+def detect_fuel_document(content):
+    """Read supported document evidence without claiming every layout is an issuer.
+
+    Format only narrows the current reader candidate. A successful, strict
+    Silvey parser verifies invoice branding, layout and reconciled totals.
+    The Fuel Store export schema has no readable issuer identity, so even a
+    successful spreadsheet parse remains a suggestion requiring confirmation.
+    Neither filenames nor card-network labels participate in detection.
+    """
+    try:
+        kind = _document_kind(content)
+    except FuelDocumentError as error:
+        if error.code == "invalid_document":
+            raise FuelDocumentError("supplier_not_recognised") from None
+        raise
+    supplier = get_supplier("silvey" if kind == "pdf" else DEFAULT_SUPPLIER_ID)
+    from haulage_app.fuel.silvey_reader import SilveyPDFError
+    from haulage_app.fuel.xlsx_reader import FuelXLSXError
+
+    try:
+        report = read_fuel_document(content, supplier.id)
+    except (SilveyPDFError, FuelXLSXError) as error:
+        # Invoices with recognisable identity but wrong totals or incomplete
+        # transactions must keep those useful diagnostics, not become guesses.
+        if error.code == "unsupported_layout":
+            raise FuelDocumentError("supplier_not_recognised") from None
+        raise
+    if (report.fuel_card_name != supplier.label
+            or report.source_format not in supplier.source_formats):
+        raise FuelDocumentError("supplier_not_recognised")
+    detection = ({"method": "document_identity", "requires_confirmation": False}
+                 if supplier.id == "silvey" else
+                 {"method": "layout_only", "requires_confirmation": True})
+    return supplier, report, detection
