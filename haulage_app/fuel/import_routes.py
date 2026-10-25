@@ -151,7 +151,7 @@ def read_import_document():
     from haulage_app.fuel.silvey_processing import SilveyPDFProcessingError
 
     if request.mimetype not in DOCUMENT_MIMETYPES:
-        return _error("unsupported_media_type", "Choose a document from the selected supplier.", 415)
+        return _error("unsupported_media_type", "Choose a supported fuel document.", 415)
     if request.content_length is not None and request.content_length > MAX_DOCUMENT_BYTES:
         return _error("too_large", "The document is too large. Choose a file under 10 MB.", 413)
 

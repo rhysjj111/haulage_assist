@@ -28,14 +28,28 @@ class _UploadControls(HTMLParser):
         super().__init__()
         self.inputs = []
         self.selects = []
+        self.elements = []
+        self.parents = {}
+        self.stack = []
         self.feed(html)
 
     def handle_starttag(self, tag, attrs):
         attributes = dict(attrs)
+        self.elements.append((tag, attributes))
+        if attributes.get("id"):
+            self.parents[attributes["id"]] = tuple(self.stack)
         if tag == "input":
             self.inputs.append(attributes)
         elif tag == "select":
             self.selects.append(attributes)
+        if tag not in {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}:
+            self.stack.append((tag, attributes))
+
+    def handle_endtag(self, tag):
+        for index in range(len(self.stack) - 1, -1, -1):
+            if self.stack[index][0] == tag:
+                del self.stack[index:]
+                break
 
 
 def selected():
@@ -73,7 +87,7 @@ class FuelSupplierUploadTests(OwnerTestCase):
                 select(table).order_by(*table.primary_key.columns))]
                 for name, table in db.metadata.tables.items()}
 
-    def test_page_exposes_available_supplier_and_one_picker_without_format_selector(self):
+    def test_page_starts_with_one_document_picker_and_defers_supplier_choice_to_hidden_review(self):
         response, context = self.get_page(PREVIEW)
         controls = _UploadControls(response.text)
         files = [field for field in controls.inputs if field.get("type") == "file"]
@@ -82,6 +96,17 @@ class FuelSupplierUploadTests(OwnerTestCase):
         self.assertIn(".pdf", files[0].get("accept", ""))
         self.assertEqual([field.get("id") for field in controls.selects],
                          ["fuel-import-supplier"])
+        supplier_parents = controls.parents["fuel-import-supplier"]
+        self.assertFalse(any("fuel-import-upload" in attributes.get("class", "").split()
+                             for _, attributes in supplier_parents))
+        self.assertTrue(any(attributes.get("id") == "fuel-import-review"
+                            and "hidden" in attributes for _, attributes in supplier_parents))
+        self.assertTrue(any(attributes.get("id") == "fuel-supplier-choice"
+                            and "hidden" in attributes for _, attributes in supplier_parents))
+        self.assertTrue(any(tag == "option" and attributes.get("value") == ""
+                            for tag, attributes in controls.elements))
+        self.assertFalse(any(tag == "button" and attributes.get("id") == "fuel-confirm-supplier"
+                             for tag, attributes in controls.elements))
         self.assertEqual(context["default_supplier_id"], "auto")
         profiles = context["supplier_profiles"]
         self.assertEqual({profile["id"] for profile in profiles}, {"the-fuel-store", "silvey"})

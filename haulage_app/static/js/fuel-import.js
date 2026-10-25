@@ -22,7 +22,7 @@
     const saveResult = byId("fuel-save-result");
     const detectionNotice = byId("fuel-supplier-detection");
     const detectedSupplier = byId("fuel-detected-supplier");
-    const confirmSupplierButton = byId("fuel-confirm-supplier");
+    const supplierChoice = byId("fuel-supplier-choice");
     const originalDocument = byId("fuel-original-document");
     let originalFrame = byId("fuel-pdf-preview");
     const openOriginal = byId("fuel-open-original");
@@ -80,17 +80,15 @@
     let reviewRequestId = null;
     let reviewGeneration = null;
     let supplierConfirmed = false;
+    let supplierChoiceRequired = false;
+    let compatibleSupplierIds = new Set();
     let documentKind = "xlsx";
     let documentPageCount = 0;
     let documentUrl = null;
     let visibleDocumentPage = null;
 
-    function selectedSupplier() {
-        return supplierProfiles.get(supplierInput.value) || null;
-    }
-
     function requestedSupplierId() {
-        return supplierProfiles.size && supplierInput.value === "auto" ? "auto" : selectedSupplier()?.id || null;
+        return supplierProfiles.size ? "auto" : null;
     }
 
     function reviewProfile() {
@@ -99,7 +97,9 @@
     }
 
     function reviewSupplier() {
-        return supplierConfirmed ? reviewProfile() : null;
+        const supplier = reviewProfile();
+        return supplierConfirmed && supplier && (!supplierChoiceRequired
+            || supplierInput.value === supplier.id && compatibleSupplierIds.has(supplier.id)) ? supplier : null;
     }
 
     function initialiseSuppliers() {
@@ -128,8 +128,7 @@
                     diesel_products: Object.freeze(products)}));
             }
             supplierProfiles = choices;
-            supplierInput.value = "auto";
-            if (supplierInput.value !== "auto") throw new Error("invalid_suppliers");
+            supplierInput.value = "";
             updateSupplierHelp();
         } catch (error) {
             supplierProfiles = new Map();
@@ -139,10 +138,7 @@
     }
 
     function updateSupplierHelp() {
-        const supplier = selectedSupplier();
-        byId("fuel-file-help").textContent = requestedSupplierId() === "auto"
-            ? "Choose your fuel document. We’ll detect the supplier where possible. Up to 10 MB."
-            : supplier ? supplier.help_text : "Choose an available supplier.";
+        byId("fuel-file-help").textContent = "Choose your fuel document. Up to 10 MB.";
     }
 
     function editingLocked() {
@@ -153,11 +149,10 @@
         const saving = savePhase === "saving";
         const locked = editingLocked();
         const count = rows.filter((model) => model.included).length;
-        supplierInput.disabled = saving || !supplierProfiles.size;
+        supplierInput.disabled = locked || !supplierChoiceRequired || !reviewProfile();
         fileInput.disabled = saving || !requestedSupplierId();
         clearButton.disabled = saving;
         readButton.disabled = busy || locked || !chosenFile || !requestedSupplierId();
-        confirmSupplierButton.disabled = saving || supplierConfirmed || !reviewProfile();
         previousPage.disabled = saving || page === 0;
         nextPage.disabled = saving || (page + 1) * pageSize >= rows.length;
         retryChecks.disabled = saving || savePhase === "complete";
@@ -183,7 +178,7 @@
     function showError(message, {manualHelp = false} = {}) {
         errorBox.textContent = message;
         if (manualHelp) {
-            const help = node("p", "fuel-import-error-help", "Choose a supplier manually above, or ");
+            const help = node("p", "fuel-import-error-help", "Use an original Silvey invoice or The Fuel Store Transactions export, or ");
             const manual = node("a", "", "enter fuel manually");
             manual.href = "/fuel/add_fuel/0/entry";
             manual.target = "_blank";
@@ -213,10 +208,13 @@
         reviewRequestId = null;
         reviewGeneration = null;
         supplierConfirmed = false;
+        supplierChoiceRequired = false;
+        compatibleSupplierIds = new Set();
         detectionNotice.hidden = true;
         detectedSupplier.textContent = "";
-        confirmSupplierButton.hidden = true;
-        confirmSupplierButton.onclick = null;
+        supplierChoice.hidden = true;
+        supplierInput.replaceChildren(node("option", "", "Choose supplier"));
+        supplierInput.firstElementChild.value = "";
         saveGeneration += 1;
         savePhase = "idle";
         saveReady = false;
@@ -400,7 +398,7 @@
         if (savePhase === "idle") {
             saveStatus.dataset.error = "false";
             saveStatus.textContent = !selected.length ? "Select the entries to save."
-                : reviewProfile() && !supplierConfirmed ? "Confirm the detected supplier before checking or saving."
+                : reviewProfile() && !reviewSupplier() ? "Choose the supplier before checking or saving."
                 : selected.length > maxSaveRows ? `Select up to ${maxSaveRows} entries to save at a time.`
                 : invalid ? "Correct the highlighted fields before saving."
                 : unsupported ? "Exclude unsupported products before saving."
@@ -845,7 +843,7 @@
         retryChecks.textContent = checkPhase === "failed" ? "Retry checks" : "Recheck entries";
         checkStatus.dataset.state = checkPhase === "failed" ? "failed" : warnings ? "warning" : checkPhase;
         if (!rows.length) checkStatus.textContent = "";
-        else if (reviewProfile() && !supplierConfirmed) checkStatus.textContent = "Confirm the detected supplier before checking or saving.";
+        else if (reviewProfile() && !reviewSupplier()) checkStatus.textContent = "Choose the supplier before checking or saving.";
         else if (!selected.length) checkStatus.textContent = "Select entries to check for duplicates and unusual amounts.";
         else if (["pending", "checking"].includes(checkPhase)) checkStatus.textContent = "Checking selected entries…";
         else if (checkPhase === "failed") checkStatus.textContent = "Checks unavailable. Retry before relying on these results.";
@@ -1010,22 +1008,22 @@
         reviewRequestId = requestId;
         reviewGeneration = generation;
         supplierConfirmed = !detection.requires_confirmation;
+        supplierChoiceRequired = detection.requires_confirmation;
+        compatibleSupplierIds = new Set();
+        supplierInput.replaceChildren(node("option", "", "Choose supplier"));
+        supplierInput.firstElementChild.value = "";
+        supplierChoice.hidden = !supplierChoiceRequired;
         detectionNotice.hidden = false;
-        confirmSupplierButton.hidden = supplierConfirmed;
         if (detection.requires_confirmation) {
-            detectedSupplier.textContent = `Possible supplier: ${supplier.label}. Confirm before checking or saving.`;
-            confirmSupplierButton.textContent = `Confirm ${supplier.label}`;
-            const confirmationGeneration = generation;
-            confirmSupplierButton.onclick = () => {
-                if (editingLocked() || generation !== confirmationGeneration
-                        || reviewProfile()?.id !== supplier.id || supplierConfirmed) return;
-                supplierConfirmed = true;
-                detectedSupplier.textContent = `Supplier confirmed: ${supplier.label}.`;
-                confirmSupplierButton.hidden = true;
-                confirmSupplierButton.onclick = null;
-                clearError();
-                scheduleChecks(true);
-            };
+            detectedSupplier.textContent = "Choose the supplier for this export.";
+            for (const candidate of supplierProfiles.values()) {
+                if (candidate.id !== supplier.id || !candidate.source_formats.includes(data.report.source_format)
+                        || !candidate.formats.includes(data.report.document_kind || "xlsx")) continue;
+                compatibleSupplierIds.add(candidate.id);
+                const option = node("option", "", candidate.label);
+                option.value = candidate.id;
+                supplierInput.append(option);
+            }
         } else {
             detectedSupplier.textContent = detection.method === "document_identity"
                 ? `Detected supplier: ${supplier.label}.` : `Supplier: ${supplier.label}.`;
@@ -1050,7 +1048,7 @@
             return model;
         });
         const reportLabel = documentKind === "pdf" ? `${data.report.fuel_card_name} invoice`
-            : `${data.report.fuel_card_name} · ${data.report.sheet_name}`;
+            : supplierChoiceRequired ? data.report.sheet_name : `${data.report.fuel_card_name} · ${data.report.sheet_name}`;
         byId("fuel-report-description").textContent = `${reportLabel} · ${data.rows.length} ${data.rows.length === 1 ? "transaction" : "transactions"}`;
         const sourceTotalLabel = documentKind === "pdf" ? "Invoice totals before VAT (all products)" : "Spreadsheet totals (calculated)";
         byId("fuel-source-totals").textContent = `${sourceTotalLabel}: ${displayHundredths(parseHundredths(data.report.totals.quantity, true))} L · £${displayHundredths(parseHundredths(data.report.totals.cost, true))}`;
@@ -1123,9 +1121,9 @@
         if (editingLocked() || saveNeedsRecheck || busy) return;
         const supplier = reviewSupplier();
         if (!supplier) {
-            showError(reviewProfile() && !supplierConfirmed
-                ? "Confirm the detected supplier before saving."
-                : "Choose an available supplier and read its document before saving.");
+            showError(reviewProfile()
+                ? "Choose the supplier before saving."
+                : "Read a supported fuel document before saving.");
             return;
         }
         updateSaveState();
@@ -1189,20 +1187,25 @@
     });
 
     supplierInput.addEventListener("change", () => {
-        if (savePhase === "saving") {
-            supplierInput.value = reviewRequestId || "auto";
+        if (editingLocked()) {
+            supplierInput.value = supplierConfirmed ? reviewSupplierId || "" : "";
             return;
         }
-        cancelReading();
-        resetPreview();
-        clearError();
-        chosenFile = null;
-        fileInput.value = "";
-        clearButton.hidden = true;
-        status.textContent = "";
-        updateSupplierHelp();
-        if (!requestedSupplierId()) showError("Choose an available supplier before reading a document.");
-        setBusy(false);
+        const supplier = reviewProfile();
+        if (!supplierChoiceRequired || !supplier) return;
+        const selectedId = supplierInput.value;
+        supplierConfirmed = Boolean(selectedId && selectedId === supplier.id && compatibleSupplierIds.has(selectedId));
+        if (supplierConfirmed) {
+            detectedSupplier.textContent = `Supplier: ${supplier.label}.`;
+            clearError();
+        } else {
+            detectedSupplier.textContent = "Choose the supplier for this export.";
+            if (selectedId) {
+                supplierInput.value = "";
+                showError("Choose a supplier available for this document layout.");
+            }
+        }
+        scheduleChecks(true);
     });
 
     fileInput.addEventListener("change", () => {
@@ -1218,7 +1221,7 @@
         chosenFile = file;
         clearButton.hidden = !chosenFile;
         if (!requestedSupplierId()) {
-            showError("Choose an available supplier before reading a document.");
+            showError("Document readers could not be loaded. Refresh this page and try again.");
             chosenFile = null;
         } else if (chosenFile && chosenFile.size === 0) {
             showError("The document is empty. Choose the fuel document again.");
@@ -1246,7 +1249,7 @@
         if (!chosenFile || busy || editingLocked()) return;
         const requestId = requestedSupplierId();
         if (!requestId) {
-            showError("Choose an available supplier before reading a document.");
+            showError("Document readers could not be loaded. Refresh this page and try again.");
             return;
         }
         cancelReading();

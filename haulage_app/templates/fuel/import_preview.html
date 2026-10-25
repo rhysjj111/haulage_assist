@@ -16,15 +16,6 @@
     </div>
 
     <div class="fuel-import-upload">
-        <div class="fuel-import-supplier-control">
-            <label for="fuel-import-supplier">Supplier</label>
-            <select id="fuel-import-supplier" class="browser-default" aria-describedby="fuel-file-help">
-                <option value="auto" selected>Detect automatically</option>
-                {% for supplier in supplier_profiles %}
-                <option value="{{ supplier.id }}">{{ supplier.label }}</option>
-                {% endfor %}
-            </select>
-        </div>
         <div class="fuel-import-file-control">
             <label for="fuel-xlsx-file">Fuel document</label>
             <input id="fuel-xlsx-file" type="file"
@@ -44,7 +35,12 @@
     <section id="fuel-import-review" class="fuel-import-review" aria-labelledby="fuel-review-title" hidden>
         <div id="fuel-supplier-detection" class="fuel-import-detection" role="status" aria-live="polite" hidden>
             <p id="fuel-detected-supplier"></p>
-            <button id="fuel-confirm-supplier" class="btn" type="button" hidden>Confirm supplier</button>
+            <div id="fuel-supplier-choice" class="fuel-import-supplier-control" hidden>
+                <label for="fuel-import-supplier">Supplier</label>
+                <select id="fuel-import-supplier" class="browser-default" aria-describedby="fuel-detected-supplier">
+                    <option value="">Choose supplier</option>
+                </select>
+            </div>
         </div>
         <div class="fuel-import-review-heading">
             <div>

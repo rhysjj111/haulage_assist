@@ -12,7 +12,7 @@ _ERRORS = {
     "invalid_document": (422, "This document could not be recognised. Choose the original document for the selected supplier."),
     "too_large": (413, "The document is too large. Choose a file under 10 MB."),
     "format_unavailable": (422, "This document format is not supported for the selected supplier. Check the supplier and choose its original document."),
-    "supplier_not_recognised": (422, "The supplier could not be identified from this document. Choose a supported supplier and try its original invoice or export, or enter the fuel manually."),
+    "supplier_not_recognised": (422, "This document could not be recognised. Use an original Silvey fuel invoice or The Fuel Store Transactions export, or enter the fuel manually."),
 }
 
 

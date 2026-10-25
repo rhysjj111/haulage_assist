@@ -106,13 +106,14 @@ rather than running ZIP/XML processing directly in the Flask process.
 
 ## Upload and editable review
 
-Open **Add Fuel → Import fuel**, or `/fuel/import`. Leave the supplier on
-**Detect automatically**, choose the document and click **Read document**.
+Open **Add Fuel → Import fuel**, or `/fuel/import`. Choose the document and click
+**Read document**; there is no supplier selection at upload.
 The recognised supplier is shown above the review. A Silvey invoice is identified
 by its branding and validated invoice layout. A Fuel Store-shaped spreadsheet
-requires **Confirm The Fuel Store** before checks and Save become available:
-the layout alone does not prove which company supplied the export.
-The supplier can also be selected manually before reading. The Fuel Store uses
+shows a **Choose supplier** dropdown in its review, with **The Fuel Store** first
+among the compatible choices. Selecting the supplier confirms it and enables
+checks; no separate confirmation button is needed. The layout alone does not
+prove which company supplied the export. The Fuel Store uses
 its Transactions export; Silvey uses the recognised digital invoice layout.
 The preview contains every
 source row, its purchase date, proposed truck, litres and cost. Each row has an
@@ -156,19 +157,21 @@ Fuel Store spreadsheet and Silvey digital invoice are enabled.
 
 ## One upload for supplier documents
 
-There is one supplier selector, file chooser and **Read document** action, with
-no manual spreadsheet/PDF mode. Supplier guidance comes from a small registry of
+There is one file chooser and **Read document** action, with no initial supplier
+selector or manual spreadsheet/PDF mode. Supplier choices come from a registry of
 enabled profiles; unsupported suppliers are not offered as working importers.
 The chooser accepts common spreadsheet/PDF files so the app can explain an
 unsupported document rather than requiring the user to identify its format.
 It makes no promise that every PDF or supplier layout is supported.
 
-The browser sends a bounded raw body as `application/octet-stream` with the
-selected `X-Fuel-Supplier` ID, or `auto` for automatic detection. The server validates that ID and identifies XLSX
+The browser sends a bounded raw body as `application/octet-stream` with
+`X-Fuel-Supplier: auto` for automatic detection. The server identifies XLSX
 or PDF from the bytes, not the filename, extension or browser-supplied MIME type.
 The route retains the existing XLSX/PDF MIME labels as accepted transports.
 Automatic detection is available only when reading a document. Check and Save
-require a concrete registered supplier ID. Missing supplier headers default to The Fuel Store for existing clients;
+require a concrete registered supplier ID. Explicit supplier reads remain
+supported by the API for existing clients. Missing supplier headers default to
+The Fuel Store for existing clients;
 explicit unknown or empty IDs fail before parsing, querying or saving.
 
 Automatic detection runs the matching supported isolated reader and requires
@@ -177,13 +180,15 @@ document identity; the recognised Fuel Store spreadsheet supplies only a layout
 suggestion. The read response distinguishes these cases with
 `detection.method` (`document_identity`, `layout_only` or `manual`) and
 `detection.requires_confirmation`. The browser keeps an unconfirmed layout out
-of financial checks and saving until the user confirms the supplier. Filenames,
+of financial checks and saving until the user selects its supplier. The review
+dropdown offers only profiles compatible with the validated source format;
+selecting another provider cannot relabel an already parsed document. Filenames,
 extensions and card-network names never establish supplier identity.
 
 Unrecognised documents return a clear error without saving anything. The user
-can choose a supported supplier and try again, or enter the purchases manually.
-A manual choice still runs that supplier's strict reader; it does not bypass
-layout validation or make an unknown supplier supported. New invoice layouts
+can try a supported original document or enter the purchases manually.
+An API client's explicit supplier choice still runs that supplier's strict reader;
+it does not bypass layout validation or make an unknown supplier supported. New invoice layouts
 need a separately tested reader before they can be imported.
 
 XLSX and PDF go through their selected supplier's isolated reader. Unsupported
@@ -194,9 +199,10 @@ services use the selected profile's supplier label and diesel-product list for
 duplicate matching, confirmations and inserts; one supplier's rows cannot be
 silently relabelled as another supplier through a hardcoded default.
 
-Changing supplier clears the chosen document, review and confirmations, and
-cancels pending reads/checks. Late replies cannot restore a previous supplier's
-rows. The supplier selector locks during Save. File chooser cancellation still
+New files, Clear and a fresh read reset supplier selection and confirmations.
+Supplier selection preserves the spreadsheet review and edits while invalidating
+pending checks. Late replies cannot restore an old selection or document.
+The review supplier selector locks during Save. File chooser cancellation still
 preserves the current draft; no document or supplier draft is persisted in
 browser storage or session cookies.
 
@@ -223,7 +229,7 @@ references, exact amounts, supplier identity and reconciled totals.
 For Silvey, original transaction details include the actual PDF page. The local
 **Original invoice** viewer opens a PDF-typed Blob made from the chosen file;
 page links select the matching source page. Nothing is fetched from an external
-viewer or stored on the server. Clear, file/supplier changes and leaving the
+viewer or stored on the server. Clear, choosing another file, a fresh read and leaving the
 page revoke the object URL. Source invoice totals include all products before
 VAT, while selected totals include only rows selected for diesel saving.
 
