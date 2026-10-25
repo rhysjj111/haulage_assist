@@ -41,6 +41,7 @@
     let daysByDriver = new Map();
     let savePhase = "idle";
     let saveReady = false;
+    let saveNeedsRecheck = false;
     let saveGeneration = 0;
 
     function editingLocked() {
@@ -54,7 +55,7 @@
         readButton.disabled = busy || editingLocked() || !chosenFile;
         weekInput.disabled = editingLocked();
         retryChecks.disabled = saving || savePhase === "complete";
-        saveButton.disabled = !saveReady || editingLocked();
+        saveButton.disabled = !saveReady || editingLocked() || saveNeedsRecheck;
         const count = rowModels.filter((model) => model.row.parentElement === driverRows).length;
         saveButton.textContent = saving ? "Saving…" : savePhase === "complete" ? "Saved" : `Save ${count || ""}${count ? " " : ""}${count === 1 ? "payslip" : "payslips"}`;
         for (const model of rowModels) {
@@ -68,7 +69,7 @@
 
     function setBusy(value) {
         busy = value;
-        readButton.textContent = value ? "Reading…" : "Read PDF";
+        readButton.textContent = value ? "Reading…" : "Read document";
         updateControlLocks();
     }
 
@@ -111,6 +112,7 @@
         saveGeneration += 1;
         savePhase = "idle";
         saveReady = false;
+        saveNeedsRecheck = false;
         saveStatus.textContent = "";
         saveStatus.removeAttribute("data-error");
         saveResult.hidden = true;
@@ -246,9 +248,11 @@
         if (editingLocked()) return false;
         if (model) model.serverErrors = field ? model.serverErrors.filter((error) => error.field !== field) : [];
         else for (const row of rowModels) row.serverErrors = [];
-        savePhase = "idle";
-        saveStatus.textContent = "";
-        saveStatus.removeAttribute("data-error");
+        if (savePhase !== "unconfirmed") {
+            savePhase = "idle";
+            saveStatus.textContent = "";
+            saveStatus.removeAttribute("data-error");
+        }
         return true;
     }
 
@@ -310,7 +314,7 @@
         const count = included.length;
         byId("payroll-driver-count").textContent = `${count} ${count === 1 ? "entry" : "entries"}${attentionCount ? ` · ${attentionCount} need${attentionCount === 1 ? "s" : ""} attention` : ""}`;
         retryChecks.hidden = review.hidden || savePhase === "complete";
-        retryChecks.textContent = checkPhase === "failed" ? "Retry check" : "Recheck entries";
+        retryChecks.textContent = checkPhase === "failed" ? "Retry checks" : "Recheck entries";
         if (editingLocked()) {
             checkStatus.textContent = "";
         } else if (checkPhase === "pending" || checkPhase === "checking") {
@@ -601,7 +605,7 @@
         resetPreview();
         clearError();
         setBusy(true);
-        status.textContent = "Reading PDF…";
+        status.textContent = "Reading the document…";
         let timedOut = false;
         const timer = window.setTimeout(() => { timedOut = true; requestController.abort(); }, 30_000);
         try {
@@ -617,19 +621,21 @@
             if (current !== generation) return;
             if (!response.ok) {
                 const message = data && data.error && typeof data.error.message === "string" ? data.error.message : "The PDF could not be read. Please try again.";
+                status.textContent = "";
                 showError(message);
                 return;
             }
             renderReport(data, file);
+            status.textContent = "Document read. Review the entries below.";
         } catch (error) {
             if (current !== generation) return;
             resetPreview();
+            status.textContent = "";
             showError(timedOut ? "Reading took too long. Please try again." : "The PDF could not be read. Please try again.");
         } finally {
             window.clearTimeout(timer);
             if (current === generation) {
                 controller = null;
-                status.textContent = "";
                 setBusy(false);
             }
         }
@@ -676,8 +682,26 @@
         return safeLocalUrl(data.history_url, /^\/payslip\/add_payslip\/0\/history$/);
     }
 
+    function showUnconfirmedSave() {
+        savePhase = "unconfirmed";
+        saveNeedsRecheck = true;
+        cancelCheckWork();
+        checkKey = null;
+        existingByDriver = new Map();
+        daysByDriver = new Map();
+        checkPhase = "idle";
+        const history = document.createElement("a");
+        history.href = "/payslip/add_payslip/0/history";
+        history.target = "_blank";
+        history.rel = "noopener noreferrer";
+        history.textContent = "View payslip history";
+        saveStatus.replaceChildren(document.createTextNode(
+            "The save could not be confirmed. Check payslip history, then select Recheck entries before trying again. "), history);
+        saveStatus.setAttribute("data-error", "true");
+    }
+
     saveButton.addEventListener("click", async () => {
-        if (editingLocked()) return;
+        if (editingLocked() || saveNeedsRecheck || busy) return;
         refreshRowChecks();
         if (!saveReady) return;
         const snapshot = checkSnapshot();
@@ -704,30 +728,35 @@
             });
             const data = await response.json();
             if (serial !== saveGeneration) return;
-            if (!response.ok) {
+            if ([400, 403, 409, 413, 422].includes(response.status)) {
+                if (!data || !data.error || typeof data.error.code !== "string"
+                        || typeof data.error.message !== "string" || data.error.message.length > 1000) {
+                    throw new Error("unconfirmed_save");
+                }
                 savePhase = "failed";
                 applySaveErrors(data);
-                saveStatus.textContent = data && data.error && typeof data.error.message === "string" ? data.error.message : "The save could not be confirmed. Check recorded payslips before trying again.";
+                saveStatus.textContent = data.error.message;
                 saveStatus.setAttribute("data-error", "true");
-            } else {
+            } else if (response.status === 201) {
                 const historyUrl = confirmSaved(data, payload, snapshot);
                 savePhase = "complete";
-                saveStatus.textContent = "";
+                saveNeedsRecheck = false;
+                saveStatus.textContent = "Saved. Clear this preview or choose another file to start a new import.";
                 saveStatus.removeAttribute("data-error");
                 byId("payroll-saved-message").textContent = `${data.saved_count} ${data.saved_count === 1 ? "payslip" : "payslips"} saved for the week ending ${dateFormat.format(calendarDate(data.entry_date))}.`;
                 savedHistory.href = historyUrl;
                 saveResult.hidden = false;
+            } else {
+                throw new Error("unconfirmed_save");
             }
         } catch (error) {
             if (serial !== saveGeneration) return;
-            savePhase = "failed";
-            saveStatus.textContent = "The save could not be confirmed. Check recorded payslips before trying again.";
-            saveStatus.setAttribute("data-error", "true");
+            showUnconfirmedSave();
         } finally {
             window.clearTimeout(timeout);
             if (serial === saveGeneration) {
                 refreshRowChecks();
-                if (savePhase !== "complete") scheduleChecks({immediate: true, force: true});
+                if (savePhase === "failed") scheduleChecks({immediate: true, force: true});
             }
         }
     });
@@ -739,7 +768,27 @@
     }
     weekInput.addEventListener("input", weekChanged);
     weekInput.addEventListener("change", weekChanged);
-    retryChecks.addEventListener("click", () => scheduleChecks({immediate: true, force: true}));
+    retryChecks.addEventListener("click", () => {
+        if (editingLocked()) return;
+        saveNeedsRecheck = false;
+        if (savePhase === "failed") {
+            savePhase = "idle";
+            saveStatus.textContent = "";
+            saveStatus.removeAttribute("data-error");
+        }
+        scheduleChecks({immediate: true, force: true});
+    });
+    window.addEventListener("focus", () => {
+        if (!busy && !review.hidden && !editingLocked()
+                && !["pending", "checking"].includes(checkPhase)) {
+            scheduleChecks({immediate: true, force: true});
+        }
+    });
+    window.addEventListener("beforeunload", (event) => {
+        if (savePhase !== "saving") return;
+        event.preventDefault();
+        event.returnValue = "";
+    });
     window.addEventListener("pagehide", () => {
         stopReading();
         cancelCheckWork();

@@ -1,14 +1,14 @@
 # Import and review payroll PDFs
 
-Upload a digital weekly management report from **Add Payslip → Import payroll
-PDF**. The prototype reads section 4, suggests existing active drivers and
+Upload a digital weekly management report from **Add Payslip → Import
+payslips**. The prototype reads section 4, suggests existing active drivers and
 shows an editable table beside the original PDF. **Save payslips** creates the
 selected entries together after repeating the checks. Uploading and editing
 alone do not change records. There is no document archive or database migration.
 
 ## Reviewing the prototype
 
-1. Choose the original digital PDF and click **Read PDF**.
+1. Choose the original digital PDF and click **Read document**.
 2. Check the proposed working week, driver selections, Total wage and Employer
    cost. Each employee's **Page** link selects the source page in the viewer.
 3. Exact name matches ignore case and repeated spaces. Ambiguous matches require
@@ -37,19 +37,28 @@ alone do not change records. There is no document archive or database migration.
    the validations against current records and saves the entire batch in one
    transaction. An invalid row stops the batch; existing payslips are never
    overwritten or silently skipped. A confirmed result shows the saved count
-   and a **View payslips** link, and locks that batch against resubmission.
+   and a **View payslip history** link, and locks that batch against resubmission.
 
 These checks help review the proposed entries; they do not confirm that payroll
-is correct. Choosing **Exclude** explicitly
-removes an ambiguous employee from the selected entries. Changing an amount
+is correct. Both import pages use the assignment dropdown to include or exclude
+rows: select a driver here, or a truck in fuel. Choosing **Exclude** explicitly
+removes an employee from the selected entries. Changing an amount
 updates local checks without uploading the PDF or amounts again.
 
 While saving, editable controls are locked to prevent double submissions. A
 validation failure keeps your mappings, amounts and original PDF available.
-If a response is interrupted or cannot confirm the result, the page rechecks
-recorded entries and never retries the save automatically. Check the recorded
-payslips before trying again: a lost response can follow a successful commit.
+If a response is interrupted or cannot confirm the result, the page retains an
+unconfirmed-save message and a history link. Save stays unavailable until the
+user manually selects **Recheck entries** and current checks finish successfully,
+matching fuel's recovery flow. Editing or returning to the tab does not clear
+this gate or warning. Check the recorded payslips before trying again: a lost
+response can follow a successful commit. The page never retries Save automatically.
 Use **Clear** or choose another PDF to start a new batch after success.
+
+Both pages use **Read document**, **Clear**, **Retry checks**, saved counts and
+history links. Payroll retains its week selection and blocking driver/day
+checks; fuel retains individual purchase dates and its optional warning
+confirmations. Supported formats and financial rules are unchanged.
 
 The original viewer uses the browser's selected File through a local object
 URL. A raw copy is sent to the app for short-lived extraction. No PDF or review

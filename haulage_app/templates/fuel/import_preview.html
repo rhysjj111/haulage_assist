@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block header %}<h1>Import fuel spreadsheet</h1>{% endblock %}
+{% block header %}<h1>Import fuel</h1>{% endblock %}
 
 {% block main %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/fuel-import.css') }}">
@@ -22,7 +22,7 @@
             <p id="fuel-file-help" class="fuel-import-muted">Excel (.xlsx) · up to 10 MB</p>
         </div>
         <div class="fuel-import-upload-actions">
-            <button id="fuel-read-xlsx" class="btn" type="button" disabled>Read spreadsheet</button>
+            <button id="fuel-read-xlsx" class="btn" type="button" disabled>Read document</button>
             <button id="fuel-clear-xlsx" class="fuel-import-text-button" type="button" hidden>Clear</button>
         </div>
     </div>
@@ -38,7 +38,7 @@
             </div>
             <p id="fuel-source-totals" class="fuel-import-source-totals"></p>
         </div>
-        <p class="fuel-import-muted">Choose the entries to include and correct any details. Open an original row to compare.</p>
+        <p class="fuel-import-muted">Choose a truck to include an entry, or Exclude to leave it out. Open the original row to compare.</p>
         <p id="fuel-selection-summary" class="fuel-import-selection" aria-live="polite"></p>
         <div class="fuel-import-check-state">
             <p id="fuel-check-status" role="status" aria-live="polite"></p>
@@ -53,7 +53,6 @@
         <div class="fuel-import-table-wrap">
             <table class="fuel-import-table">
                 <thead><tr>
-                    <th scope="col" class="fuel-import-include-column">Include</th>
                     <th scope="col">Source</th>
                     <th scope="col">Purchase date</th>
                     <th scope="col">Truck</th>

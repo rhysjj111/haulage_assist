@@ -83,7 +83,11 @@
         previousPage.disabled = saving || page === 0;
         nextPage.disabled = saving || (page + 1) * pageSize >= rows.length;
         retryChecks.disabled = saving || savePhase === "complete";
-        for (const input of tableBody.querySelectorAll("input, select")) input.disabled = locked;
+        for (const input of tableBody.querySelectorAll("input, select")) {
+            const entryRow = input.closest("tr[data-source-row]");
+            input.disabled = locked || (input.tagName !== "SELECT"
+                && Boolean(entryRow?.classList.contains("fuel-import-excluded")));
+        }
         for (const button of tableBody.querySelectorAll("button")) button.disabled = saving;
         saveButton.disabled = !saveReady || locked || saveNeedsRecheck;
         saveButton.textContent = saving ? "Saving…" : savePhase === "complete" ? "Saved"
@@ -110,7 +114,7 @@
 
     function setBusy(value) {
         busy = value;
-        readButton.textContent = value ? "Reading…" : "Read spreadsheet";
+        readButton.textContent = value ? "Reading…" : "Read document";
         syncControls();
     }
 
@@ -296,7 +300,7 @@
         originalRow.id = `fuel-original-row-${source.source_row}`;
         originalRow.hidden = true;
         const cell = node("td");
-        cell.colSpan = 6;
+        cell.colSpan = 5;
         const box = node("section", "fuel-import-original");
         const heading = node("h3", "", `Original spreadsheet row ${source.source_row}`);
         const list = node("dl");
@@ -361,7 +365,7 @@
         return {cell, input, error, field};
     }
 
-    function createTruckField(model) {
+    function createTruckField(model, selectionChanged) {
         const cell = node("td");
         const select = node("select", "browser-default");
         select.id = `fuel-row-${model.source.source_row}-truck`;
@@ -369,28 +373,29 @@
         const error = node("span", "fuel-import-field-error");
         error.id = `${select.id}-error`;
         select.setAttribute("aria-describedby", error.id);
-        const placeholder = node("option", "", "Choose truck…");
-        placeholder.value = "";
-        select.append(placeholder);
+        const excluded = node("option", "", "Exclude");
+        excluded.value = "";
+        select.append(excluded);
         for (const truck of trucks) {
             const option = node("option", "", truck.registration);
             option.value = String(truck.id);
             select.append(option);
         }
-        select.value = model.truckId === null ? "" : String(model.truckId);
+        select.value = model.included ? String(model.truckId) : "";
         select.addEventListener("change", () => {
             if (!editDraft(model)) return;
             model.truckId = select.value ? Number(select.value) : null;
-            updateField(model, "truck", select, error);
+            model.included = model.truckId !== null;
+            selectionChanged();
             updateSummary();
             scheduleChecks();
         });
         cell.append(select, error);
         const matchNotes = {
-            unmatched: "No matching truck; choose one to include.",
-            ambiguous: "More than one truck matches; choose one.",
-            registration_conflict: "Source registrations differ; choose the correct truck.",
-            missing_registration: "No transaction registration; choose a truck.",
+            unmatched: "No automatic match for the source registration.",
+            ambiguous: "The source registration matches more than one truck.",
+            registration_conflict: "Transaction and card registrations differ in the source.",
+            missing_registration: "The source has no transaction registration.",
         };
         if (matchNotes[model.source.match_status]) cell.append(node("p", "fuel-import-source-warning", matchNotes[model.source.match_status]));
         return {cell, input: select, error, field: "truck"};
@@ -400,12 +405,6 @@
         const source = model.source;
         const row = node("tr");
         row.dataset.sourceRow = String(source.source_row);
-        const includeCell = node("td", "fuel-import-include-column");
-        const checkbox = node("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = model.included;
-        checkbox.setAttribute("aria-label", `Include spreadsheet row ${source.source_row}`);
-        includeCell.append(checkbox);
         const sourceCell = node("td");
         sourceCell.append(node("span", "fuel-import-source-registration", source.transaction_registration || "No registration"));
         sourceCell.append(node("span", "fuel-import-source-meta", [source.product, source.card_type].filter(Boolean).join(" · ")));
@@ -417,20 +416,13 @@
                 sourceCell.append(node("p", "fuel-import-source-warning", issueLabels[issue]));
             }
         }
-        const fields = [createField(model, "date", "Purchase date"), createTruckField(model),
+        const fields = [createField(model, "date", "Purchase date"), createTruckField(model, () => update()),
             createField(model, "quantity", "Litres"), createField(model, "cost", "Cost in pounds")];
         const update = () => {
             row.classList.toggle("fuel-import-excluded", !model.included);
             for (const field of fields) updateField(model, field.field, field.input, field.error);
         };
-        checkbox.addEventListener("change", () => {
-            if (!editDraft(model)) return;
-            model.included = checkbox.checked;
-            update();
-            updateSummary();
-            scheduleChecks();
-        });
-        row.append(includeCell, sourceCell, ...fields.map((field) => field.cell));
+        row.append(sourceCell, ...fields.map((field) => field.cell));
         update();
         return [row, createCheckRow(model), createOriginalRow(source, sourceButton)];
     }
@@ -572,7 +564,7 @@
         row.id = `fuel-check-row-${model.source.source_row}`;
         row.hidden = true;
         const cell = node("td");
-        cell.colSpan = 6;
+        cell.colSpan = 5;
         row.append(cell);
         model.checkRow = row;
         return row;
@@ -839,6 +831,7 @@
             // Out-of-range source amounts remain visible and need a deliberate
             // inclusion after correction; no source rows disappear.
             if (["date", "truck", "quantity", "cost"].some((field) => fieldError(model, field))) model.included = false;
+            if (!model.included) model.truckId = null;
             return model;
         });
         byId("fuel-report-description").textContent = `${data.report.fuel_card_name} · ${data.report.sheet_name} · ${data.rows.length} ${data.rows.length === 1 ? "transaction" : "transactions"}`;
@@ -971,11 +964,15 @@
 
     fileInput.addEventListener("change", () => {
         if (savePhase === "saving") return;
+        const file = fileInput.files && fileInput.files[0];
+        // Cancelling a chooser keeps the current editable preview, as it does
+        // on the payslip import page.
+        if (!file) return;
         cancelReading();
         resetPreview();
         clearError();
         status.textContent = "";
-        chosenFile = fileInput.files && fileInput.files[0] || null;
+        chosenFile = file;
         clearButton.hidden = !chosenFile;
         if (chosenFile && (!/\.xlsx$/i.test(chosenFile.name) || chosenFile.size === 0)) {
             showError("Choose The Fuel Store's Transactions .xlsx export.");
@@ -1008,7 +1005,7 @@
         const upload = chosenFile;
         controller = new AbortController();
         setBusy(true);
-        status.textContent = "Reading the spreadsheet…";
+        status.textContent = "Reading the document…";
         try {
             const response = await fetch(root.dataset.readUrl, {
                 method: "POST",
@@ -1026,7 +1023,7 @@
                 return;
             }
             showPreview(data);
-            status.textContent = "Spreadsheet read. Review the entries below.";
+            status.textContent = "Document read. Review the entries below.";
         } catch (error) {
             if (generation !== currentGeneration || error.name === "AbortError") return;
             resetPreview();

@@ -75,7 +75,7 @@ class PayslipPDFPreviewTests(OwnerTestCase):
         self.assertTrue(any(field.get("type") == "file" for field in parsed.inputs))
         self.assertIsInstance(context["csrf_token"], str)
         self.assertEqual(context["read_url"], READ)
-        self.assertIn("Import payroll PDF", response.text)
+        self.assertIn("Import payslips", response.text)
         self.assertFalse(any("add_payslip" in form.get("action", "")
                              or "edit_payslip" in form.get("action", "")
                              for form in parsed.forms))

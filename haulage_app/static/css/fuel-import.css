@@ -34,15 +34,13 @@ main > .container { width: 96%; max-width: 1660px; }
 .fuel-import-table-wrap { width: 100%; overflow-x: auto; }
 .fuel-import-table { width: 100%; min-width: 890px; border-collapse: collapse; table-layout: fixed; }
 .fuel-import-table th { padding: 11px 9px; background: #f5f7f9; font-size: .77rem; font-weight: 700; color: #5a6877; vertical-align: bottom; }
-.fuel-import-table th:nth-child(1) { width: 68px; }
-.fuel-import-table th:nth-child(2) { width: 29%; }
-.fuel-import-table th:nth-child(3) { width: 17%; }
-.fuel-import-table th:nth-child(4) { width: 21%; }
-.fuel-import-table th:nth-child(5), .fuel-import-table th:nth-child(6) { width: 14%; }
+.fuel-import-table th:nth-child(1) { width: 29%; }
+.fuel-import-table th:nth-child(2) { width: 19%; }
+.fuel-import-table th:nth-child(3) { width: 24%; }
+.fuel-import-table th:nth-child(4), .fuel-import-table th:nth-child(5) { width: 14%; }
 .fuel-import-table td { padding: 13px 9px; border-bottom: 1px solid #e7ebef; vertical-align: top; font-size: .87rem; overflow-wrap: anywhere; }
 .fuel-import-number { text-align: right; }
-.fuel-import-include-column { text-align: center; }
-.fuel-import input[type="checkbox"] { position: static; opacity: 1; pointer-events: auto; appearance: auto; width: 18px; height: 18px; margin: 8px 0 0; cursor: pointer; }
+.fuel-import .fuel-import-review-confirm input[type="checkbox"] { position: static; opacity: 1; pointer-events: auto; appearance: auto; width: 18px; height: 18px; cursor: pointer; }
 .fuel-import-source-registration { display: block; font-weight: 700; line-height: 1.5; }
 .fuel-import-source-meta { display: block; margin-top: 3px; color: #6d7785; font-size: .74rem; line-height: 1.5; }
 .fuel-import-original-button { display: block; margin-top: 4px; padding: 0; font-size: .75rem; }
@@ -55,7 +53,7 @@ main > .container { width: 96%; max-width: 1660px; }
 .fuel-import-source-warning { margin: 6px 0 0; color: #94621d; font-size: .75rem; line-height: 1.45; }
 .fuel-import-excluded > td { background: #fafbfc; }
 .fuel-import-excluded .fuel-import-source-registration { color: #687383; }
-.fuel-import-check-row > td { padding: 0 14px 13px 86px; background: #fffaf2; }
+.fuel-import-check-row > td { padding: 0 14px 13px; background: #fffaf2; }
 .fuel-import-check-row.fuel-import-context-only > td { background: #fafbfc; }
 .fuel-import-check-warning { margin: 0 0 5px; color: #875919; font-size: .8rem; line-height: 1.5; }
 .fuel-import-recorded-entries { margin-top: 4px; color: #526171; font-size: .79rem; }

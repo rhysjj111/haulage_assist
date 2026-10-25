@@ -90,8 +90,8 @@ rather than running ZIP/XML processing directly in the Flask process.
 
 ## Upload and editable review
 
-Open **Add Fuel → Import fuel spreadsheet**, or `/fuel/import`. Select the
-Transactions export and click **Read spreadsheet**. The preview contains every
+Open **Add Fuel → Import fuel**, or `/fuel/import`. Select the
+Transactions export and click **Read document**. The preview contains every
 source row, its purchase date, proposed truck, litres and cost. Each row has an
 original-row expansion with the extracted values, both registrations, source
 time, network, product and unit price. This is an extracted comparison, not an
@@ -102,6 +102,12 @@ case. Unknown or ambiguous registrations, a missing Tran VRN, or disagreement
 between Tran VRN and Card VRN require an explicit truck choice. There is no fuzzy
 matching, truck creation, driver inference or day linking. All existing trucks
 are available, as on the manual fuel form.
+
+The truck dropdown controls inclusion, matching the payslip import's driver
+dropdown. Choosing a truck includes a row; choosing **Exclude** leaves it out of
+the checks, selected totals and Save. Excluded date/amount controls are disabled,
+but their edited values remain available when a truck is chosen again. There is
+no separate Include checkbox.
 
 Users can edit the purchase date, truck, litres and cost, or exclude a row.
 Unmatched/conflicting rows, unsupported products and nonpositive amounts start
@@ -120,6 +126,10 @@ Drafts live only in the current page's memory and are discarded by Clear,
 choosing another file or leaving/reloading the page. Until Save is clicked,
 neither reading nor editing creates fuel entries. Source documents and review
 drafts are not stored in browser storage, session cookies or an upload archive.
+Cancelling the file chooser preserves the current draft on both import pages.
+The common **Read document**, **Clear**, **Recheck entries** and saved-history
+actions do not change which file layouts each reader supports: fuel still
+accepts only the recognised Fuel Store Transactions spreadsheet at this stage.
 
 `POST /fuel/import/read` accepts only the raw XLSX body with a CSRF header, with
 a 10 MiB request cap before processing. It avoids multipart temporary-file
