@@ -555,7 +555,8 @@
         row.dataset.sourceRow = String(source.source_row);
         const sourceCell = node("td");
         sourceCell.append(node("span", "fuel-import-source-registration", source.transaction_registration || "No registration"));
-        sourceCell.append(node("span", "fuel-import-source-meta", [source.product, source.card_type].filter(Boolean).join(" · ")));
+        const productLabel = source.product.trim().toUpperCase() === "DERV" ? "Diesel" : source.product;
+        sourceCell.append(node("span", "fuel-import-source-meta", [productLabel, source.card_type].filter(Boolean).join(" · ")));
         const sourceButton = node("button", "fuel-import-text-button fuel-import-original-button", documentKind === "pdf"
             ? `Original transaction ${source.source_row} · page ${source.source_page}` : `Original row ${source.source_row}`);
         sourceButton.type = "button";
