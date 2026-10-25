@@ -20,6 +20,9 @@
     const saveButton = byId("fuel-save-entries");
     const saveStatus = byId("fuel-save-status");
     const saveResult = byId("fuel-save-result");
+    const originalDocument = byId("fuel-original-document");
+    let originalFrame = byId("fuel-pdf-preview");
+    const openOriginal = byId("fuel-open-original");
     const maxBytes = 10 * 1024 * 1024;
     const maxCheckBytes = 2 * 1024 * 1024;
     const maxSaveBytes = 512 * 1024;
@@ -36,10 +39,6 @@
     const knownCheckIssues = new Set([
         "truck_unavailable", "fuel_amount_out_of_range", "fuel_price_unusual",
         "possible_duplicate_upload", "possible_duplicate_fuel",
-    ]);
-    const dieselProducts = new Set([
-        "DIESEL", "KEYFUELS DIESEL", "UK FUELS DIESEL", "UK FUELS DIESEL (TP)",
-        "ESSO DIESEL", "DIESEL (SHELL)",
     ]);
     const issueLabels = {
         missing_transaction_registration: "No transaction registration in the source.",
@@ -71,6 +70,10 @@
     let saveGeneration = 0;
     let supplierProfiles = new Map();
     let reviewSupplierId = null;
+    let documentKind = "xlsx";
+    let documentPageCount = 0;
+    let documentUrl = null;
+    let visibleDocumentPage = null;
 
     function selectedSupplier() {
         return supplierProfiles.get(supplierInput.value) || null;
@@ -96,9 +99,15 @@
                         || !Array.isArray(profile.source_formats) || !profile.source_formats.length || profile.source_formats.length > 10
                         || !profile.source_formats.every((format) => typeof format === "string"
                             && /^[a-z0-9][a-z0-9-]{0,99}$/.test(format))
-                        || new Set(profile.source_formats).size !== profile.source_formats.length) throw new Error("invalid_suppliers");
+                        || new Set(profile.source_formats).size !== profile.source_formats.length
+                        || !Array.isArray(profile.diesel_products) || !profile.diesel_products.length || profile.diesel_products.length > 50
+                        || !profile.diesel_products.every((product) => typeof product === "string"
+                            && product.trim() && product.length <= 200)) throw new Error("invalid_suppliers");
+                const products = profile.diesel_products.map((product) => product.trim().replace(/\s+/g, " ").toUpperCase());
+                if (new Set(products).size !== products.length) throw new Error("invalid_suppliers");
                 choices.set(profile.id, Object.freeze({...profile,
-                    formats: Object.freeze([...profile.formats]), source_formats: Object.freeze([...profile.source_formats])}));
+                    formats: Object.freeze([...profile.formats]), source_formats: Object.freeze([...profile.source_formats]),
+                    diesel_products: Object.freeze(products)}));
             }
             if (!choices.has(root.dataset.defaultSupplierId)) throw new Error("invalid_suppliers");
             supplierProfiles = choices;
@@ -167,6 +176,9 @@
     }
 
     function resetPreview() {
+        releaseDocument();
+        documentKind = "xlsx";
+        documentPageCount = 0;
         reviewSupplierId = null;
         saveGeneration += 1;
         savePhase = "idle";
@@ -199,6 +211,41 @@
         if (controller) controller.abort();
         controller = null;
         setBusy(false);
+    }
+
+    function releaseDocument() {
+        originalFrame.removeAttribute("src");
+        openOriginal.removeAttribute("href");
+        originalDocument.open = false;
+        originalDocument.hidden = true;
+        if (documentUrl) URL.revokeObjectURL(documentUrl);
+        documentUrl = null;
+        visibleDocumentPage = null;
+    }
+
+    function prepareDocument(file) {
+        if (documentKind !== "pdf") return;
+        // File.type and filename are untrusted. A local viewer is always given
+        // an explicit PDF Blob, never uploaded HTML or another active type.
+        documentUrl = URL.createObjectURL(new Blob([file], {type: "application/pdf"}));
+        originalDocument.hidden = false;
+        openOriginal.href = `${documentUrl}#page=1&view=FitH`;
+    }
+
+    function showDocumentPage(page, scroll = false) {
+        if (!documentUrl || !Number.isInteger(page) || page < 1 || page > documentPageCount) return;
+        const url = `${documentUrl}#page=${page}&view=FitH`;
+        originalDocument.open = true;
+        // Native PDF viewers can ignore changes to only the URL fragment.
+        // A new frame gives each explicit page request a fresh viewer; it also
+        // works after the user has navigated within the viewer themselves.
+        const nextFrame = originalFrame.cloneNode(false);
+        nextFrame.src = url;
+        originalFrame.replaceWith(nextFrame);
+        originalFrame = nextFrame;
+        visibleDocumentPage = page;
+        openOriginal.href = url;
+        if (scroll) originalDocument.scrollIntoView({behavior: "smooth", block: "start"});
     }
 
     function parseHundredths(value, signed = false) {
@@ -291,7 +338,9 @@
 
     function unsupportedProduct(model) {
         const product = model.source.product.trim().replace(/\s+/g, " ").toUpperCase();
-        return model.source.issues.includes("unsupported_product") || !dieselProducts.has(product);
+        const supplier = reviewSupplier();
+        return model.source.issues.includes("unsupported_product") || !supplier
+            || !supplier.diesel_products.includes(product);
     }
 
     function needsReview(model) {
@@ -351,18 +400,29 @@
         const cell = node("td");
         cell.colSpan = 5;
         const box = node("section", "fuel-import-original");
-        const heading = node("h3", "", `Original spreadsheet row ${source.source_row}`);
+        const pdf = documentKind === "pdf";
+        const heading = node("h3", "", pdf
+            ? `Original transaction ${source.source_row} · page ${source.source_page}`
+            : `Original spreadsheet row ${source.source_row}`);
         const list = node("dl");
         addOriginalField(list, "Purchase date", source.transaction_date);
         addOriginalField(list, "Time", source.transaction_time);
-        addOriginalField(list, "Tran VRN", source.transaction_registration);
-        addOriginalField(list, "Card VRN", source.card_registration);
-        addOriginalField(list, "Card Type / network", source.card_type);
+        addOriginalField(list, pdf ? "Registration" : "Tran VRN", source.transaction_registration);
+        if (!pdf) {
+            addOriginalField(list, "Card VRN", source.card_registration);
+            addOriginalField(list, "Card Type / network", source.card_type);
+        }
         addOriginalField(list, "Product", source.product);
         addOriginalField(list, "Quantity (litres)", source.quantity);
-        addOriginalField(list, "Cost (£)", source.cost);
+        addOriginalField(list, pdf ? "PRICE / cost before VAT (£)" : "Cost (£)", source.cost);
         addOriginalField(list, "Unit Price (£/litre)", source.unit_price);
         box.append(heading, list);
+        if (pdf) {
+            const pageButton = node("button", "fuel-import-text-button", `View invoice page ${source.source_page}`);
+            pageButton.type = "button";
+            pageButton.addEventListener("click", () => showDocumentPage(source.source_page, true));
+            box.append(pageButton);
+        }
         cell.append(box);
         originalRow.append(cell);
         sourceButton.setAttribute("aria-controls", originalRow.id);
@@ -370,7 +430,10 @@
         sourceButton.addEventListener("click", () => {
             originalRow.hidden = !originalRow.hidden;
             sourceButton.setAttribute("aria-expanded", String(!originalRow.hidden));
-            sourceButton.textContent = `${originalRow.hidden ? "Original" : "Hide original"} row ${source.source_row}`;
+            sourceButton.textContent = pdf
+                ? `${originalRow.hidden ? "Original" : "Hide original"} transaction ${source.source_row} · page ${source.source_page}`
+                : `${originalRow.hidden ? "Original" : "Hide original"} row ${source.source_row}`;
+            if (pdf && !originalRow.hidden) showDocumentPage(source.source_page);
         });
         return originalRow;
     }
@@ -457,7 +520,8 @@
         const sourceCell = node("td");
         sourceCell.append(node("span", "fuel-import-source-registration", source.transaction_registration || "No registration"));
         sourceCell.append(node("span", "fuel-import-source-meta", [source.product, source.card_type].filter(Boolean).join(" · ")));
-        const sourceButton = node("button", "fuel-import-text-button fuel-import-original-button", `Original row ${source.source_row}`);
+        const sourceButton = node("button", "fuel-import-text-button fuel-import-original-button", documentKind === "pdf"
+            ? `Original transaction ${source.source_row} · page ${source.source_page}` : `Original row ${source.source_row}`);
         sourceButton.type = "button";
         sourceCell.append(sourceButton);
         for (const issue of source.issues) {
@@ -666,7 +730,7 @@
             confirmation.type = "checkbox";
             confirmation.id = `fuel-review-confirm-${model.source.source_row}`;
             confirmation.checked = model.reviewConfirmed;
-            confirmation.setAttribute("aria-label", `I checked this entry against the spreadsheet, row ${model.source.source_row}`);
+            confirmation.setAttribute("aria-label", `I checked this entry against the document, row ${model.source.source_row}`);
             confirmation.addEventListener("change", () => {
                 if (editingLocked()) return;
                 model.reviewConfirmed = confirmation.checked;
@@ -674,7 +738,7 @@
                 updateRowChecks(model);
                 updateSaveState();
             });
-            label.append(confirmation, node("span", "", "I checked this entry against the spreadsheet"));
+            label.append(confirmation, node("span", "", "I checked this entry against the document"));
             cell.append(label);
         }
         for (const error of model.serverErrors) {
@@ -834,12 +898,18 @@
                 || !Array.isArray(data.trucks) || !data.rows.length || data.rows.length > 10000
                 || data.trucks.length > 10000) return false;
         const report = data.report;
+        const kind = report.document_kind === undefined ? "xlsx" : report.document_kind;
         if (report.supplier_id !== supplier.id || !supplier.source_formats.includes(report.source_format)
                 || report.fuel_card_name !== supplier.label || !validString(report.sheet_name)
                 || !Number.isInteger(report.header_row) || report.header_row < 1
                 || report.transaction_count !== data.rows.length || !report.totals
+                || !["xlsx", "pdf"].includes(kind) || !supplier.formats.includes(kind)
                 || parseHundredths(report.totals.quantity, true) === null
                 || parseHundredths(report.totals.cost, true) === null) return false;
+        if (kind === "pdf" && (!Number.isInteger(report.page_count) || report.page_count < 1 || report.page_count > 20
+                || !report.printed_totals
+                || parseHundredths(report.printed_totals.quantity, true) !== parseHundredths(report.totals.quantity, true)
+                || parseHundredths(report.printed_totals.cost, true) !== parseHundredths(report.totals.cost, true))) return false;
         const ids = new Set();
         for (const truck of data.trucks) {
             if (!truck || !Number.isSafeInteger(truck.id) || truck.id <= 0 || ids.has(truck.id)
@@ -865,6 +935,8 @@
                     || !(source.truck_id === null || ids.has(source.truck_id))
                     || !Array.isArray(source.candidate_truck_ids)
                     || !source.candidate_truck_ids.every((id) => ids.has(id))) return false;
+            if (kind === "pdf" && (!Number.isInteger(source.source_page) || source.source_page < 1
+                    || source.source_page > report.page_count)) return false;
             sourceRows.add(source.source_row);
             quantity += parseHundredths(source.quantity, true);
             cost += parseHundredths(source.cost, true);
@@ -873,9 +945,12 @@
             && cost === parseHundredths(report.totals.cost, true);
     }
 
-    function showPreview(data, supplier) {
+    function showPreview(data, supplier, file) {
         if (selectedSupplier()?.id !== supplier.id || !validPayload(data, supplier)) throw new Error("invalid_preview");
         reviewSupplierId = supplier.id;
+        documentKind = data.report.document_kind || "xlsx";
+        documentPageCount = documentKind === "pdf" ? data.report.page_count : 0;
+        prepareDocument(file);
         trucks = data.trucks;
         truckIds = new Set(trucks.map((truck) => truck.id));
         rows = data.rows.map((source) => {
@@ -892,8 +967,11 @@
             if (!model.included) model.truckId = null;
             return model;
         });
-        byId("fuel-report-description").textContent = `${data.report.fuel_card_name} · ${data.report.sheet_name} · ${data.rows.length} ${data.rows.length === 1 ? "transaction" : "transactions"}`;
-        byId("fuel-source-totals").textContent = `Spreadsheet totals (calculated): ${displayHundredths(parseHundredths(data.report.totals.quantity, true))} L · £${displayHundredths(parseHundredths(data.report.totals.cost, true))}`;
+        const reportLabel = documentKind === "pdf" ? `${data.report.fuel_card_name} invoice`
+            : `${data.report.fuel_card_name} · ${data.report.sheet_name}`;
+        byId("fuel-report-description").textContent = `${reportLabel} · ${data.rows.length} ${data.rows.length === 1 ? "transaction" : "transactions"}`;
+        const sourceTotalLabel = documentKind === "pdf" ? "Invoice totals before VAT (all products)" : "Spreadsheet totals (calculated)";
+        byId("fuel-source-totals").textContent = `${sourceTotalLabel}: ${displayHundredths(parseHundredths(data.report.totals.quantity, true))} L · £${displayHundredths(parseHundredths(data.report.totals.cost, true))}`;
         page = 0;
         renderPage();
         updateSummary();
@@ -1112,7 +1190,7 @@
                 status.textContent = "";
                 return;
             }
-            showPreview(data, supplier);
+            showPreview(data, supplier, upload);
             status.textContent = "Document read. Review the entries below.";
         } catch (error) {
             if (generation !== currentGeneration || error.name === "AbortError") return;
@@ -1165,6 +1243,10 @@
         status.textContent = "";
         clearError();
         setBusy(false);
+    });
+
+    originalDocument.addEventListener("toggle", () => {
+        if (originalDocument.open && documentUrl && visibleDocumentPage === null) showDocumentPage(1);
     });
 
     initialiseSuppliers();

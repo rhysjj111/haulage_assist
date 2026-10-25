@@ -5,10 +5,10 @@ from sqlalchemy import insert, select, tuple_
 
 from haulage_app import db
 from haulage_app.fuel.import_checks import (
-    FUEL_CARD_NAME, LOOKUP_PAIR_CHUNK, ImportCheckInputError, _display_hundredths,
+    LOOKUP_PAIR_CHUNK, ImportCheckInputError, _display_hundredths,
     _validated_rows, check_fuel_for_preview,
 )
-from haulage_app.fuel.xlsx_reader import _DIESEL_PRODUCTS
+from haulage_app.fuel.import_profiles import get_supplier
 from haulage_app.models import Day, Fuel, Truck
 from haulage_app.verification.models import MissingEntryAnomaly, TableName
 
@@ -47,7 +47,7 @@ def _review_error(errors):
     )
 
 
-def _validated_batch(payload):
+def _validated_batch(payload, supplier):
     if (not isinstance(payload, dict) or set(payload) != {"rows"}
             or not isinstance(payload["rows"], list)
             or not 1 <= len(payload["rows"]) <= MAX_SAVE_ROWS):
@@ -74,7 +74,7 @@ def _validated_batch(payload):
     for row in rows:
         source = metadata[row.source_row]
         product = " ".join(source["product"].split()).upper()
-        if product not in _DIESEL_PRODUCTS or "unsupported_product" in source["source_issues"]:
+        if product not in supplier.diesel_products or "unsupported_product" in source["source_issues"]:
             errors.append(_row_error(row, "product", "unsupported_product",
                 "This product cannot be imported as diesel. Exclude this row."))
         if not 100 < row.quantity < 100_000:
@@ -88,14 +88,14 @@ def _validated_batch(payload):
     return rows, metadata, base
 
 
-def _database_review(rows, metadata, base):
+def _database_review(rows, metadata, base, supplier):
     truck_ids = sorted({row.truck_id for row in rows})
     # Serialize importer batches for these trucks before the final duplicate
     # lookup. Legacy manual forms do not provide a global uniqueness guarantee.
     db.session.execute(select(Truck.id).where(Truck.id.in_(truck_ids))
         .order_by(Truck.id).with_for_update()).all()
     try:
-        checked = check_fuel_for_preview(base)
+        checked = check_fuel_for_preview(base, supplier.id)
     except ImportCheckInputError as error:
         raise ImportSaveError(error.code, str(error), status=error.status) from None
 
@@ -165,27 +165,28 @@ def _rectify_missing_fuel(pairs):
             db.session.delete(anomaly)
 
 
-def save_reviewed_fuel(payload):
+def save_reviewed_fuel(payload, supplier_id=None):
     """Save a reviewed batch once, or roll back every mutation on failure.
 
     Exact duplicate candidates cannot be overridden by a confirmation flag.
     This protects importer retries without changing the legacy Fuel schema.
     Purchase amounts remain exact integer hundredths through the Core insert.
     """
-    rows, metadata, base = _validated_batch(payload)
+    supplier = get_supplier(supplier_id)
+    rows, metadata, base = _validated_batch(payload, supplier)
     if db.session.new or db.session.dirty or db.session.deleted:
         # Preserve unrelated pending ORM work: do not commit or roll it back.
         raise ImportSaveError("save_unavailable", "The batch could not be saved. Please try again.", status=409)
     try:
         with db.session.no_autoflush:
-            _database_review(rows, metadata, base)
+            _database_review(rows, metadata, base, supplier)
             pairs = sorted({row.pair for row in rows})
             day_links = _day_links(pairs)
             saved = []
             for row in rows:
                 entry_id = db.session.execute(insert(Fuel.__table__).values(
                     date=row.date, truck_id=row.truck_id, day_id=day_links[row.pair],
-                    fuel_card_name=FUEL_CARD_NAME, fuel_volume=row.quantity, fuel_cost=row.cost,
+                    fuel_card_name=supplier.label, fuel_volume=row.quantity, fuel_cost=row.cost,
                 ).returning(Fuel.id)).scalar_one()
                 saved.append({"source_row": row.source_row, "truck_id": row.truck_id,
                     "date": row.date.isoformat(), "id": entry_id,

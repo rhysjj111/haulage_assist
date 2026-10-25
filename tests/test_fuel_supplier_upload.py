@@ -8,7 +8,6 @@ from sqlalchemy import select
 
 from owner_test_support import OwnerTestCase, db
 from fuel_xlsx_fixtures import transactions_xlsx
-from haulage_app.fuel.import_profiles import FuelImportSupplier
 from haulage_app.fuel.xlsx_reader import read_fuel_store_transactions_xlsx
 from haulage_app.models import Fuel
 
@@ -85,13 +84,17 @@ class FuelSupplierUploadTests(OwnerTestCase):
                          ["fuel-import-supplier"])
         self.assertEqual(context["default_supplier_id"], SUPPLIER)
         profiles = context["supplier_profiles"]
-        self.assertEqual(len(profiles), 1)
+        self.assertEqual({profile["id"] for profile in profiles}, {"the-fuel-store", "silvey"})
         self.assertEqual(profiles[0]["id"], SUPPLIER)
         self.assertEqual(profiles[0]["label"], "The Fuel Store")
         self.assertEqual(list(profiles[0]["formats"]), ["xlsx"])
         self.assertEqual(list(profiles[0]["source_formats"]),
                          ["fuel-store-transactions-xlsx-v1"])
         self.assertTrue(profiles[0]["help_text"])
+        silvey = next(profile for profile in profiles if profile["id"] == "silvey")
+        self.assertEqual(silvey["label"], "Silvey")
+        self.assertEqual(list(silvey["formats"]), ["pdf"])
+        self.assertIn("DERV", silvey["diesel_products"])
         self.assertEqual(context["read_url"], READ)
         self.assert_private(response)
 
@@ -172,7 +175,7 @@ class FuelSupplierUploadTests(OwnerTestCase):
         with patch(WORKER) as worker, patch(CHECKER) as checker, patch(SAVER) as saver, \
                 patch.object(db.session, "query", side_effect=AssertionError("unexpected lookup")), \
                 patch.object(db.session, "commit", side_effect=AssertionError("unexpected commit")):
-            for supplier in ("", " ", "silvey", "THE-FUEL-STORE", "private-supplier-value", "../supplier"):
+            for supplier in ("", " ", "unknown-supplier", "THE-FUEL-STORE", "private-supplier-value", "../supplier"):
                 for endpoint, content, mimetype in (
                     (READ, transactions_xlsx(), "application/octet-stream"),
                     (CHECK, '{"rows":[]}', "application/json"),
@@ -208,28 +211,24 @@ class FuelSupplierUploadTests(OwnerTestCase):
                          ("The Fuel Store", 14327, 18625))
         self.assert_private(save)
 
-    def test_future_registered_reader_cannot_reuse_current_supplier_financial_services(self):
+    def test_registered_supplier_is_forwarded_to_its_financial_services(self):
         token = self.token()
-        future = FuelImportSupplier(
-            id="fictional-supplier", label="Fictional supplier", help_text="Fictional document",
-            formats=("pdf",), source_formats=("fictional-transactions-pdf-v1",),
-        )
         before = self.snapshot()
-        with patch("haulage_app.fuel.import_routes.get_supplier", return_value=future), \
-                patch(CHECKER) as checker, patch(SAVER) as saver, \
+        with patch(CHECKER, return_value={"fuel_card_name": "Silvey", "rows": []}) as checker, \
+                patch(SAVER, return_value={"saved_count": 1, "fuel_entries": []}) as saver, \
                 patch.object(db.session, "commit", side_effect=AssertionError("unexpected commit")):
             for endpoint, row in ((CHECK, selected()), (SAVE, reviewed())):
                 with self.subTest(endpoint=endpoint):
                     response = self.client.post(
                         endpoint, json={"rows": [row]},
-                        headers=self.headers(supplier=future.id, token=token),
+                        headers=self.headers(supplier="silvey", token=token),
                     )
-                    self.assertEqual(response.status_code, 400, response.text)
-                    self.assertEqual(response.get_json()["error"]["code"], "supplier_unavailable")
-                    self.assertNotIn("rows", response.get_json())
+                    self.assertEqual(response.status_code, 200 if endpoint == CHECK else 201, response.text)
                     self.assert_private(response)
-            checker.assert_not_called()
-            saver.assert_not_called()
+            for service, row in ((checker, selected()), (saver, reviewed())):
+                self.assertEqual(service.call_count, 1)
+                self.assertEqual(service.call_args.args[0], {"rows": [row]})
+                self.assertEqual(service.call_args.kwargs.get("supplier_id"), "silvey")
         self.assertEqual(self.snapshot(), before)
 
     def test_missing_supplier_header_keeps_the_existing_upload_contract(self):

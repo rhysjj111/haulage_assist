@@ -1,7 +1,8 @@
-# The Fuel Store spreadsheet import
+# Fuel document import
 
-Read **The Fuel Store's Transactions `.xlsx` export**, review its purchases,
-then explicitly save the selected fuel entries. Reading and checking do not
+Read **The Fuel Store's Transactions export** or a supported **Silvey digital
+PDF invoice**, review its purchases, then explicitly save the selected fuel entries.
+Reading and checking do not
 write business records; Save adds the reviewed batch in one transaction. There
 is no truck creation, document archive or AI service. The supplied workbook is
 private and is not a repository fixture.
@@ -9,8 +10,12 @@ private and is not a repository fixture.
 The user confirmed **The Fuel Store** as the supplier and **Cost** as the amount
 normally entered in the app. Card Type contains different networks, so it does
 not determine the app's fuel-card supplier.
+For **Silvey**, the confirmed fuel-cost column is transaction **PRICE**, before
+the separately listed VAT. AdBlue stays visible but excluded from diesel saving.
 
 ## Confirmed field mapping
+
+The Fuel Store Transactions export:
 
 | Spreadsheet column | Meaning for the app |
 | --- | --- |
@@ -20,6 +25,17 @@ not determine the app's fuel-card supplier.
 | Cost | Fuel cost, copied directly without a VAT adjustment |
 | Card Type | Source network/card-type information for review |
 | Card VRN | Additional registration evidence; flag disagreements |
+
+Silvey digital invoice:
+
+| Invoice column | Meaning for the app |
+| --- | --- |
+| DATE | Purchase date, resolved against the printed invoice date |
+| TIME | Source purchase time for comparison |
+| REG. | Proposed truck registration |
+| LITRES | Exact printed litres |
+| PRICE | Exact transaction cost before VAT; this is not a unit price |
+| PRODUCT | DERV is diesel; AdBlue and other unsupported products stay excluded |
 
 All rows use the supplier label **The Fuel Store**, including transactions whose
 Card Type says Esso, Shell or UK Fuels. The reader itself does not match
@@ -91,8 +107,9 @@ rather than running ZIP/XML processing directly in the Flask process.
 ## Upload and editable review
 
 Open **Add Fuel → Import fuel**, or `/fuel/import`. Select the
-supplier, choose their document and click **Read document**. The Fuel Store is
-the currently enabled supplier and uses its Transactions export. The preview contains every
+supplier, choose their document and click **Read document**. The Fuel Store uses
+its Transactions export; Silvey uses the recognised digital invoice layout.
+The preview contains every
 source row, its purchase date, proposed truck, litres and cost. Each row has an
 original-row expansion with the extracted values, both registrations, source
 time, network, product and unit price. This is an extracted comparison, not an
@@ -113,8 +130,8 @@ no separate Include checkbox.
 Users can edit the purchase date, truck, litres and cost, or exclude a row.
 Unmatched/conflicting rows, unsupported products and nonpositive amounts start
 excluded but remain visible with their source issues. Source details and flags
-remain unchanged when review fields are edited. The supplier stays **The Fuel
-Store**; network values do not change it. Dates may span several payroll weeks.
+remain unchanged when review fields are edited. The supplier stays the selected
+profile's canonical label; network values do not change it. Dates may span several payroll weeks.
 
 Displayed source totals are calculated sums of the extracted rows. Selected
 totals use edited values and exact integer hundredths. Local field feedback
@@ -129,8 +146,8 @@ neither reading nor editing creates fuel entries. Source documents and review
 drafts are not stored in browser storage, session cookies or an upload archive.
 Cancelling the file chooser preserves the current draft on both import pages.
 The common **Read document**, **Clear**, **Recheck entries** and saved-history
-actions do not change which file layouts each reader supports: only the
-recognised Fuel Store Transactions spreadsheet is currently enabled.
+actions do not change which file layouts each reader supports: the recognised
+Fuel Store spreadsheet and Silvey digital invoice are enabled.
 
 ## One upload for supplier documents
 
@@ -148,13 +165,13 @@ The route retains the existing XLSX/PDF MIME labels as accepted transports.
 Missing supplier headers default to The Fuel Store for existing clients;
 explicit unknown or empty IDs fail before parsing, querying or saving.
 
-XLSX goes through the existing isolated reader. A recognised PDF currently
-receives a fixed message explaining that its layout is not set up yet; it is
-not sent through an untested parser or AI service. Read results identify the
+XLSX and PDF go through their selected supplier's isolated reader. Unsupported
+supplier/format combinations receive a fixed message. Read results identify the
 supplier, and the page validates that identity, label and source format before
-showing rows. Check and Save also send and validate the supplier ID. Current
-financial services explicitly accept only The Fuel Store, so adding a future
-reader cannot silently save another supplier's records under that label.
+showing rows. Check and Save also send and validate the supplier ID. Financial
+services use the selected profile's supplier label and diesel-product list for
+duplicate matching, confirmations and inserts; one supplier's rows cannot be
+silently relabelled as another supplier through a hardcoded default.
 
 Changing supplier clears the chosen document, review and confirmations, and
 cancels pending reads/checks. Late replies cannot restore a previous supplier's
@@ -176,6 +193,18 @@ output cap while reading; failed/timed-out children are killed and reaped. The
 parent validates the complete bounded result before exposing rows. Unsupported
 resource controls fail closed. This follows the supported Linux preview and
 Heroku runtime rather than providing an unbounded fallback on other platforms.
+
+`silvey_processing.read_silvey_pdf_isolated` uses the same limits in a separate
+standalone worker. Both PDF text extraction and semantic invoice parsing happen
+inside that child. The parent validates the returned complete report, PDF page
+references, exact amounts, supplier identity and reconciled totals.
+
+For Silvey, original transaction details include the actual PDF page. The local
+**Original invoice** viewer opens a PDF-typed Blob made from the chosen file;
+page links select the matching source page. Nothing is fetched from an external
+viewer or stored on the server. Clear, file/supplier changes and leaving the
+page revoke the object URL. Source invoice totals include all products before
+VAT, while selected totals include only rows selected for diesel saving.
 
 ## Checks on the current selection
 
@@ -271,11 +300,12 @@ manual fuel form and owner-analysis calculations retain their current behavior.
 
 ## Validation
 
-Tests create fictional `.xlsx` files in memory. Run them from the repository
+Tests create fictional `.xlsx` and PDF files in memory. Run them from the repository
 root:
 
 ```bash
 python3 -m unittest discover -s tests -p 'test_fuel_*.py' -v
+python3 -m unittest discover -s tests -p 'test_silvey_*.py' -v
 ```
 
 The supplied sample is checked privately against the original workbook data;
@@ -286,7 +316,7 @@ on a private Unix socket. Set `FUEL_TEST_POSTGRES_BIN` to the PostgreSQL binary
 directory to test real locking, exact inserts and full transaction rollback.
 It refuses configured application database targets and never contacts Heroku.
 
-## Next supplier mapping: Silvey
+## Silvey reader and reconciliation
 
 The supplied Silvey sample is a digital PDF with transaction-level DATE, REG.,
 LITRES and PRICE fields. The user confirmed PRICE directly as fuel cost before
@@ -294,6 +324,21 @@ the separately listed VAT, with AdBlue excluded from diesel saving. PRICE is an
 extended transaction cost, not a unit price. Diesel purchase amounts and litres
 reconcile to the invoice/card/product summaries in the private sample review.
 
-This mapping is recorded for the next reader; Silvey PDF import is not enabled
-in this upload-only stage. The source PDF, extracted text, registrations, card
-numbers and invoice/customer details remain outside the repository.
+The parser recognises the supplied digital layout, retains transactions across
+page/card continuations, and checks every card total, transaction Grand Total
+and product/unit-price summary. Litres and PRICE use the printed decimal tokens
+directly; the summary rate is additional comparison evidence, never a substitute
+for PRICE. Incomplete, ambiguous or mismatching tables fail without returning a
+partial batch. Two-digit purchase years are anchored to the printed invoice
+date, including a previous-year purchase on a January invoice.
+
+DERV/DIESEL are eligible under the Silvey profile. AdBlue remains visible and
+excluded by default, and cannot be saved as diesel even after confirmation.
+Scans/photos, password protection and unrecognised invoice layouts are not
+supported by this deterministic reader. PDF limits are 10 MiB, 20 pages and
+250,000 extracted characters.
+
+The source PDF, extracted text, registrations, card numbers and invoice/customer
+details remain outside the repository. An independent private extraction is
+compared with the reader and worker without putting actual source values in
+tests or Git.

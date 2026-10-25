@@ -38,13 +38,8 @@ def _normalise_registration(value):
     return "".join((value or "").split()).upper()
 
 
-def _request_supplier(*, review=False):
-    supplier = get_supplier(request.headers.get("X-Fuel-Supplier"))
-    # The current financial services save The Fuel Store entries. Registering
-    # a future reader must not silently reuse that supplier's checks or saver.
-    if review and supplier.id != DEFAULT_SUPPLIER_ID:
-        raise FuelDocumentError("supplier_unavailable")
-    return supplier
+def _request_supplier():
+    return get_supplier(request.headers.get("X-Fuel-Supplier"))
 
 
 def _preview_payload(report, supplier):
@@ -91,7 +86,7 @@ def _preview_payload(report, supplier):
             "match_status": status,
             "candidate_truck_ids": candidates,
         })
-    return {
+    payload = {
         "report": {
             "supplier_id": supplier.id,
             "source_format": report.source_format,
@@ -107,6 +102,18 @@ def _preview_payload(report, supplier):
         "trucks": choices,
         "rows": rows,
     }
+    if report.document_kind == "pdf":
+        payload["report"].update({
+            "document_kind": "pdf",
+            "page_count": report.page_count,
+            "printed_totals": {
+                "quantity": format(report.printed_total_quantity, ".2f"),
+                "cost": format(report.printed_total_cost, ".2f"),
+            },
+        })
+        for proposed, source in zip(payload["rows"], report.rows):
+            proposed["source_page"] = source.source_page
+    return payload
 
 
 @fuel_bp.route("/import", methods=["GET"])
@@ -139,6 +146,8 @@ def read_import_document():
 
     from haulage_app.fuel.xlsx_processing import FuelXLSXProcessingError
     from haulage_app.fuel.xlsx_reader import FuelXLSXError
+    from haulage_app.fuel.silvey_reader import SilveyPDFError
+    from haulage_app.fuel.silvey_processing import SilveyPDFProcessingError
 
     if request.mimetype not in DOCUMENT_MIMETYPES:
         return _error("unsupported_media_type", "Choose a document from the selected supplier.", 415)
@@ -163,6 +172,11 @@ def read_import_document():
         return _error(error.code, str(error), status)
     except FuelXLSXProcessingError as error:
         return _error(error.code, str(error), 503)
+    except SilveyPDFError as error:
+        status = 413 if error.code == "too_large" else 503 if error.code == "reader_unavailable" else 422
+        return _error(error.code, str(error), status)
+    except SilveyPDFProcessingError as error:
+        return _error(error.code, str(error), 503)
     except SQLAlchemyError:
         return _error("preview_unavailable", "Truck choices could not be loaded. Please try again.", 503)
     except Exception:
@@ -181,7 +195,7 @@ def check_import_preview():
             return _error("csrf_failed", "Refresh this page and choose the document again.", 403)
 
     try:
-        _request_supplier(review=True)
+        supplier = _request_supplier()
     except FuelDocumentError as error:
         return _error(error.code, str(error), error.status)
 
@@ -201,7 +215,7 @@ def check_import_preview():
     except (ValueError, UnicodeError, RecursionError):
         return _error("invalid_check", "Choose valid fuel entries to check.", 400)
     try:
-        result = check_fuel_for_preview(payload)
+        result = check_fuel_for_preview(payload, supplier_id=supplier.id)
     except ImportCheckInputError as error:
         return _error(error.code, str(error), error.status)
     except Exception:
@@ -220,7 +234,7 @@ def save_import_fuel():
             return _error("csrf_failed", "Refresh this page and choose the document again.", 403)
 
     try:
-        _request_supplier(review=True)
+        supplier = _request_supplier()
     except FuelDocumentError as error:
         return _error(error.code, str(error), error.status)
 
@@ -238,7 +252,7 @@ def save_import_fuel():
     except (ValueError, UnicodeError, RecursionError):
         return _error("invalid_save", "Choose valid reviewed fuel entries to save.", 400)
     try:
-        result = save_reviewed_fuel(payload)
+        result = save_reviewed_fuel(payload, supplier_id=supplier.id)
     except ImportSaveError as error:
         response = jsonify(error={"code": error.code, "message": str(error)}, row_errors=error.row_errors)
         response.status_code = error.status

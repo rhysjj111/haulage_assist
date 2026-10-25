@@ -78,6 +78,7 @@ class FuelTransaction:
     cost: Decimal
     unit_price: Decimal
     issues: tuple[str, ...]
+    source_page: int | None = None
 
 
 @dataclass(frozen=True)
@@ -87,6 +88,10 @@ class FuelTransactionsReport:
     rows: tuple[FuelTransaction, ...]
     source_format: str = "fuel-store-transactions-xlsx-v1"
     fuel_card_name: str = "The Fuel Store"
+    document_kind: str = "xlsx"
+    page_count: int | None = None
+    printed_total_quantity: Decimal | None = None
+    printed_total_cost: Decimal | None = None
 
     @property
     def calculated_total_quantity(self):

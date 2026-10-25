@@ -16,7 +16,7 @@ WORKER = "haulage_app.fuel.xlsx_processing.read_fuel_store_xlsx_isolated"
 
 
 class FuelImportProfilesTests(TestCase):
-    def test_only_current_supported_supplier_is_available_and_default_is_immutable(self):
+    def test_supported_supplier_profiles_and_default_are_immutable(self):
         supplier = import_profiles.get_supplier()
         self.assertEqual(supplier.id, "the-fuel-store")
         self.assertEqual(import_profiles.DEFAULT_SUPPLIER_ID, supplier.id)
@@ -24,13 +24,19 @@ class FuelImportProfilesTests(TestCase):
         self.assertEqual(supplier.formats, ("xlsx",))
         self.assertEqual(supplier.source_formats, ("fuel-store-transactions-xlsx-v1",))
         self.assertIs(import_profiles.get_supplier("the-fuel-store"), supplier)
+        silvey = import_profiles.get_supplier("silvey")
+        self.assertEqual(silvey.label, "Silvey")
+        self.assertEqual(silvey.formats, ("pdf",))
+        self.assertEqual(silvey.source_formats, ("silvey-fuel-invoice-pdf-v1",))
+        self.assertIn("DERV", silvey.diesel_products)
+        self.assertNotIn("ADBLUE", silvey.diesel_products)
         with self.assertRaises(FrozenInstanceError):
             supplier.label = "Other supplier"
 
     def test_public_metadata_is_safe_json_and_mutating_it_does_not_change_registry(self):
         choices = import_profiles.supplier_choices()
-        self.assertEqual(len(choices), 1)
-        self.assertEqual(set(choices[0]), {"id", "label", "help_text", "formats", "source_formats"})
+        self.assertEqual({choice["id"] for choice in choices}, {"the-fuel-store", "silvey"})
+        self.assertEqual(set(choices[0]), {"id", "label", "help_text", "formats", "source_formats", "diesel_products"})
         self.assertEqual(json.loads(json.dumps(choices)), choices)
         self.assertNotIn("pdf", choices[0]["formats"])
         choices[0]["formats"].append("pdf")
@@ -43,7 +49,7 @@ class FuelImportProfilesTests(TestCase):
 
     def test_explicit_missing_unknown_or_wrong_type_supplier_is_not_guessed(self):
         invalid = ("", " ", "THE-FUEL-STORE", "the-fuel-store ", "The Fuel Store",
-                   "silvey", "private-account-value", 1, True, [], {})
+                   "unknown-supplier", "private-account-value", 1, True, [], {})
         for value in invalid:
             with self.subTest(value_type=type(value).__name__), patch(WORKER) as worker:
                 with self.assertRaises(import_profiles.FuelDocumentError) as raised:
@@ -72,7 +78,7 @@ class FuelImportProfilesTests(TestCase):
                     import_profiles.read_fuel_document(content)
                 self.assertEqual(raised.exception.code, "format_unavailable")
                 self.assertEqual(raised.exception.status, 422)
-                self.assertIn("PDF layout is not set up yet", str(raised.exception))
+                self.assertTrue(str(raised.exception))
                 self.assertNotIn("private-source-value", str(raised.exception))
                 worker.assert_not_called()
 

@@ -48,7 +48,7 @@
             </div>
             <p id="fuel-source-totals" class="fuel-import-source-totals"></p>
         </div>
-        <p class="fuel-import-muted">Choose a truck to include an entry, or Exclude to leave it out. Open the original row to compare.</p>
+        <p class="fuel-import-muted">Choose a truck to include an entry, or Exclude to leave it out. Open the original details to compare.</p>
         <p id="fuel-selection-summary" class="fuel-import-selection" aria-live="polite"></p>
         <div class="fuel-import-check-state">
             <p id="fuel-check-status" role="status" aria-live="polite"></p>
@@ -81,6 +81,14 @@
             <p id="fuel-save-status" class="fuel-import-muted" role="status" aria-live="polite"></p>
         </div>
         <div id="fuel-save-result" class="fuel-import-save-result" role="status" hidden></div>
+        <details id="fuel-original-document" class="fuel-import-document" hidden>
+            <summary>Original invoice</summary>
+            <div class="fuel-import-document-heading">
+                <p class="fuel-import-muted">Use the page links beside a transaction to compare it with the invoice.</p>
+                <a id="fuel-open-original" target="_blank" rel="noopener noreferrer">Open original</a>
+            </div>
+            <iframe id="fuel-pdf-preview" title="Original fuel invoice" referrerpolicy="no-referrer"></iframe>
+        </details>
     </section>
     <noscript><p class="fuel-import-error">Enable JavaScript to upload and review a fuel document.</p></noscript>
 </section>

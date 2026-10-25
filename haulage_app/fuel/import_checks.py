@@ -9,6 +9,7 @@ from flask import url_for
 from sqlalchemy import tuple_
 
 from haulage_app import db
+from haulage_app.fuel.import_profiles import get_supplier
 from haulage_app.models import Fuel, Truck
 from haulage_app.owner_analysis.policy import (
     FUEL_PRICE_MAX_PENCE_PER_LITRE,
@@ -56,7 +57,10 @@ class _SelectedFuelRow:
 
     @property
     def signature(self):
-        return self.truck_id, self.date, _PROVIDER, self.quantity, self.cost
+        return self.signature_for(_PROVIDER)
+
+    def signature_for(self, provider):
+        return self.truck_id, self.date, provider, self.quantity, self.cost
 
 
 def _hundredths(value):
@@ -106,7 +110,7 @@ def _validated_rows(payload):
     return rows
 
 
-def _database_context(rows):
+def _database_context(rows, provider=_PROVIDER):
     """Bound lookups by exact truck/date pairs and total returned records."""
     truck_ids = sorted({row.truck_id for row in rows})
     available = set()
@@ -142,7 +146,7 @@ def _database_context(rows):
                 entries_by_pair[(entry.truck_id, entry.date)].append({
                     "id": entry.id,
                     "fuel_card_name": entry.fuel_card_name,
-                    "same_supplier": normalize_fuel_provider(entry.fuel_card_name) == _PROVIDER,
+                    "same_supplier": normalize_fuel_provider(entry.fuel_card_name) == provider,
                     "quantity": _display_hundredths(entry.fuel_volume),
                     "cost": _display_hundredths(entry.fuel_cost),
                     "review_url": url_for("fuel.add_fuel", item_id=entry.id, tab="edit"),
@@ -154,19 +158,21 @@ def _database_context(rows):
     return available, entries_by_pair, signatures
 
 
-def check_fuel_for_preview(payload):
+def check_fuel_for_preview(payload, supplier_id=None):
     """Check the current selection without changing, saving or excluding it.
 
     Matching purchase details are candidates, not proof of a duplicate: the
     legacy Fuel model has no invoice transaction ID or purchase time. Different
     fills on the same truck/date are context rather than duplicate warnings.
     """
+    supplier = get_supplier(supplier_id)
+    provider = normalize_fuel_provider(supplier.label)
     rows = _validated_rows(payload)
-    available, existing_by_pair, stored_signatures = _database_context(rows)
+    available, existing_by_pair, stored_signatures = _database_context(rows, provider)
     by_signature = defaultdict(list)
     for row in rows:
         if row.truck_id in available and row.quantity > 0 and row.cost > 0:
-            by_signature[row.signature].append(row.source_row)
+            by_signature[row.signature_for(provider)].append(row.source_row)
     duplicate_groups = sorted(
         ({"source_rows": sorted(source_rows)} for source_rows in by_signature.values()
          if len(source_rows) > 1),
@@ -188,7 +194,7 @@ def check_fuel_for_preview(payload):
             issues.append("fuel_price_unusual")
         if row.source_row in duplicated_rows:
             issues.append("possible_duplicate_upload")
-        if row.truck_id in available and row.signature in stored_signatures:
+        if row.truck_id in available and row.signature_for(provider) in stored_signatures:
             issues.append("possible_duplicate_fuel")
         checked.append({
             "source_row": row.source_row, "truck_id": row.truck_id,
@@ -198,7 +204,7 @@ def check_fuel_for_preview(payload):
             "issues": issues,
         })
     return {
-        "fuel_card_name": FUEL_CARD_NAME,
+        "fuel_card_name": supplier.label,
         "rows": checked,
         # Membership appears once per group, avoiding quadratic output for an
         # export containing many rows with the same purchase details.

@@ -8,9 +8,9 @@ DEFAULT_SUPPLIER_ID = "the-fuel-store"
 MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
 _ERRORS = {
     "supplier_unavailable": (400, "Choose a supplier available in the fuel import list."),
-    "invalid_document": (422, "This document could not be recognised. Choose the Transactions export from your Fuel Store account."),
+    "invalid_document": (422, "This document could not be recognised. Choose the original document for the selected supplier."),
     "too_large": (413, "The document is too large. Choose a file under 10 MB."),
-    "format_unavailable": (422, "This supplier's PDF layout is not set up yet. Choose the Transactions export from your Fuel Store account."),
+    "format_unavailable": (422, "This document format is not supported for the selected supplier. Check the supplier and choose its original document."),
 }
 
 
@@ -30,6 +30,7 @@ class FuelImportSupplier:
     help_text: str
     formats: tuple[str, ...]
     source_formats: tuple[str, ...]
+    diesel_products: tuple[str, ...] = ()
 
 
 _SUPPLIERS = MappingProxyType({
@@ -39,6 +40,16 @@ _SUPPLIERS = MappingProxyType({
         help_text="Choose the Transactions export from your Fuel Store account. Up to 10 MB.",
         formats=("xlsx",),
         source_formats=("fuel-store-transactions-xlsx-v1",),
+        diesel_products=("DIESEL", "KEYFUELS DIESEL", "UK FUELS DIESEL",
+                         "UK FUELS DIESEL (TP)", "ESSO DIESEL", "DIESEL (SHELL)"),
+    ),
+    "silvey": FuelImportSupplier(
+        id="silvey",
+        label="Silvey",
+        help_text="Choose the original Silvey fuel invoice. Up to 10 MB.",
+        formats=("pdf",),
+        source_formats=("silvey-fuel-invoice-pdf-v1",),
+        diesel_products=("DERV", "DIESEL"),
     ),
 })
 
@@ -60,6 +71,7 @@ def supplier_choices():
         "help_text": supplier.help_text,
         "formats": list(supplier.formats),
         "source_formats": list(supplier.source_formats),
+        "diesel_products": list(supplier.diesel_products),
     } for supplier in _SUPPLIERS.values()]
 
 
@@ -71,8 +83,15 @@ def _read_fuel_store_xlsx(content):
     return read_fuel_store_xlsx_isolated(content)
 
 
+def _read_silvey_pdf(content):
+    from haulage_app.fuel.silvey_processing import read_silvey_pdf_isolated
+
+    return read_silvey_pdf_isolated(content)
+
+
 _READERS = MappingProxyType({
     (DEFAULT_SUPPLIER_ID, "xlsx"): _read_fuel_store_xlsx,
+    ("silvey", "pdf"): _read_silvey_pdf,
 })
 
 

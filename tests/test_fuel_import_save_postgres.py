@@ -99,6 +99,12 @@ class FuelImportSavePostgresTests(unittest.TestCase):
     def test_anomaly_feedback_delete_failure_rolls_back_all_fuel_inserts(self):
         self.run_case()
 
+    def test_silvey_saves_its_supplier_and_ignores_other_supplier_duplicate_candidates(self):
+        self.run_case()
+
+    def test_concurrent_silvey_batches_wait_for_locks_and_save_once(self):
+        self.run_case()
+
 
 def _run_worker(case, cluster_root, database):
     from urllib.parse import urlencode
@@ -182,8 +188,9 @@ def _run_worker(case, cluster_root, database):
             return {"rows": [self.row(), self.row(9, truck_id=2, date=self.second.isoformat(),
                                                  quantity="211.08", cost="274.40")]}
 
-        def post(self, payload=None):
-            response = app.test_client().post("/fuel/import/save", json=payload or self.payload())
+        def post(self, payload=None, *, supplier=None):
+            headers = {} if supplier is None else {"X-Fuel-Supplier": supplier}
+            response = app.test_client().post("/fuel/import/save", json=payload or self.payload(), headers=headers)
             self.assertIn("no-store", response.headers.get("Cache-Control", ""))
             self.assertEqual(response.headers.get("Pragma"), "no-cache")
             self.assertEqual(response.headers.get("X-Content-Type-Options"), "nosniff")
@@ -348,6 +355,60 @@ def _run_worker(case, cluster_root, database):
             with self.engine.begin() as connection:
                 connection.execute(text("DROP TRIGGER fuel_test_cleanup_failure ON user_feedback"))
             self.assertEqual(self.post()[0], 201)
+
+        def test_silvey_saves_its_supplier_and_ignores_other_supplier_duplicate_candidates(self):
+            fuel_store = {"rows": [self.row()]}
+            self.assertEqual(self.post(fuel_store)[0], 201)
+            silvey = {"rows": [self.row(product="DERV")]}
+            status, result = self.post(silvey, supplier="silvey")
+            self.assertEqual(status, 201, result)
+            with self.engine.connect() as connection:
+                rows = connection.execute(select(
+                    Fuel.fuel_card_name, Fuel.fuel_volume, Fuel.fuel_cost, Fuel.date, Fuel.day_id,
+                ).order_by(Fuel.id)).all()
+            self.assertEqual([tuple(row) for row in rows], [
+                ("The Fuel Store", 14327, 18625, self.first, 11),
+                ("Silvey", 14327, 18625, self.first, 11),
+            ])
+            before = self.snapshot()
+            status, result = self.post(silvey, supplier="silvey")
+            self.assertEqual(status, 409, result)
+            self.assertEqual([error["code"] for error in result["row_errors"]], ["possible_duplicate_fuel"])
+            self.assertEqual(self.snapshot(), before)
+
+        def test_concurrent_silvey_batches_wait_for_locks_and_save_once(self):
+            payload = self.payload()
+            for row in payload["rows"]:
+                row["product"] = "DERV"
+            reversed_payload = {"rows": list(reversed(payload["rows"]))}
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                with self.engine.connect() as blocker:
+                    transaction = blocker.begin()
+                    blocker.execute(text("SELECT id FROM truck ORDER BY id FOR UPDATE")).all()
+                    futures = [pool.submit(self.post, current, supplier="silvey")
+                               for current in (payload, reversed_payload)]
+                    try:
+                        deadline = time.monotonic() + 10
+                        waiting = 0
+                        while time.monotonic() < deadline:
+                            with self.engine.connect() as observer:
+                                waiting = observer.execute(text("""SELECT count(*) FROM pg_stat_activity
+                                    WHERE datname=current_database() AND wait_event_type='Lock'
+                                    AND pid <> pg_backend_pid()""")).scalar_one()
+                            if waiting >= 2:
+                                break
+                            time.sleep(0.02)
+                        self.assertGreaterEqual(waiting, 2, "Both Silvey requests must reach the truck lock")
+                    finally:
+                        transaction.rollback()
+                results = [future.result(timeout=20) for future in futures]
+            self.assertEqual(sorted(status for status, _ in results), [201, 409], results)
+            losing = next(result for status, result in results if status == 409)
+            self.assertTrue(all(error["code"] == "possible_duplicate_fuel" for error in losing["row_errors"]))
+            with self.engine.connect() as connection:
+                rows = connection.execute(select(Fuel.fuel_card_name, Fuel.fuel_volume, Fuel.fuel_cost)
+                                          .order_by(Fuel.fuel_volume)).all()
+            self.assertEqual([tuple(row) for row in rows], [("Silvey", 14327, 18625), ("Silvey", 21108, 27440)])
 
     result = unittest.TextTestRunner(verbosity=2).run(SaveCases(case))
     raise SystemExit(0 if result.wasSuccessful() else 1)
