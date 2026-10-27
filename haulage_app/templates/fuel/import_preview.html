@@ -83,12 +83,36 @@
         </div>
         <div id="fuel-save-result" class="fuel-import-save-result" role="status" hidden></div>
         <details id="fuel-original-document" class="fuel-import-document" hidden>
-            <summary>Original invoice</summary>
-            <div class="fuel-import-document-heading">
-                <p class="fuel-import-muted">Use the page links beside a transaction to compare it with the invoice.</p>
-                <a id="fuel-open-original" target="_blank" rel="noopener noreferrer">Open original</a>
+            <summary id="fuel-original-summary">Original invoice</summary>
+            <div id="fuel-pdf-document" hidden>
+                <div class="fuel-import-document-heading">
+                    <p class="fuel-import-muted">Use the page links beside a transaction to compare it with the invoice.</p>
+                    <a id="fuel-open-original" target="_blank" rel="noopener noreferrer">Open original</a>
+                </div>
+                <iframe id="fuel-pdf-preview" title="Original fuel invoice" referrerpolicy="no-referrer"></iframe>
             </div>
-            <iframe id="fuel-pdf-preview" title="Original fuel invoice" referrerpolicy="no-referrer"></iframe>
+            <div id="fuel-spreadsheet-source" hidden>
+                <p class="fuel-import-muted">Values read from the spreadsheet, including excluded entries.</p>
+                <div id="fuel-source-pager" class="fuel-import-pager" hidden>
+                    <button id="fuel-source-previous-page" class="fuel-import-text-button" type="button" disabled>← Previous</button>
+                    <span id="fuel-source-page-description" aria-live="polite"></span>
+                    <button id="fuel-source-next-page" class="fuel-import-text-button" type="button" disabled>Next →</button>
+                </div>
+                <div class="fuel-import-source-table-wrap">
+                    <table class="fuel-import-source-table" aria-labelledby="fuel-original-summary">
+                        <thead><tr>
+                            <th scope="col">Row</th>
+                            <th scope="col">Purchase date</th>
+                            <th scope="col">Registration</th>
+                            <th scope="col">Product</th>
+                            <th scope="col" class="fuel-import-number">Litres</th>
+                            <th scope="col" class="fuel-import-number">Unit price (£/litre)</th>
+                            <th scope="col" class="fuel-import-number">Cost (£)</th>
+                        </tr></thead>
+                        <tbody id="fuel-spreadsheet-rows"></tbody>
+                    </table>
+                </div>
+            </div>
         </details>
     </section>
     <noscript><p class="fuel-import-error">Enable JavaScript to upload and review a fuel document.</p></noscript>

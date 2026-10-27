@@ -121,6 +121,16 @@ original-row expansion with the extracted values, both registrations, source
 time, network, product and unit price. This is an extracted comparison, not an
 embedded Excel viewer; the workbook is not sent to an external document service.
 
+For spreadsheets, the existing expandable document section below the review is
+labelled **Original spreadsheet data**. Its read-only table shows the original
+row, date, registration, product, litres, unit price and cost, including excluded
+entries. These values come from the immutable extracted source and stay unchanged
+when entries are edited, excluded or assigned to trucks. The source table has its
+own 100-row pages, independent of the editable list. Clicking an existing
+**Original row** link still expands its details and also opens the lower source
+table at that row, with a highlight. This reproduces useful extracted values,
+not workbook formatting or extra columns; no additional document storage is used.
+
 Truck suggestions use exact registration matches after ignoring whitespace and
 case. Unknown or ambiguous registrations, a missing Tran VRN, or disagreement
 between Tran VRN and Card VRN require an explicit truck choice. There is no fuzzy
@@ -294,6 +304,8 @@ through the manual fuel form after review; confirmation cannot bypass the
 importer's duplicate protection.
 
 Original source warnings and unusual prices require a per-row confirmation.
+The acknowledgement uses one visible native checkbox; its appearance is scoped
+to the fuel review and does not add confirmations to the payslip import.
 Changing that row's truck, date, litres, cost or inclusion clears its
 confirmation. This acknowledgement does not override amount limits or permit
 unsupported products such as AdBlue to be imported as diesel. A confirmation is

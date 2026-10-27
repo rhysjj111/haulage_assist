@@ -70,6 +70,9 @@ main > .container { width: 96%; max-width: 1660px; }
 .fuel-import-recorded-entries a { white-space: nowrap; }
 .fuel-import .fuel-import-review-confirm { display: flex; align-items: center; gap: 9px; margin: 9px 0 1px; color: #526171; font-size: .8rem; font-weight: 400; cursor: pointer; }
 .fuel-import .fuel-import-review-confirm input[type="checkbox"] { flex: 0 0 18px; margin: 0; }
+.fuel-import .fuel-import-review-confirm input[type="checkbox"] + span { padding-left: 0; height: auto; line-height: 1.5; font-size: inherit; }
+.fuel-import .fuel-import-review-confirm input[type="checkbox"] + span::before,
+.fuel-import .fuel-import-review-confirm input[type="checkbox"] + span::after { display: none; content: none; }
 .fuel-import-save-row-error { margin: 5px 0; color: #a73333; font-size: .8rem; line-height: 1.5; }
 .fuel-import-save-row-error a { margin-left: 12px; }
 .fuel-import-original-row > td { padding: 0; }
@@ -85,6 +88,18 @@ main > .container { width: 96%; max-width: 1660px; }
 .fuel-import-document-heading p { margin: 0; }
 .fuel-import-document-heading a { white-space: nowrap; font-size: .84rem; }
 .fuel-import-document iframe { display: block; width: 100%; height: 720px; border: 1px solid #dce2e7; background: #f4f6f8; }
+.fuel-import-source-table-wrap { max-height: 560px; overflow: auto; margin-top: 12px; border: 1px solid #dce2e7; border-radius: 4px; }
+.fuel-import-source-table { width: 100%; min-width: 800px; border-collapse: collapse; table-layout: fixed; }
+.fuel-import-source-table th { position: sticky; top: 0; z-index: 1; padding: 11px 10px; background: #f5f7f9; color: #5a6877; font-size: .77rem; font-weight: 700; }
+.fuel-import-source-table td { padding: 12px 10px; border-bottom: 1px solid #e7ebef; color: #263445; font-size: .83rem; vertical-align: top; overflow-wrap: anywhere; }
+.fuel-import-source-table th:first-child { width: 6%; }
+.fuel-import-source-table th:nth-child(2) { width: 14%; }
+.fuel-import-source-table th:nth-child(3) { width: 15%; }
+.fuel-import-source-table th:nth-child(4) { width: 23%; }
+.fuel-import-source-table th:nth-child(n+5) { width: 14%; }
+.fuel-import-source-table .fuel-import-source-highlight > td { background: #fff5db; }
+.fuel-import-source-table .fuel-import-source-highlight > td:first-child { box-shadow: inset 3px 0 #b17b25; font-weight: 700; }
+#fuel-source-pager { margin: 12px 0; }
 .fuel-import-footer { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin-top: 17px; }
 .fuel-import-footer > p { margin: 0; }
 #fuel-selected-totals { font-weight: 600; font-size: .9rem; }
