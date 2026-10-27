@@ -24,8 +24,16 @@
     const detectedSupplier = byId("fuel-detected-supplier");
     const supplierChoice = byId("fuel-supplier-choice");
     const originalDocument = byId("fuel-original-document");
+    const originalSummary = byId("fuel-original-summary");
+    const pdfDocument = byId("fuel-pdf-document");
     let originalFrame = byId("fuel-pdf-preview");
     const openOriginal = byId("fuel-open-original");
+    const spreadsheetSource = byId("fuel-spreadsheet-source");
+    const spreadsheetBody = byId("fuel-spreadsheet-rows");
+    const sourcePager = byId("fuel-source-pager");
+    const sourcePreviousPage = byId("fuel-source-previous-page");
+    const sourceNextPage = byId("fuel-source-next-page");
+    const sourcePageDescription = byId("fuel-source-page-description");
     const maxBytes = 10 * 1024 * 1024;
     const maxCheckBytes = 2 * 1024 * 1024;
     const maxSaveBytes = 512 * 1024;
@@ -86,6 +94,8 @@
     let documentPageCount = 0;
     let documentUrl = null;
     let visibleDocumentPage = null;
+    let sourcePage = 0;
+    let highlightedSourceRow = null;
 
     function requestedSupplierId() {
         return supplierProfiles.size ? "auto" : null;
@@ -253,18 +263,78 @@
         openOriginal.removeAttribute("href");
         originalDocument.open = false;
         originalDocument.hidden = true;
+        originalSummary.textContent = "Original invoice";
+        pdfDocument.hidden = true;
+        spreadsheetSource.hidden = true;
+        spreadsheetBody.replaceChildren();
+        sourcePage = 0;
+        highlightedSourceRow = null;
+        sourcePager.hidden = true;
+        sourcePreviousPage.disabled = true;
+        sourceNextPage.disabled = true;
+        sourcePageDescription.textContent = "";
         if (documentUrl) URL.revokeObjectURL(documentUrl);
         documentUrl = null;
         visibleDocumentPage = null;
     }
 
     function prepareDocument(file) {
-        if (documentKind !== "pdf") return;
+        const pdf = documentKind === "pdf";
+        originalSummary.textContent = pdf ? "Original invoice" : "Original spreadsheet data";
+        pdfDocument.hidden = !pdf;
+        spreadsheetSource.hidden = pdf;
+        originalDocument.hidden = false;
+        if (!pdf) {
+            renderSpreadsheetPage();
+            return;
+        }
         // File.type and filename are untrusted. A local viewer is always given
         // an explicit PDF Blob, never uploaded HTML or another active type.
         documentUrl = URL.createObjectURL(new Blob([file], {type: "application/pdf"}));
-        originalDocument.hidden = false;
         openOriginal.href = `${documentUrl}#page=1&view=FitH`;
+    }
+
+    function renderSpreadsheetPage() {
+        if (documentKind !== "xlsx") return;
+        const start = sourcePage * pageSize;
+        const fragment = document.createDocumentFragment();
+        for (const model of rows.slice(start, start + pageSize)) {
+            // This view always uses the immutable source, including entries
+            // excluded from the editable review or mapped to another truck.
+            const source = model.source;
+            const row = node("tr");
+            row.id = `fuel-source-row-${source.source_row}`;
+            row.dataset.sourceRow = String(source.source_row);
+            row.tabIndex = -1;
+            if (source.source_row === highlightedSourceRow) {
+                row.className = "fuel-import-source-highlight";
+                row.setAttribute("aria-current", "true");
+            }
+            const values = [String(source.source_row), source.transaction_date, source.transaction_registration,
+                source.product, source.quantity, source.unit_price, source.cost];
+            for (const [index, value] of values.entries()) {
+                row.append(node("td", index >= 4 ? "fuel-import-number" : "", value || "—"));
+            }
+            fragment.append(row);
+        }
+        spreadsheetBody.replaceChildren(fragment);
+        sourcePager.hidden = rows.length <= pageSize;
+        sourcePreviousPage.disabled = sourcePage === 0;
+        sourceNextPage.disabled = start + pageSize >= rows.length;
+        sourcePageDescription.textContent = `Entries ${start + 1}–${Math.min(start + pageSize, rows.length)} of ${rows.length}`;
+    }
+
+    function showSpreadsheetRow(source) {
+        if (documentKind !== "xlsx") return;
+        const index = rows.findIndex((model) => model.source === source);
+        if (index < 0) return;
+        sourcePage = Math.floor(index / pageSize);
+        highlightedSourceRow = source.source_row;
+        originalDocument.open = true;
+        renderSpreadsheetPage();
+        const row = byId(`fuel-source-row-${source.source_row}`);
+        row.focus({preventScroll: true});
+        row.scrollIntoView({behavior: "smooth", block: "center"});
     }
 
     function showDocumentPage(page, scroll = false) {
@@ -470,6 +540,7 @@
                 ? `${originalRow.hidden ? "Original" : "Hide original"} transaction ${source.source_row} · page ${source.source_page}`
                 : `${originalRow.hidden ? "Original" : "Hide original"} row ${source.source_row}`;
             if (pdf && !originalRow.hidden) showDocumentPage(source.source_page);
+            else if (!pdf && !originalRow.hidden) showSpreadsheetRow(source);
         });
         return originalRow;
     }
@@ -1031,7 +1102,6 @@
         }
         documentKind = data.report.document_kind || "xlsx";
         documentPageCount = documentKind === "pdf" ? data.report.page_count : 0;
-        prepareDocument(file);
         trucks = data.trucks;
         truckIds = new Set(trucks.map((truck) => truck.id));
         rows = data.rows.map((source) => {
@@ -1048,6 +1118,7 @@
             if (!model.included) model.truckId = null;
             return model;
         });
+        prepareDocument(file);
         const reportLabel = documentKind === "pdf" ? `${data.report.fuel_card_name} invoice`
             : supplierChoiceRequired ? data.report.sheet_name : `${data.report.fuel_card_name} · ${data.report.sheet_name}`;
         byId("fuel-report-description").textContent = `${reportLabel} · ${data.rows.length} ${data.rows.length === 1 ? "transaction" : "transactions"}`;
@@ -1302,6 +1373,16 @@
         if (savePhase === "saving" || (page + 1) * pageSize >= rows.length) return;
         page += 1;
         renderPage();
+    });
+    sourcePreviousPage.addEventListener("click", () => {
+        if (documentKind !== "xlsx" || sourcePage <= 0) return;
+        sourcePage -= 1;
+        renderSpreadsheetPage();
+    });
+    sourceNextPage.addEventListener("click", () => {
+        if (documentKind !== "xlsx" || (sourcePage + 1) * pageSize >= rows.length) return;
+        sourcePage += 1;
+        renderSpreadsheetPage();
     });
     retryChecks.addEventListener("click", () => {
         if (editingLocked()) return;
