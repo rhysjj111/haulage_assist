@@ -55,6 +55,13 @@
         non_positive_cost: "Source cost is zero or negative.",
         cost_price_mismatch: "Source cost differs from quantity × unit price.",
     };
+
+    function registrationMismatchLabel(source) {
+        return source.transaction_registration
+            ? `Registrations differ (driver entered: ${source.transaction_registration}). Check which truck was fuelled.`
+            : issueLabels.registration_mismatch;
+    }
+
     let chosenFile = null;
     let controller = null;
     let generation = 0;
@@ -577,7 +584,7 @@
         const matchNotes = {
             unmatched: `No automatic match for the ${registration}. Choose a truck.`,
             ambiguous: `The ${registration} matches more than one truck. Choose a truck.`,
-            registration_conflict: "Transaction and card registrations differ in the source.",
+            registration_conflict: registrationMismatchLabel(model.source),
             missing_registration: `The source has no ${registration}. Choose a truck.`,
         };
         if (matchNotes[model.source.match_status]) cell.append(node("p", "fuel-import-source-warning", matchNotes[model.source.match_status]));
@@ -599,7 +606,8 @@
         sourceButton.type = "button";
         sourceCell.append(sourceButton);
         for (const issue of source.issues) {
-            sourceCell.append(node("p", "fuel-import-source-warning", issueLabels[issue]));
+            const label = issue === "registration_mismatch" ? registrationMismatchLabel(source) : issueLabels[issue];
+            sourceCell.append(node("p", "fuel-import-source-warning", label));
         }
         const fields = [createField(model, "date", "Purchase date"), createTruckField(model, () => update()),
             createField(model, "quantity", "Litres"), createField(model, "cost", "Cost in pounds")];
