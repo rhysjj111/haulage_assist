@@ -96,6 +96,8 @@ class SilveyImportTests(OwnerTestCase):
         ])
         self.assertEqual([row["transaction_registration"] for row in rows],
                          [REGISTRATIONS[0]] * 3 + [REGISTRATIONS[1]] * 2 + [REGISTRATIONS[2]])
+        self.assertTrue(all(row["card_registration"] is None for row in rows))
+        self.assertEqual([row["truck_id"] for row in rows], [1, 1, 1, 2, 2, 3])
         self.assertTrue(all(row["match_status"] == "matched" for row in rows))
         self.assertTrue(all(row["transaction_time"] is not None for row in rows))
         self.assertEqual(rows[0]["transaction_date"], "2026-10-01")

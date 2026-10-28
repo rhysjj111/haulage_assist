@@ -135,8 +135,8 @@ class FuelImportPreviewTests(OwnerTestCase):
 
     def test_matching_ignores_registration_case_and_spaces_but_does_not_guess(self):
         payload = self.preview_rows((
-            transaction({"Tran VRN": "  zz26abc  ", "Card VRN": "ZZ26 ABC"}),
-            transaction({"Tran VRN": "ZZ26 ABD", "Card VRN": "ZZ26 ABD"}),
+            transaction({"Tran VRN": "ZZ26ABC", "Card VRN": "  zz26abc  "}),
+            transaction({"Tran VRN": "ZZ26 ABC", "Card VRN": "ZZ26 ABD"}),
         ))
         exact, near = payload["rows"]
         self.assertEqual((exact["truck_id"], exact["match_status"]), (1, "matched"))
@@ -147,35 +147,57 @@ class FuelImportPreviewTests(OwnerTestCase):
 
     def test_ambiguous_normalized_registrations_require_an_explicit_truck_choice(self):
         self.add_truck(2, registration="ZZ26ABC")
-        payload = self.preview_rows((TRANSACTIONS[0],))
+        self.add_truck(3, registration="ZX26 DEF")
+        payload = self.preview_rows((transaction({"Tran VRN": "ZX26 DEF"}),))
         row = payload["rows"][0]
         self.assertEqual(row["match_status"], "ambiguous")
         self.assertIsNone(row["truck_id"])
         self.assertCountEqual(row["candidate_truck_ids"], [1, 2])
+        self.assertIn("registration_mismatch", row["issues"])
 
-    def test_conflicting_registrations_do_not_suggest_a_truck_even_with_an_exact_match(self):
+    def test_unmatched_card_does_not_fall_back_to_an_exact_transaction_match(self):
         payload = self.preview_rows((transaction({"Card VRN": "ZX26 DEF"}),))
         row = payload["rows"][0]
-        self.assertEqual(row["match_status"], "registration_conflict")
+        self.assertEqual(row["match_status"], "unmatched")
         self.assertIsNone(row["truck_id"])
-        self.assertEqual(row["candidate_truck_ids"], [1])
+        self.assertEqual(row["candidate_truck_ids"], [])
         self.assertIn("registration_mismatch", row["issues"])
         self.assertEqual(row["card_registration"], "ZX26 DEF")
         self.assertEqual(row["transaction_registration"], "ZZ26 ABC")
 
-    def test_missing_transaction_registration_does_not_silently_use_card_registration(self):
+    def test_card_match_survives_missing_transaction_registration_with_source_warning(self):
         payload = self.preview_rows((transaction({"Tran VRN": None}),))
         row = payload["rows"][0]
-        self.assertEqual(row["match_status"], "missing_registration")
-        self.assertIsNone(row["truck_id"])
-        self.assertEqual(row["candidate_truck_ids"], [])
+        self.assertEqual((row["truck_id"], row["match_status"]), (1, "matched"))
+        self.assertEqual(row["candidate_truck_ids"], [1])
         self.assertIn("missing_transaction_registration", row["issues"])
         self.assertEqual(row["card_registration"], "ZZ26 ABC")
+        self.assertIsNone(row["transaction_registration"])
 
-    def test_missing_card_registration_does_not_block_a_unique_transaction_match(self):
-        row = self.preview_rows((transaction({"Card VRN": None}),))["rows"][0]
-        self.assertEqual((row["truck_id"], row["match_status"]), (1, "matched"))
-        self.assertIsNone(row["card_registration"])
+    def test_missing_card_registration_requires_manual_mapping_without_transaction_fallback(self):
+        for missing in (None, "   "):
+            with self.subTest(card_registration=missing):
+                row = self.preview_rows((transaction({"Card VRN": missing}),))["rows"][0]
+                self.assertEqual(row["match_status"], "missing_registration")
+                self.assertIsNone(row["truck_id"])
+                self.assertEqual(row["candidate_truck_ids"], [])
+                self.assertEqual(row["transaction_registration"], "ZZ26 ABC")
+
+    def test_card_registration_wins_when_transaction_names_another_truck_or_has_a_typo(self):
+        self.add_truck(2, registration="ZX26 DEF")
+        before = self.source_snapshot()
+        payload = self.preview_rows((
+            transaction({"Tran VRN": "ZX26 DEF"}),
+            transaction({"Tran VRN": "ZZ26 ABD"}),
+        ))
+        self.assertEqual([row["transaction_registration"] for row in payload["rows"]],
+                         ["ZX26 DEF", "ZZ26 ABD"])
+        for row in payload["rows"]:
+            self.assertEqual((row["truck_id"], row["match_status"]), (1, "matched"))
+            self.assertEqual(row["candidate_truck_ids"], [1])
+            self.assertEqual(row["card_registration"], "ZZ26 ABC")
+            self.assertIn("registration_mismatch", row["issues"])
+        self.assertEqual(self.source_snapshot(), before)
 
     def test_network_labels_do_not_change_the_confirmed_fuel_store_supplier(self):
         rows = tuple(transaction({"Card Type": label})

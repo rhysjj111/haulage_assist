@@ -72,12 +72,18 @@ class FuelSupplierDetectionTests(OwnerTestCase):
         self.assert_private(response)
 
     def test_spreadsheet_schema_only_suggests_fuel_store_and_requires_confirmation(self):
-        response = self.read(transactions_xlsx())
+        before = self.snapshot()
+        response = self.read(transactions_xlsx(rows=(transaction({"Tran VRN": "ZZ26 ABD"}),)))
         self.assertEqual(response.status_code, 200, response.text)
         payload = response.get_json()
         self.assertEqual(payload["report"]["supplier_id"], "the-fuel-store")
         self.assertEqual(payload["report"]["source_format"], "fuel-store-transactions-xlsx-v1")
         self.assertEqual(payload["detection"], {"method": "layout_only", "requires_confirmation": True})
+        self.assertEqual(payload["rows"][0]["truck_id"], 1)
+        self.assertEqual(payload["rows"][0]["match_status"], "matched")
+        self.assertEqual(payload["rows"][0]["candidate_truck_ids"], [1])
+        self.assertIn("registration_mismatch", payload["rows"][0]["issues"])
+        self.assertEqual(self.snapshot(), before)
         self.assert_private(response)
 
     def test_card_network_labels_do_not_prove_or_change_the_spreadsheet_issuer(self):
