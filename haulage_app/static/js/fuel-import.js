@@ -24,16 +24,8 @@
     const detectedSupplier = byId("fuel-detected-supplier");
     const supplierChoice = byId("fuel-supplier-choice");
     const originalDocument = byId("fuel-original-document");
-    const originalSummary = byId("fuel-original-summary");
-    const pdfDocument = byId("fuel-pdf-document");
     let originalFrame = byId("fuel-pdf-preview");
     const openOriginal = byId("fuel-open-original");
-    const spreadsheetSource = byId("fuel-spreadsheet-source");
-    const spreadsheetBody = byId("fuel-spreadsheet-rows");
-    const sourcePager = byId("fuel-source-pager");
-    const sourcePreviousPage = byId("fuel-source-previous-page");
-    const sourceNextPage = byId("fuel-source-next-page");
-    const sourcePageDescription = byId("fuel-source-page-description");
     const maxBytes = 10 * 1024 * 1024;
     const maxCheckBytes = 2 * 1024 * 1024;
     const maxSaveBytes = 512 * 1024;
@@ -56,8 +48,8 @@
         "possible_duplicate_upload", "possible_duplicate_fuel",
     ]);
     const issueLabels = {
-        missing_transaction_registration: "No transaction registration in the source.",
-        registration_mismatch: "Transaction and card registrations differ.",
+        missing_transaction_registration: "No transaction registration in the source. Check which truck was fuelled.",
+        registration_mismatch: "Transaction and card registrations differ. Check which truck was fuelled.",
         unsupported_product: "Review product; excluded by default.",
         non_positive_quantity: "Source litres are zero or negative.",
         non_positive_cost: "Source cost is zero or negative.",
@@ -94,8 +86,9 @@
     let documentPageCount = 0;
     let documentUrl = null;
     let visibleDocumentPage = null;
-    let sourcePage = 0;
-    let highlightedSourceRow = null;
+    let reviewPointerId = null;
+    let reviewPointerTimer = null;
+    let checkRefreshPending = false;
 
     function requestedSupplierId() {
         return supplierProfiles.size ? "auto" : null;
@@ -110,6 +103,10 @@
         const supplier = reviewProfile();
         return supplierConfirmed && supplier && (!supplierChoiceRequired
             || supplierInput.value === supplier.id && compatibleSupplierIds.has(supplier.id)) ? supplier : null;
+    }
+
+    function usesCardRegistration() {
+        return documentKind === "xlsx" && reviewProfile()?.id === "the-fuel-store";
     }
 
     function initialiseSuppliers() {
@@ -210,7 +207,31 @@
         syncControls();
     }
 
+    function resetReviewPointer() {
+        if (reviewPointerTimer !== null) window.clearTimeout(reviewPointerTimer);
+        reviewPointerTimer = null;
+        reviewPointerId = null;
+        checkRefreshPending = false;
+    }
+
+    function finishReviewPointer(event) {
+        if (reviewPointerId === null || reviewPointerTimer !== null
+                || (event.pointerId !== undefined && event.pointerId !== reviewPointerId)) return;
+        const currentGeneration = generation;
+        // Native checkbox click/change happens after pointerup. Keep check
+        // messages still until that activation has finished at its original position.
+        reviewPointerTimer = window.setTimeout(() => {
+            reviewPointerTimer = null;
+            reviewPointerId = null;
+            if (generation !== currentGeneration) return;
+            const refresh = checkRefreshPending;
+            checkRefreshPending = false;
+            if (refresh) updateChecks();
+        }, 0);
+    }
+
     function resetPreview() {
+        resetReviewPointer();
         releaseDocument();
         documentKind = "xlsx";
         documentPageCount = 0;
@@ -263,78 +284,18 @@
         openOriginal.removeAttribute("href");
         originalDocument.open = false;
         originalDocument.hidden = true;
-        originalSummary.textContent = "Original invoice";
-        pdfDocument.hidden = true;
-        spreadsheetSource.hidden = true;
-        spreadsheetBody.replaceChildren();
-        sourcePage = 0;
-        highlightedSourceRow = null;
-        sourcePager.hidden = true;
-        sourcePreviousPage.disabled = true;
-        sourceNextPage.disabled = true;
-        sourcePageDescription.textContent = "";
         if (documentUrl) URL.revokeObjectURL(documentUrl);
         documentUrl = null;
         visibleDocumentPage = null;
     }
 
     function prepareDocument(file) {
-        const pdf = documentKind === "pdf";
-        originalSummary.textContent = pdf ? "Original invoice" : "Original spreadsheet data";
-        pdfDocument.hidden = !pdf;
-        spreadsheetSource.hidden = pdf;
-        originalDocument.hidden = false;
-        if (!pdf) {
-            renderSpreadsheetPage();
-            return;
-        }
+        if (documentKind !== "pdf") return;
         // File.type and filename are untrusted. A local viewer is always given
         // an explicit PDF Blob, never uploaded HTML or another active type.
         documentUrl = URL.createObjectURL(new Blob([file], {type: "application/pdf"}));
+        originalDocument.hidden = false;
         openOriginal.href = `${documentUrl}#page=1&view=FitH`;
-    }
-
-    function renderSpreadsheetPage() {
-        if (documentKind !== "xlsx") return;
-        const start = sourcePage * pageSize;
-        const fragment = document.createDocumentFragment();
-        for (const model of rows.slice(start, start + pageSize)) {
-            // This view always uses the immutable source, including entries
-            // excluded from the editable review or mapped to another truck.
-            const source = model.source;
-            const row = node("tr");
-            row.id = `fuel-source-row-${source.source_row}`;
-            row.dataset.sourceRow = String(source.source_row);
-            row.tabIndex = -1;
-            if (source.source_row === highlightedSourceRow) {
-                row.className = "fuel-import-source-highlight";
-                row.setAttribute("aria-current", "true");
-            }
-            const values = [String(source.source_row), source.transaction_date, source.transaction_registration,
-                source.product, source.quantity, source.unit_price, source.cost];
-            for (const [index, value] of values.entries()) {
-                row.append(node("td", index >= 4 ? "fuel-import-number" : "", value || "—"));
-            }
-            fragment.append(row);
-        }
-        spreadsheetBody.replaceChildren(fragment);
-        sourcePager.hidden = rows.length <= pageSize;
-        sourcePreviousPage.disabled = sourcePage === 0;
-        sourceNextPage.disabled = start + pageSize >= rows.length;
-        sourcePageDescription.textContent = `Entries ${start + 1}–${Math.min(start + pageSize, rows.length)} of ${rows.length}`;
-    }
-
-    function showSpreadsheetRow(source) {
-        if (documentKind !== "xlsx") return;
-        const index = rows.findIndex((model) => model.source === source);
-        if (index < 0) return;
-        sourcePage = Math.floor(index / pageSize);
-        highlightedSourceRow = source.source_row;
-        originalDocument.open = true;
-        renderSpreadsheetPage();
-        const row = byId(`fuel-source-row-${source.source_row}`);
-        row.focus({preventScroll: true});
-        row.scrollIntoView({behavior: "smooth", block: "center"});
     }
 
     function showDocumentPage(page, scroll = false) {
@@ -462,7 +423,7 @@
             return !checked || checked.issues.some((issue) => issue !== "fuel_price_unusual")
                 || model.serverErrors.length;
         });
-        const unreviewed = selected.some((model) => needsReview(model) && !model.reviewConfirmed);
+        const unreviewed = selected.filter((model) => needsReview(model) && !model.reviewConfirmed).length;
         saveReady = Boolean(reviewSupplier() && selected.length && selected.length <= maxSaveRows && !invalid && !unsupported
             && !blocked && !unreviewed && checkPhase === "complete");
         if (savePhase === "idle") {
@@ -475,7 +436,7 @@
                 : ["pending", "checking"].includes(checkPhase) ? "Checking the selected entries before saving…"
                 : checkPhase !== "complete" ? "Complete the entry checks before saving."
                 : blocked ? "Resolve the highlighted entries before saving."
-                : unreviewed ? "Confirm the highlighted warnings before saving."
+                : unreviewed ? `Confirm ${unreviewed} flagged ${unreviewed === 1 ? "entry" : "entries"} before saving.`
                 : "Ready to save the selected entries.";
         }
         syncControls();
@@ -540,7 +501,6 @@
                 ? `${originalRow.hidden ? "Original" : "Hide original"} transaction ${source.source_row} · page ${source.source_page}`
                 : `${originalRow.hidden ? "Original" : "Hide original"} row ${source.source_row}`;
             if (pdf && !originalRow.hidden) showDocumentPage(source.source_page);
-            else if (!pdf && !originalRow.hidden) showSpreadsheetRow(source);
         });
         return originalRow;
     }
@@ -566,6 +526,7 @@
         }
         input.value = model[field];
         input.addEventListener("input", () => {
+            if (input.value === model[field]) return;
             if (!editDraft(model)) return;
             model[field] = input.value;
             updateField(model, field, input, error);
@@ -602,19 +563,22 @@
         }
         select.value = model.included ? String(model.truckId) : "";
         select.addEventListener("change", () => {
+            const truckId = select.value ? Number(select.value) : null;
+            if (truckId === model.truckId && Boolean(truckId) === model.included) return;
             if (!editDraft(model)) return;
-            model.truckId = select.value ? Number(select.value) : null;
+            model.truckId = truckId;
             model.included = model.truckId !== null;
             selectionChanged();
             updateSummary();
             scheduleChecks();
         });
         cell.append(select, error);
+        const registration = usesCardRegistration() ? "card registration" : "transaction registration";
         const matchNotes = {
-            unmatched: "No automatic match for the source registration.",
-            ambiguous: "The source registration matches more than one truck.",
+            unmatched: `No automatic match for the ${registration}. Choose a truck.`,
+            ambiguous: `The ${registration} matches more than one truck. Choose a truck.`,
             registration_conflict: "Transaction and card registrations differ in the source.",
-            missing_registration: "The source has no transaction registration.",
+            missing_registration: `The source has no ${registration}. Choose a truck.`,
         };
         if (matchNotes[model.source.match_status]) cell.append(node("p", "fuel-import-source-warning", matchNotes[model.source.match_status]));
         return {cell, input: select, error, field: "truck"};
@@ -625,7 +589,9 @@
         const row = node("tr");
         row.dataset.sourceRow = String(source.source_row);
         const sourceCell = node("td");
-        sourceCell.append(node("span", "fuel-import-source-registration", source.transaction_registration || "No registration"));
+        const registration = usesCardRegistration()
+            ? source.card_registration || "No card registration" : source.transaction_registration || "No registration";
+        sourceCell.append(node("span", "fuel-import-source-registration", registration));
         const productLabel = source.product.trim().toUpperCase() === "DERV" ? "Diesel" : source.product;
         sourceCell.append(node("span", "fuel-import-source-meta", [productLabel, source.card_type].filter(Boolean).join(" · ")));
         const sourceButton = node("button", "fuel-import-text-button fuel-import-original-button", documentKind === "pdf"
@@ -633,9 +599,7 @@
         sourceButton.type = "button";
         sourceCell.append(sourceButton);
         for (const issue of source.issues) {
-            if (issue !== "missing_transaction_registration" && issue !== "registration_mismatch") {
-                sourceCell.append(node("p", "fuel-import-source-warning", issueLabels[issue]));
-            }
+            sourceCell.append(node("p", "fuel-import-source-warning", issueLabels[issue]));
         }
         const fields = [createField(model, "date", "Purchase date"), createTruckField(model, () => update()),
             createField(model, "quantity", "Litres"), createField(model, "cost", "Cost in pounds")];
@@ -795,12 +759,23 @@
         const row = model.checkRow;
         if (!row) return;
         const cell = row.firstElementChild;
-        cell.replaceChildren();
-        row.hidden = true;
-        if (!model.included) return;
+        const previousLabel = cell.querySelector(".fuel-import-review-confirm");
+        // Keep the live acknowledgement connected while checks refresh. A
+        // replacement between pointerdown and pointerup can swallow the click.
+        for (const child of [...cell.children]) {
+            if (child !== previousLabel) child.remove();
+        }
+        if (!model.included) {
+            previousLabel?.remove();
+            row.hidden = true;
+            return;
+        }
         const checked = checkPhase === "complete" ? checkedRows.get(model.source.source_row) : null;
         const issues = checked?.issues || [];
-        const addWarning = (text) => cell.append(node("p", "fuel-import-check-warning", text));
+        const showConfirmation = needsReview(model)
+            || Boolean(previousLabel && ["pending", "checking"].includes(checkPhase));
+        const warnings = document.createDocumentFragment();
+        const addWarning = (text) => warnings.append(node("p", "fuel-import-check-warning", text));
         if (issues.includes("truck_unavailable")) addWarning("This truck is no longer available. Read the spreadsheet again to refresh truck choices.");
         if (issues.includes("fuel_amount_out_of_range")) addWarning("Check litres and cost against the fuel form's permitted amounts.");
         if (issues.includes("fuel_price_unusual")) addWarning("Unusual price per litre — check litres and cost.");
@@ -828,30 +803,43 @@
             manual.target = "_blank";
             manual.rel = "noopener noreferrer";
             note.append(manual);
-            cell.append(note);
+            warnings.append(note);
         }
         if (unsupportedProduct(model)) {
+            previousLabel?.remove();
             addWarning("This product cannot be imported as diesel. Exclude this row.");
-        } else if (needsReview(model)) {
-            const label = node("label", "fuel-import-review-confirm");
-            const confirmation = node("input");
-            confirmation.type = "checkbox";
-            confirmation.id = `fuel-review-confirm-${model.source.source_row}`;
+        } else if (showConfirmation) {
+            const label = previousLabel || node("label", "fuel-import-review-confirm");
+            const confirmation = previousLabel ? previousLabel.firstElementChild : node("input");
             confirmation.checked = model.reviewConfirmed;
-            confirmation.setAttribute("aria-label", `I checked this entry against the document, row ${model.source.source_row}`);
-            confirmation.addEventListener("change", () => {
-                if (editingLocked()) return;
-                model.reviewConfirmed = confirmation.checked;
-                model.serverErrors = model.serverErrors.filter((item) => item.field !== "review");
-                updateRowChecks(model);
-                updateSaveState();
-            });
-            label.append(confirmation, node("span", "", "I checked this entry against the document"));
-            cell.append(label);
+            if (!previousLabel) {
+                confirmation.type = "checkbox";
+                confirmation.id = `fuel-review-confirm-${model.source.source_row}`;
+                confirmation.setAttribute("aria-label", `I checked this entry against the document, row ${model.source.source_row}`);
+                label.addEventListener("pointerdown", (event) => {
+                    if (event.button !== 0 || !event.isPrimary || editingLocked()) return;
+                    if (reviewPointerTimer !== null) window.clearTimeout(reviewPointerTimer);
+                    reviewPointerTimer = null;
+                    reviewPointerId = event.pointerId;
+                });
+                confirmation.addEventListener("change", () => {
+                    if (editingLocked() || !confirmation.isConnected || model.checkRow !== row) return;
+                    model.reviewConfirmed = confirmation.checked;
+                    model.serverErrors = model.serverErrors.filter((item) => item.field !== "review");
+                    for (const message of cell.querySelectorAll('.fuel-import-save-row-error[data-field="review"]')) message.remove();
+                    updateSaveState();
+                });
+                label.append(confirmation, node("span", "", "I checked this entry against the document"));
+                cell.append(label);
+            }
+        } else {
+            previousLabel?.remove();
         }
+        cell.prepend(warnings);
         for (const error of model.serverErrors) {
             if (["date", "truck_id", "quantity", "cost"].includes(error.field)) continue;
             const message = node("p", "fuel-import-save-row-error", error.message);
+            message.dataset.field = error.field;
             if (error.action_url) {
                 const link = node("a", "", "View entry");
                 link.href = error.action_url;
@@ -903,14 +891,22 @@
             }
             cell.append(details);
         }
-        row.classList.toggle("fuel-import-context-only", issues.length === 0 && !needsReview(model) && !unsupportedProduct(model) && !model.serverErrors.length);
+        row.classList.toggle("fuel-import-context-only", issues.length === 0 && !showConfirmation && !unsupportedProduct(model) && !model.serverErrors.length);
         row.hidden = !cell.childElementCount;
     }
 
     function updateChecks() {
+        if (reviewPointerId !== null) {
+            // Responses still update the current check data and Save gates;
+            // only painting waits so messages cannot move a pressed checkbox.
+            checkRefreshPending = true;
+            updateSaveState();
+            return;
+        }
         const selected = rows.filter((model) => model.included);
         const invalid = selected.filter((model) => ["date", "truck", "quantity", "cost"].some((field) => fieldError(model, field))).length;
-        const warnings = checkPhase === "complete" ? [...checkedRows.values()].filter((row) => row.issues.length).length : 0;
+        const warnings = selected.filter((model) => model.source.issues.length
+            || (checkPhase === "complete" && checkedRows.get(model.source.source_row)?.issues.length)).length;
         retryChecks.hidden = savePhase === "complete" || (!saveNeedsRecheck && !["complete", "failed"].includes(checkPhase));
         retryChecks.textContent = checkPhase === "failed" ? "Retry checks" : "Recheck entries";
         checkStatus.dataset.state = checkPhase === "failed" ? "failed" : warnings ? "warning" : checkPhase;
@@ -1105,8 +1101,9 @@
         trucks = data.trucks;
         truckIds = new Set(trucks.map((truck) => truck.id));
         rows = data.rows.map((source) => {
-            const unsafeDefault = ["missing_transaction_registration", "registration_mismatch", "unsupported_product",
-                "non_positive_quantity", "non_positive_cost"].some((issue) => source.issues.includes(issue));
+            const unsafeIssues = ["unsupported_product", "non_positive_quantity", "non_positive_cost"];
+            if (!usesCardRegistration()) unsafeIssues.push("missing_transaction_registration", "registration_mismatch");
+            const unsafeDefault = unsafeIssues.some((issue) => source.issues.includes(issue));
             const model = {source: Object.freeze({...source, issues: Object.freeze([...source.issues])}),
                 date: source.transaction_date, truckId: source.truck_id,
                 quantity: source.quantity, cost: source.cost,
@@ -1374,16 +1371,6 @@
         page += 1;
         renderPage();
     });
-    sourcePreviousPage.addEventListener("click", () => {
-        if (documentKind !== "xlsx" || sourcePage <= 0) return;
-        sourcePage -= 1;
-        renderSpreadsheetPage();
-    });
-    sourceNextPage.addEventListener("click", () => {
-        if (documentKind !== "xlsx" || (sourcePage + 1) * pageSize >= rows.length) return;
-        sourcePage += 1;
-        renderSpreadsheetPage();
-    });
     retryChecks.addEventListener("click", () => {
         if (editingLocked()) return;
         saveNeedsRecheck = false;
@@ -1398,6 +1385,9 @@
         // A recorded entry may have been corrected in the separate review tab.
         if (rows.length && !busy && !editingLocked() && !["pending", "checking"].includes(checkPhase)) scheduleChecks(true);
     });
+    window.addEventListener("pointerup", finishReviewPointer, true);
+    window.addEventListener("pointercancel", finishReviewPointer, true);
+    window.addEventListener("blur", finishReviewPointer);
     window.addEventListener("beforeunload", (event) => {
         if (savePhase !== "saving") return;
         event.preventDefault();

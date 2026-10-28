@@ -20,11 +20,11 @@ The Fuel Store Transactions export:
 | Spreadsheet column | Meaning for the app |
 | --- | --- |
 | Date | The individual purchase date; retain the source time for review |
-| Tran VRN | Proposed truck registration |
+| Tran VRN | Driver-entered registration; flag missing values or disagreements for review |
 | Quantity | Litres, using the source's two-decimal display |
 | Cost | Fuel cost, copied directly without a VAT adjustment |
 | Card Type | Source network/card-type information for review |
-| Card VRN | Additional registration evidence; flag disagreements |
+| Card VRN | Primary registration for proposing the truck assigned to the card |
 
 Silvey digital invoice:
 
@@ -40,8 +40,9 @@ Silvey digital invoice:
 All Fuel Store spreadsheet rows use the supplier label **The Fuel Store**, including transactions whose
 Card Type says Esso, Shell or UK Fuels. The reader itself does not match
 registrations to database trucks. It returns both registration columns and flags
-a missing transaction registration or a disagreement, without silently
-substituting the card registration. Registration comparisons ignore case and spaces.
+a missing transaction registration or a disagreement without overwriting either
+original value. The upload review matches Fuel Store entries by Card VRN;
+registration comparisons ignore case and spaces.
 
 The export contains transaction dates rather than an invoice-wide payroll week.
 Multiple purchases for the same truck/day, including identical rows, remain
@@ -121,19 +122,18 @@ original-row expansion with the extracted values, both registrations, source
 time, network, product and unit price. This is an extracted comparison, not an
 embedded Excel viewer; the workbook is not sent to an external document service.
 
-For spreadsheets, the existing expandable document section below the review is
-labelled **Original spreadsheet data**. Its read-only table shows the original
-row, date, registration, product, litres, unit price and cost, including excluded
-entries. These values come from the immutable extracted source and stay unchanged
-when entries are edited, excluded or assigned to trucks. The source table has its
-own 100-row pages, independent of the editable list. Clicking an existing
-**Original row** link still expands its details and also opens the lower source
-table at that row, with a highlight. This reproduces useful extracted values,
-not workbook formatting or extra columns; no additional document storage is used.
+For spreadsheets, **Original row** expands the original values directly beneath
+that entry. Both Card VRN and Tran VRN remain available for comparison alongside
+date/time, network, product, litres, unit price and cost. These immutable values
+stay unchanged when entries are edited, excluded or assigned to trucks. Excel
+source details stay inline; the lower document viewer is used for PDFs.
 
-Truck suggestions use exact registration matches after ignoring whitespace and
-case. Unknown or ambiguous registrations, a missing Tran VRN, or disagreement
-between Tran VRN and Card VRN require an explicit truck choice. There is no fuzzy
+Fuel Store truck suggestions use exact Card VRN matches after ignoring whitespace
+and case. A unique match preselects that truck. A differing or missing Tran VRN
+keeps its warning and requires acknowledgement before saving; users can choose
+the actual truck if a driver used another truck's card. Missing, unknown or
+ambiguous Card VRNs require an explicit truck choice, with no automatic fallback
+to Tran VRN. Silvey continues to use the invoice's REG. field. There is no fuzzy
 matching, truck creation, driver inference or day linking. All existing trucks
 are available, as on the manual fuel form.
 
@@ -144,7 +144,7 @@ but their edited values remain available when a truck is chosen again. There is
 no separate Include checkbox.
 
 Users can edit the purchase date, truck, litres and cost, or exclude a row.
-Unmatched/conflicting rows, unsupported products and nonpositive amounts start
+Unmatched or ambiguous registrations, unsupported products and nonpositive amounts start
 excluded but remain visible with their source issues. Source details and flags
 remain unchanged when review fields are edited. The supplier stays the selected
 profile's canonical label; network values do not change it. Dates may span several payroll weeks.
@@ -306,6 +306,12 @@ importer's duplicate protection.
 Original source warnings and unusual prices require a per-row confirmation.
 The acknowledgement uses one visible native checkbox; its appearance is scoped
 to the fuel review and does not add confirmations to the payslip import.
+Background checks preserve the active checkbox. Visual refresh waits until an
+in-progress pointer click completes, while Save eligibility still uses the
+current check results immediately. Rechecking and unchanged field events retain
+acknowledgement.
+The summary counts source and check warnings together, and the Save hint shows
+how many flagged entries still need acknowledgement.
 Changing that row's truck, date, litres, cost or inclusion clears its
 confirmation. This acknowledgement does not override amount limits or permit
 unsupported products such as AdBlue to be imported as diesel. A confirmation is

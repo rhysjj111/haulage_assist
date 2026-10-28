@@ -54,14 +54,20 @@ def _preview_payload(report, supplier):
     for truck in choices:
         registrations[_normalise_registration(truck["registration"])].append(truck["id"])
 
+    # Fuel Store's Card VRN identifies the truck assigned to the card. Tran VRN
+    # is driver-entered and can contain typos; retain it and its source warnings
+    # without using it as a fallback. Other suppliers keep their own mapping.
+    card_primary = supplier.id == "the-fuel-store" and report.document_kind == "xlsx"
     rows = []
     for row in report.rows:
-        registration = _normalise_registration(row.transaction_registration)
+        registration = _normalise_registration(
+            row.card_registration if card_primary else row.transaction_registration,
+        )
         card_registration = _normalise_registration(row.card_registration)
         candidates = registrations.get(registration, []) if registration else []
         if not registration:
             status = "missing_registration"
-        elif card_registration and card_registration != registration:
+        elif not card_primary and card_registration and card_registration != registration:
             status = "registration_conflict"
         elif len(candidates) == 1:
             status = "matched"
