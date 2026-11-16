@@ -167,6 +167,34 @@ document.addEventListener('DOMContentLoaded', function () {
     //     autoClose: true,
     // }
 
+    function parseDateInput(value) {
+        const text = value.trim();
+        const uk = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text);
+        const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+        if (!uk && !iso) return null;
+
+        const day = Number(uk ? uk[1] : iso[3]);
+        const month = Number(uk ? uk[2] : iso[2]);
+        const year = Number(uk ? uk[3] : iso[1]);
+        const date = new Date(0);
+        date.setFullYear(year, month - 1, day);
+        date.setHours(0, 0, 0, 0);
+        if (year < 1 || date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+            return null;
+        }
+        return date;
+    }
+
+    function initialiseDatepicker(picker, options) {
+        // Materialize reads defaultDate before consulting parse. An invalid
+        // Date also prevents it guessing a rejected input's month/day order.
+        return M.Datepicker.init(picker, {
+            ...options,
+            parse: parseDateInput,
+            defaultDate: parseDateInput(picker.value) || new Date(NaN),
+        });
+    }
+
     // 7. Specific Datepicker Optimization
     // Pre-calculate dates to avoid recalculation during rendering
     const today = new Date();
@@ -233,11 +261,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const initDatepicker = () => {
             if (picker.id === 'week_select') {
                 if (!M.Datepicker.getInstance(picker)) {
-                    M.Datepicker.init(picker, weekSelectOptions);
+                    initialiseDatepicker(picker, weekSelectOptions);
                 }
             } else {
                 if (!M.Datepicker.getInstance(picker)) {
-                    M.Datepicker.init(picker, defaultOptions);
+                    initialiseDatepicker(picker, defaultOptions);
                 }
             }
             // Remove event listener after initialization
@@ -255,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function () {
         dateTrigger.addEventListener('click', () => {
             // Initialize if not already done
             if (!M.Datepicker.getInstance(weekSelect)) {
-                M.Datepicker.init(weekSelect, weekSelectOptions);
+                initialiseDatepicker(weekSelect, weekSelectOptions);
             }
             M.Datepicker.getInstance(weekSelect).open();
         });
